@@ -2,6 +2,9 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { getCsrfToken } from "next-auth/react";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/db";
@@ -14,6 +17,14 @@ const hasCredentialsAuth = Boolean(prisma);
 export default async function SignInPage() {
   const session = await getServerSession(authOptions);
   if (session?.user) redirect("/");
+
+  const csrfToken = await getCsrfToken({
+    req: {
+      headers: {
+        cookie: headers().get("cookie") ?? "",
+      },
+    },
+  });
 
   return (
     <div className="min-h-dvh grid place-items-center p-6">
@@ -44,6 +55,7 @@ export default async function SignInPage() {
               method="post"
               className="space-y-2"
             >
+              <input type="hidden" name="csrfToken" value={csrfToken ?? undefined} />
               <input type="hidden" name="callbackUrl" value="/?login=success" />
               <input
                 name="email"

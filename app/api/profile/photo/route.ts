@@ -2,10 +2,8 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { uploadBuffer } from "@/lib/dropbox";
+import { storeProfileImage } from "@/lib/storage";
 import { assertImage, sanitizeExt } from "@/lib/file";
-
-const appName = process.env.APP_NAME ?? "next-profile-bg";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -31,10 +29,8 @@ export async function POST(request: Request) {
   const ext = sanitizeExt(file.type);
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
-  const dropboxPath = `/apps/${appName}/profiles/${session.user.id}.${ext}`;
-
   try {
-    const imageUrl = await uploadBuffer(dropboxPath, buffer, "overwrite");
+    const imageUrl = await storeProfileImage(session.user.id, ext, buffer);
 
     const updated = await prisma.user.update({
       where: { id: Number(session.user.id) },

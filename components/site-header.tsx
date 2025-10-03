@@ -12,15 +12,24 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 export function SiteHeader() {
   const { data: session } = useSession();
   const user = session?.user ?? null;
+  const rawName = user?.name?.trim();
+  const displayName = rawName && rawName.length > 0 ? rawName : "Usuário";
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
   const initials = useMemo(() => {
-    if (!user) return "";
-    const source = user.name || user.email || "";
-    return source.slice(0, 2).toUpperCase();
-  }, [user]);
+    const source = rawName;
+    if (!source) return "";
+    const parts = source.split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return "";
+    if (parts.length === 1) {
+      return parts[0]!.slice(0, 2).toUpperCase();
+    }
+    const first = parts[0]?.[0] ?? "";
+    const last = parts.at(-1)?.[0] ?? "";
+    return `${first}${last}`.toUpperCase();
+  }, [rawName]);
 
   return (
     <header className="w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -34,16 +43,13 @@ export function SiteHeader() {
               <div className="flex items-center gap-3 rounded-full border px-3 py-1.5">
                 <Avatar className="size-9">
                   {user.image ? (
-                    <AvatarImage src={user.image} alt={user.name ?? user.email ?? "Usuário"} />
+                    <AvatarImage src={user.image} alt={displayName} />
                   ) : (
                     <AvatarFallback>{initials || <LogIn className="h-4 w-4" />}</AvatarFallback>
                   )}
                 </Avatar>
                 <div className="leading-tight">
-                  <p className="text-sm font-medium">{user.name ?? user.email}</p>
-                  {user.email && user.name && (
-                    <p className="text-xs text-muted-foreground">{user.email}</p>
-                  )}
+                  <p className="text-sm font-medium">{displayName}</p>
                 </div>
               </div>
               <form action="/api/auth/signout" method="post">

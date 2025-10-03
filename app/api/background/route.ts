@@ -3,10 +3,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
-import { uploadBuffer } from "@/lib/dropbox";
+import { storeBackgroundImage } from "@/lib/storage";
 import { assertImage, sanitizeExt } from "@/lib/file";
 
-const appName = process.env.APP_NAME ?? "next-profile-bg";
 const RATE_LIMIT_WINDOW = 10 * 60 * 1000;
 const RATE_LIMIT_MAX = 10;
 const rateLimitMap = new Map<string, { count: number; windowStart: number }>();
@@ -16,7 +15,15 @@ function getClientIp(request: NextRequest) {
   if (forwarded) {
     return forwarded.split(",")[0]!.trim();
   }
-  return request.ip ?? "unknown";
+  const realIp = request.headers.get("x-real-ip");
+  if (realIp) {
+    return realIp;
+  }
+  const cloudflareIp = request.headers.get("cf-connecting-ip");
+  if (cloudflareIp) {
+    return cloudflareIp;
+  }
+  return "unknown";
 }
 
 function checkRateLimit(ip: string) {
@@ -79,8 +86,7 @@ export async function PUT(request: NextRequest) {
       const ext = sanitizeExt(file.type);
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
-      const path = `/apps/${appName}/backgrounds/current.${ext}`;
-      backgroundUrl = await uploadBuffer(path, buffer, "overwrite");
+      backgroundUrl = await storeBackgroundImage(ext, buffer);
     } else {
       return NextResponse.json({ error: "Tipo de conteúdo não suportado" }, { status: 400 });
     }

@@ -37,7 +37,10 @@ async function ensureSharedLink(client: Dropbox, path: string) {
   return created.result.url;
 }
 
-export async function uploadBuffer(path: string, buffer: Buffer, mode: files.WriteModeOption = "overwrite") {
+type WriteModeTag = Exclude<files.WriteMode[".tag"], "update">;
+type WriteModeInput = files.WriteMode | WriteModeTag;
+
+export async function uploadBuffer(path: string, buffer: Buffer, mode: WriteModeInput = "overwrite") {
   const client = getDropbox();
   const writeMode: files.WriteMode =
     typeof mode === "string" ? { ".tag": mode } : mode;

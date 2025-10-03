@@ -2,6 +2,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import { redirect } from "next/navigation";
+import { LoginSuccessToast } from "@/components/login-success-toast";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -9,6 +10,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-5xl p-6">
+      <LoginSuccessToast />
       <h1 className="text-2xl font-bold">
         Olá, {session.user.name ?? session.user.email}
       </h1>

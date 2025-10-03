@@ -16,7 +16,7 @@ export function LoginSuccessToast() {
     if (shown) return;
     if (loginStatus !== "success") return;
 
-    toast.success("Login realizado com sucesso!");
+    toast.success("Login realizado com sucesso");
     setShown(true);
 
     const params = new URLSearchParams(searchParams.toString());

@@ -25,7 +25,7 @@ export default async function SignInPage() {
           {/* OAuth (endpoints automáticos) */}
           {hasGoogleOAuth ? (
             <form action="/api/auth/signin/google" method="post">
-              <input type="hidden" name="callbackUrl" value="/dashboard?login=success" />
+              <input type="hidden" name="callbackUrl" value="/?login=success" />
               <Button type="submit" className="w-full">
                 Entrar com Google
               </Button>
@@ -44,7 +44,7 @@ export default async function SignInPage() {
               method="post"
               className="space-y-2"
             >
-              <input type="hidden" name="callbackUrl" value="/dashboard?login=success" />
+              <input type="hidden" name="callbackUrl" value="/?login=success" />
               <input
                 name="email"
                 type="email"

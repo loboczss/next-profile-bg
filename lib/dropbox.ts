@@ -1,15 +1,43 @@
 import { Dropbox, files } from "dropbox";
 
 let dropboxClient: Dropbox | null = null;
+let usingRefreshToken = false;
 
-export function getDropbox() {
-  const token = process.env.DROPBOX_ACCESS_TOKEN;
-  if (!token) {
-    throw new Error("DROPBOX_ACCESS_TOKEN não configurado.");
+export async function getDropbox() {
+  if (!dropboxClient) {
+    const refreshToken = process.env.DROPBOX_REFRESH_TOKEN;
+    if (refreshToken) {
+      const clientId = process.env.DROPBOX_APP_KEY;
+      const clientSecret = process.env.DROPBOX_APP_SECRET;
+
+      if (!clientId || !clientSecret) {
+        throw new Error(
+          "Configure DROPBOX_APP_KEY e DROPBOX_APP_SECRET para usar refresh tokens."
+        );
+      }
+
+      dropboxClient = new Dropbox({
+        clientId,
+        clientSecret,
+        refreshToken,
+        fetch,
+      });
+      usingRefreshToken = true;
+    } else {
+      const token = process.env.DROPBOX_ACCESS_TOKEN;
+      if (!token) {
+        throw new Error(
+          "Configure DROPBOX_REFRESH_TOKEN ou DROPBOX_ACCESS_TOKEN no ambiente."
+        );
+      }
+
+      dropboxClient = new Dropbox({ accessToken: token, fetch });
+      usingRefreshToken = false;
+    }
   }
 
-  if (!dropboxClient) {
-    dropboxClient = new Dropbox({ accessToken: token, fetch });
+  if (usingRefreshToken) {
+    await dropboxClient.auth.checkAndRefreshAccessToken();
   }
 
   return dropboxClient;
@@ -37,8 +65,12 @@ async function ensureSharedLink(client: Dropbox, path: string) {
   return created.result.url;
 }
 
-export async function uploadBuffer(path: string, buffer: Buffer, mode: files.WriteModeOption = "overwrite") {
-  const client = getDropbox();
+export async function uploadBuffer(
+  path: string,
+  buffer: Buffer,
+  mode: files.WriteModeOption = "overwrite"
+) {
+  const client = await getDropbox();
   const writeMode: files.WriteMode =
     typeof mode === "string" ? { ".tag": mode } : mode;
 

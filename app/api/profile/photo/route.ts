@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { storeProfileImage } from "@/lib/storage";
+import { UploadLogEntry } from "@/types/upload";
 import { assertImage, sanitizeExt } from "@/lib/file";
 
 export async function POST(request: Request) {
@@ -29,18 +30,39 @@ export async function POST(request: Request) {
   const ext = sanitizeExt(file.type);
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
+  let logs: UploadLogEntry[] = [];
+
   try {
-    const imageUrl = await storeProfileImage(session.user.id, ext, buffer);
+    const result = await storeProfileImage(session.user.id, ext, buffer);
+    logs = result.logs;
+
+    logs.push({
+      level: "info",
+      message: "Atualizando foto de perfil no banco de dados...",
+      timestamp: new Date().toISOString(),
+    });
 
     const updated = await prisma.user.update({
       where: { id: Number(session.user.id) },
-      data: { imageUrl },
+      data: { imageUrl: result.imageUrl },
       select: { imageUrl: true },
     });
 
-    return NextResponse.json({ imageUrl: updated.imageUrl });
+    logs.push({
+      level: "success",
+      message: "Foto de perfil atualizada com sucesso.",
+      timestamp: new Date().toISOString(),
+    });
+
+    return NextResponse.json({ imageUrl: updated.imageUrl, logs });
   } catch (error) {
     console.error("Erro ao atualizar foto de perfil", error);
-    return NextResponse.json({ error: "Erro ao enviar arquivo" }, { status: 500 });
+    logs.push({
+      level: "error",
+      message: "Falha ao atualizar a foto de perfil. Tente novamente.",
+      timestamp: new Date().toISOString(),
+    });
+
+    return NextResponse.json({ error: "Erro ao enviar arquivo", logs }, { status: 500 });
   }
 }

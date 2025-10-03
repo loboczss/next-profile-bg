@@ -6,12 +6,20 @@ import bcrypt from "bcrypt";
 
 import { prisma } from "@/lib/db";
 
-const providers: NextAuthOptions["providers"] = [
-  Google({
-    clientId: process.env.AUTH_GOOGLE_ID ?? "",
-    clientSecret: process.env.AUTH_GOOGLE_SECRET ?? "",
-  }),
-];
+const providers: NextAuthOptions["providers"] = [];
+
+const hasGoogleOAuth = Boolean(
+  process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET,
+);
+
+if (hasGoogleOAuth) {
+  providers.push(
+    Google({
+      clientId: process.env.AUTH_GOOGLE_ID!,
+      clientSecret: process.env.AUTH_GOOGLE_SECRET!,
+    }),
+  );
+}
 
 if (prisma) {
   providers.push(

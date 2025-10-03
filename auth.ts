@@ -1,20 +1,21 @@
 import NextAuth, { type NextAuthOptions } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import Google from "next-auth/providers/google";
-
 import Credentials from "next-auth/providers/credentials";
-import { prisma } from "@/lib/db";
 import bcrypt from "bcrypt";
 
-export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
-  session: { strategy: "jwt" },
-  providers: [
-    Google({
-      clientId: process.env.AUTH_GOOGLE_ID ?? "",
-      clientSecret: process.env.AUTH_GOOGLE_SECRET ?? "",
-    }),
-        Credentials({
+import { prisma } from "@/lib/db";
+
+const providers: NextAuthOptions["providers"] = [
+  Google({
+    clientId: process.env.AUTH_GOOGLE_ID ?? "",
+    clientSecret: process.env.AUTH_GOOGLE_SECRET ?? "",
+  }),
+];
+
+if (prisma) {
+  providers.push(
+    Credentials({
       name: "credentials",
       credentials: {
         email: { label: "Email", type: "email" },
@@ -34,18 +35,22 @@ export const authOptions: NextAuthOptions = {
         return { id: user.id, email: user.email, name: user.name ?? null };
       },
     }),
-  ],
+  );
+}
+
+export const authOptions: NextAuthOptions = {
+  adapter: prisma ? PrismaAdapter(prisma) : undefined,
+  session: { strategy: "jwt" },
+  providers,
   pages: { signIn: "/signin" },
-    callbacks: {
-    async session({ session, user }) {
-      if (session.user && user?.id) {
-        session.user.id = user.id;
+  callbacks: {
+    async session({ session, token }) {
+      if (session.user && token?.sub) {
+        session.user.id = token.sub;
       }
       return session;
     },
   },
 };
 
-// Se você estiver usando getServerSession(authOptions):
-// app/api/auth/[...nextauth]/route.ts deve ser:
-export const { GET, POST } = NextAuth(authOptions);
+export const authHandler = NextAuth(authOptions);

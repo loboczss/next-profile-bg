@@ -5,13 +5,33 @@ import { Button } from "@/components/ui/button";
 import { User, Image as ImageIcon, Brush } from "lucide-react";
 import { prisma } from "@/lib/db";
 
+async function getDemoUser() {
+  if (!process.env.DATABASE_URL || !prisma) {
+    return { user: null, activeBg: null, totalBgs: 0 } as const;
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email: "demo@site.com" },
+      include: {
+        profile: { include: { activeBg: true } },
+        backgrounds: true,
+      },
+    });
+
+    return {
+      user,
+      activeBg: user?.profile?.activeBg ?? null,
+      totalBgs: user?.backgrounds?.length ?? 0,
+    } as const;
+  } catch (error) {
+    console.error("Failed to load demo user", error);
+    return { user: null, activeBg: null, totalBgs: 0 } as const;
+  }
+}
+
 export default async function Home() {
-  const user = await prisma.user.findUnique({
-    where: { email: "demo@site.com" },
-    include: { profile: { include: { activeBg: true } }, backgrounds: true },
-  });
-  const activeBg = user?.profile?.activeBg;
-  const totalBgs = user?.backgrounds?.length ?? 0;
+  const { user, activeBg, totalBgs } = await getDemoUser();
 
   return (
     <main className="min-h-dvh flex flex-col">

@@ -1,132 +1,101 @@
 import Link from "next/link";
-import { getServerSession } from "next-auth";
-import { User, Image as ImageIcon, Brush } from "lucide-react";
 
-import { SiteHeader } from "@/components/site-header";
-import { SiteFooter } from "@/components/site-footer";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LoginSuccessToast } from "@/components/login-success-toast";
-import { prisma } from "@/lib/db";
-import { authOptions } from "@/auth";
+import { auth, signOut } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { ChangePhoto } from "@/components/ChangePhoto";
+import { ChangeBackground } from "@/components/ChangeBackground";
 
-async function getDemoUser() {
-  if (!process.env.DATABASE_URL || !prisma) {
-    return { user: null, activeBg: null, totalBgs: 0 } as const;
-  }
-
-  try {
-    const user = await prisma.user.findUnique({
-      where: { email: "demo@site.com" },
-      include: {
-        profile: { include: { activeBg: true } },
-        backgrounds: true,
-      },
-    });
-
-    return {
-      user,
-      activeBg: user?.profile?.activeBg ?? null,
-      totalBgs: user?.backgrounds?.length ?? 0,
-    } as const;
-  } catch (error) {
-    console.error("Failed to load demo user", error);
-    return { user: null, activeBg: null, totalBgs: 0 } as const;
-  }
+async function logout() {
+  "use server";
+  await signOut({ redirectTo: "/" });
 }
 
-export default async function Home() {
-  const session = await getServerSession(authOptions);
-  const loggedInUser = session?.user ?? null;
-  const { user, activeBg, totalBgs } = await getDemoUser();
+export default async function HomePage() {
+  const session = await auth();
+
+  let backgroundUrl: string | null = null;
+  try {
+    const settings = await prisma.globalSetting.findUnique({
+      where: { id: 1 },
+      select: { backgroundUrl: true },
+    });
+    backgroundUrl = settings?.backgroundUrl ?? null;
+  } catch {
+    backgroundUrl = null;
+  }
 
   return (
-    <main className="min-h-dvh flex flex-col">
-      <SiteHeader />
-      <section className="flex-1">
-        <div className="mx-auto max-w-5xl px-4 py-10">
-          <LoginSuccessToast />
-          <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold tracking-tight">Next Profile BG</h1>
-            <p className="text-muted-foreground mt-2">
-              Base visual + banco de dados pronto (Prisma + Postgres).
-            </p>
+    <main
+      className="min-h-dvh bg-slate-100 text-slate-900"
+      style={
+        backgroundUrl
+          ? {
+              backgroundImage: `url(${backgroundUrl})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }
+          : undefined
+      }
+    >
+      <div className="min-h-dvh bg-white/70 flex flex-col">
+        <header className="w-full border-b bg-white/80 backdrop-blur-sm">
+          <div className="mx-auto flex w-full max-w-4xl items-center justify-between px-4 py-4">
+            <h1 className="text-xl font-semibold">next-profile-bg</h1>
+            <nav className="flex items-center gap-3 text-sm">
+              {session?.user ? (
+                <form action={logout}>
+                  <button
+                    type="submit"
+                    className="rounded-md border px-3 py-2 font-medium hover:bg-slate-100"
+                  >
+                    Sair
+                  </button>
+                </form>
+              ) : (
+                <Link
+                  href="/login"
+                  className="rounded-md border px-3 py-2 font-medium hover:bg-slate-100"
+                >
+                  Login
+                </Link>
+              )}
+            </nav>
           </div>
+        </header>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>{loggedInUser ? "Sua conta" : "Usuário Demo"}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {loggedInUser ? (
-                  <div className="flex items-center gap-4">
-                    <Avatar className="size-16">
-                      {loggedInUser.image ? (
-                        <AvatarImage
-                          src={loggedInUser.image}
-                          alt={loggedInUser.name ?? loggedInUser.email ?? "Usuário"}
-                        />
-                      ) : (
-                        <AvatarFallback className="text-lg">
-                          {(loggedInUser.name || loggedInUser.email || "?")
-                            .slice(0, 2)
-                            .toUpperCase()}
-                        </AvatarFallback>
-                      )}
-                    </Avatar>
-                    <div>
-                      <p className="font-semibold text-lg">{loggedInUser.name ?? loggedInUser.email}</p>
-                      {loggedInUser.email && loggedInUser.name && (
-                        <p className="text-sm text-muted-foreground">{loggedInUser.email}</p>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <p>
-                      <strong>Email:</strong> {user?.email ?? "—"}
-                    </p>
-                    <p>
-                      <strong>Nome:</strong> {user?.name ?? "—"}
-                    </p>
-                    <p>
-                      <strong>Backgrounds salvos:</strong> {totalBgs}
-                    </p>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader><CardTitle>Background Ativo</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                {activeBg ? (
-                  <>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={activeBg.imageUrl} alt="Background ativo" className="w-full h-48 object-cover rounded-xl border" />
-                    <p className="text-sm text-muted-foreground break-all">{activeBg.imageUrl}</p>
-                  </>
-                ) : (
-                  <p className="text-muted-foreground">Nenhum background ativo.</p>
-                )}
-                <div className="flex gap-2 flex-wrap">
-                  <Button variant="default" asChild>
-                    <Link href={loggedInUser ? "/dashboard" : "/signin"}>
-                      <User className="mr-2 h-4 w-4" />
-                      {loggedInUser ? "Minha conta" : "Login"}
-                    </Link>
-                  </Button>
-                  <Button variant="secondary"><ImageIcon className="mr-2 h-4 w-4" /> Trocar Foto de Perfil</Button>
-                  <Button variant="outline"><Brush className="mr-2 h-4 w-4" /> Alterar Background</Button>
+        <section className="flex-1">
+          <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-10">
+            <div className="rounded-lg bg-white/80 p-6 shadow">
+              <h2 className="text-2xl font-semibold">Bem-vindo!</h2>
+              <p className="mt-2 text-sm text-slate-600">
+                Configure sua foto de perfil e o background global. Faça login para alterar sua foto.
+              </p>
+              {session?.user ? (
+                <div className="mt-4 space-y-2">
+                  <p className="text-sm text-slate-700">
+                    Usuário logado: <strong>{session.user.name ?? "Usuário"}</strong>
+                  </p>
+                  {session.user.image && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={session.user.image}
+                      alt="Foto atual"
+                      className="h-20 w-20 rounded-full border object-cover"
+                    />
+                  )}
                 </div>
-              </CardContent>
-            </Card>
+              ) : (
+                <p className="mt-4 text-sm text-slate-700">
+                  Não possui conta? <Link className="text-blue-600" href="/signup">Cadastre-se</Link>.
+                </p>
+              )}
+            </div>
+
+            {session?.user && <ChangePhoto />}
+            <ChangeBackground />
           </div>
-        </div>
-      </section>
-      <SiteFooter />
+        </section>
+      </div>
     </main>
   );
 }

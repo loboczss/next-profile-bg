@@ -1,41 +1,32 @@
-// prisma/seed.ts
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
+
 const prisma = new PrismaClient();
 
 async function main() {
-  // cria usuário demo (usa upsert para não duplicar)
+  const username = "demo";
+  const password = "changeme";
+  const avatarUrl = "https://images.unsplash.com/photo-1503264116251-35a269479413?w=1600";
+  const passwordHash = await bcrypt.hash(password, 10);
+
   const user = await prisma.user.upsert({
-    where: { email: "demo@site.com" },
-    update: {},
+    where: { username },
+    update: { passwordHash, imageUrl: avatarUrl },
     create: {
-      email: "demo@site.com",
-      name: "Usuário Demo",
-      profile: {
-        create: {
-          displayName: "Demo",
-          avatarUrl: null,
-        },
-      },
+      username,
+      passwordHash,
+      imageUrl: avatarUrl,
     },
-    include: { profile: true },
+    select: { id: true, username: true },
   });
 
-  // adiciona um background e marca como ativo
-  const bg = await prisma.background.create({
-    data: {
-      userId: user.id,
-      imageUrl: "https://images.unsplash.com/photo-1503264116251-35a269479413?w=1600",
-      isActive: true,
-    },
+  await prisma.globalSetting.upsert({
+    where: { id: 1 },
+    update: { backgroundUrl: avatarUrl },
+    create: { id: 1, backgroundUrl: avatarUrl },
   });
 
-  // conecta o background ativo ao profile
-  await prisma.profile.update({
-    where: { userId: user.id },
-    data: { activeBgId: bg.id },
-  });
-
-  console.log("Seed concluído.");
+  console.log(`Seed concluído. Usuário padrão: ${user.username} / ${password}`);
 }
 
 main()

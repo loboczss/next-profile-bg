@@ -4,6 +4,7 @@ import { auth, signOut } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ChangePhoto } from "@/components/ChangePhoto";
 import { ChangeBackground } from "@/components/ChangeBackground";
+import { DropboxConnectionTest } from "@/components/DropboxConnectionTest";
 
 async function logout() {
   "use server";
@@ -93,6 +94,7 @@ export default async function HomePage() {
 
             {session?.user && <ChangePhoto />}
             <ChangeBackground />
+            <DropboxConnectionTest />
           </div>
         </section>
       </div>

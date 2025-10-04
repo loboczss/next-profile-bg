@@ -197,7 +197,24 @@ async function withDropboxClient<T>(
 export interface DropboxUploadResult {
   path: string;
   sharedUrl: string | null;
-  warning?: "missing_scope" | "auth";
+  warning?:
+    | "missing_scope"
+    | "auth"
+    | "missing_scope_temporary_link";
+}
+
+async function createTemporaryLink(client: Dropbox, path: string) {
+  try {
+    const response = await client.filesGetTemporaryLink({ path });
+    return normalizeSharedUrl(response.result.link);
+  } catch (error) {
+    if (isAuthError(error)) {
+      throw error;
+    }
+
+    console.error("Falha ao gerar link temporário do Dropbox", error);
+    return null;
+  }
 }
 
 export async function uploadBuffer(
@@ -225,6 +242,15 @@ export async function uploadBuffer(
       };
     } catch (error) {
       if (isMissingScopeError(error)) {
+        const temporary = await createTemporaryLink(client, path);
+        if (temporary) {
+          return {
+            path,
+            sharedUrl: temporary,
+            warning: "missing_scope_temporary_link",
+          };
+        }
+
         return { path, sharedUrl: null, warning: "missing_scope" };
       }
 

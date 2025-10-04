@@ -2,8 +2,6 @@ import Link from "next/link";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { ChangePhoto } from "@/components/ChangePhoto";
-import { ChangeBackground } from "@/components/ChangeBackground";
 import { DropboxConnectionTest } from "@/components/DropboxConnectionTest";
 
 export default async function HomePage() {
@@ -39,10 +37,10 @@ export default async function HomePage() {
             <div className="rounded-lg bg-white/80 p-6 shadow">
               <h2 className="text-2xl font-semibold">Bem-vindo!</h2>
               <p className="mt-2 text-sm text-slate-600">
-                Configure sua foto de perfil e o background global. Faça login para alterar sua foto.
+                Gerencie sua identidade visual no Next Profile BG alterando a foto de perfil e o background global.
               </p>
               {session?.user ? (
-                <div className="mt-4 space-y-2">
+                <div className="mt-4 space-y-4">
                   <p className="text-sm text-slate-700">
                     Usuário logado: <strong>{session.user.name ?? "Usuário"}</strong>
                   </p>
@@ -54,6 +52,20 @@ export default async function HomePage() {
                       className="h-20 w-20 rounded-full border object-cover"
                     />
                   )}
+                  <div className="flex flex-wrap gap-3">
+                    <Link
+                      href="/usuario"
+                      className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
+                    >
+                      Acessar página do usuário
+                    </Link>
+                    <Link
+                      href="/dashboard"
+                      className="inline-flex items-center justify-center rounded-md border border-blue-600 px-4 py-2 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-50"
+                    >
+                      Ir para o painel admin
+                    </Link>
+                  </div>
                 </div>
               ) : (
                 <p className="mt-4 text-sm text-slate-700">
@@ -62,8 +74,6 @@ export default async function HomePage() {
               )}
             </div>
 
-            {session?.user && <ChangePhoto />}
-            {session?.user && <ChangeBackground isAuthenticated />}
             <DropboxConnectionTest />
           </div>
         </section>

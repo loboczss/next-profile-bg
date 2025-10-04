@@ -15,6 +15,26 @@ interface CredentialsStatus {
   missing?: string[];
 }
 
+type ResponseWithBuffer = Response & {
+  buffer?: () => Promise<Buffer>;
+};
+
+async function dropboxFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+) {
+  const response = (await fetch(input, init)) as ResponseWithBuffer;
+
+  if (typeof response.buffer !== "function") {
+    response.buffer = async () => {
+      const arrayBuffer = await response.arrayBuffer();
+      return Buffer.from(arrayBuffer);
+    };
+  }
+
+  return response;
+}
+
 function resolveCredentialsStatus(): CredentialsStatus {
   const refreshToken = process.env.DROPBOX_REFRESH_TOKEN?.trim();
   const appKey = process.env.DROPBOX_APP_KEY?.trim();
@@ -72,14 +92,14 @@ export function getDropbox() {
     if (status.mode === "access_token") {
       dropboxClient = new Dropbox({
         accessToken: process.env.DROPBOX_ACCESS_TOKEN!,
-        fetch,
+        fetch: dropboxFetch,
       });
     } else {
       dropboxClient = new Dropbox({
         clientId: process.env.DROPBOX_APP_KEY!,
         clientSecret: process.env.DROPBOX_APP_SECRET!,
         refreshToken: process.env.DROPBOX_REFRESH_TOKEN!,
-        fetch,
+        fetch: dropboxFetch,
       });
     }
 

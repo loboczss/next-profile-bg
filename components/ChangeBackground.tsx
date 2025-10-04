@@ -28,6 +28,7 @@ export function ChangeBackground() {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ url }),
+            credentials: "include",
           });
         } else {
           if (!file) {
@@ -39,6 +40,7 @@ export function ChangeBackground() {
           response = await fetch("/api/background", {
             method: "PUT",
             body: formData,
+            credentials: "include",
           });
         }
 
@@ -106,7 +108,7 @@ export function ChangeBackground() {
               onChange={(event) => setFile(event.target.files?.[0] ?? null)}
               className="block w-full text-sm"
             />
-            <p className="text-xs text-slate-600 mt-1">JPEG, PNG ou WebP até 2MB.</p>
+            <p className="text-xs text-slate-600 mt-1">JPEG, PNG ou WebP até 10MB.</p>
           </div>
         )}
         <button

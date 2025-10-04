@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import { UploadLogEntry } from "@/types/upload";
+import { getDropboxCredentialsStatus } from "./dropbox";
 
 const appName = process.env.APP_NAME ?? "next-profile-bg";
 
@@ -27,11 +28,13 @@ async function tryDropboxUpload(
 ) {
   const description = itemDescription;
 
-  if (!process.env.DROPBOX_ACCESS_TOKEN) {
+  const credentials = getDropboxCredentialsStatus();
+  if (!credentials.configured) {
     logs?.push(
       createLog(
         "warning",
-        skipMessage ?? "Token do Dropbox não configurado. O arquivo será salvo localmente.",
+        skipMessage ??
+          "Credenciais do Dropbox não configuradas. O arquivo será salvo localmente.",
       ),
     );
     return null;
@@ -111,7 +114,8 @@ export async function storeProfileImage(userId: string, ext: string, buffer: Buf
     logs,
     itemDescription: "foto de perfil",
     successMessage: "Upload da foto concluído no Dropbox.",
-    skipMessage: "Token do Dropbox não configurado. Salvando foto de perfil localmente.",
+    skipMessage:
+      "Credenciais do Dropbox não configuradas. Salvando foto de perfil localmente.",
   });
 
   if (dropboxUrl) {
@@ -139,7 +143,8 @@ export async function storeBackgroundImage(ext: string, buffer: Buffer) {
   const dropboxUrl = await tryDropboxUpload(dropboxPath, buffer, {
     itemDescription: "background",
     successMessage: "Upload do background concluído no Dropbox.",
-    skipMessage: "Token do Dropbox não configurado. Salvando background localmente.",
+    skipMessage:
+      "Credenciais do Dropbox não configuradas. Salvando background localmente.",
   });
   if (dropboxUrl) {
     return dropboxUrl;

@@ -1,15 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import {
-  Home,
-  Info,
-  LayoutDashboard,
-  LogIn,
-  LogOut,
-  MapPin,
-  User,
-} from "lucide-react";
+import Home from "lucide-react/icons/home";
+import Info from "lucide-react/icons/info";
+import LayoutDashboard from "lucide-react/icons/layout-dashboard";
+import LogIn from "lucide-react/icons/log-in";
+import LogOut from "lucide-react/icons/log-out";
+import MapPin from "lucide-react/icons/map-pin";
+import User from "lucide-react/icons/user";
 
 import type { Session } from "next-auth";
 

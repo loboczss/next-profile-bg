@@ -1,4 +1,8 @@
 import type { Metadata } from "next";
+
+import { Navbar } from "@/components/navbar";
+import { auth } from "@/lib/auth";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -6,10 +10,19 @@ export const metadata: Metadata = {
   description: "Gerencie foto de perfil e background com Next.js",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const session = await auth();
+
   return (
     <html lang="pt-BR">
-      <body>{children}</body>
+      <body className="font-sans antialiased">
+        <Navbar user={session?.user ?? null} />
+        <div className="pt-20 lg:pt-24">{children}</div>
+      </body>
     </html>
   );
 }

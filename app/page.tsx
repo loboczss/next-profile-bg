@@ -1,15 +1,10 @@
 import Link from "next/link";
 
-import { auth, signOut } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ChangePhoto } from "@/components/ChangePhoto";
 import { ChangeBackground } from "@/components/ChangeBackground";
 import { DropboxConnectionTest } from "@/components/DropboxConnectionTest";
-
-async function logout() {
-  "use server";
-  await signOut({ redirectTo: "/" });
-}
 
 export default async function HomePage() {
   const session = await auth();
@@ -39,31 +34,6 @@ export default async function HomePage() {
       }
     >
       <div className="min-h-dvh bg-white/70 flex flex-col">
-        <header className="w-full border-b bg-white/80 backdrop-blur-sm">
-          <div className="mx-auto flex w-full max-w-4xl items-center justify-between px-4 py-4">
-            <h1 className="text-xl font-semibold">next-profile-bg</h1>
-            <nav className="flex items-center gap-3 text-sm">
-              {session?.user ? (
-                <form action={logout}>
-                  <button
-                    type="submit"
-                    className="rounded-md border px-3 py-2 font-medium hover:bg-slate-100"
-                  >
-                    Sair
-                  </button>
-                </form>
-              ) : (
-                <Link
-                  href="/login"
-                  className="rounded-md border px-3 py-2 font-medium hover:bg-slate-100"
-                >
-                  Login
-                </Link>
-              )}
-            </nav>
-          </div>
-        </header>
-
         <section className="flex-1">
           <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-10">
             <div className="rounded-lg bg-white/80 p-6 shadow">

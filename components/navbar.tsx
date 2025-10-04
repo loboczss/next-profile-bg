@@ -41,7 +41,7 @@ export function Navbar({ user }: NavbarProps) {
       icon: MapPin,
     },
     {
-      href: "#sobre-nos",
+      href: "/sobre-nos",
       label: "Sobre nós",
       icon: Info,
     },

@@ -300,11 +300,17 @@ export async function downloadFile(path: string): Promise<{
       fileBlob?: Blob;
     };
 
+    const fallbackBinary =
+      "fileBinary" in response
+        ? await toBuffer(
+            (response as { fileBinary?: Buffer | ArrayBuffer }).fileBinary,
+          )
+        : null;
+
     const binary =
       (await toBuffer(result.fileBinary)) ??
       (await toBuffer(result.fileBlob)) ??
-      // @ts-expect-error - dropbox sdk also exposes fileBinary on response directly
-      (await toBuffer((response as unknown as { fileBinary?: Buffer | ArrayBuffer }).fileBinary));
+      fallbackBinary;
 
     if (!binary) {
       throw new Error("Dropbox não retornou o conteúdo do arquivo.");

@@ -69,7 +69,12 @@ export async function GET(request: Request) {
       headers.ETag = metadata.rev;
     }
 
-    return new NextResponse(buffer, {
+    const arrayBuffer = buffer.buffer.slice(
+      buffer.byteOffset,
+      buffer.byteOffset + buffer.byteLength,
+    ) as ArrayBuffer;
+
+    return new NextResponse(arrayBuffer, {
       headers,
     });
   } catch (error) {

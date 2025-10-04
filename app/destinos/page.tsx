@@ -12,6 +12,8 @@ import {
 } from "@/lib/destinations";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { assertImage, sanitizeExt } from "@/lib/file";
+import { storeDestinationPhoto } from "@/lib/storage";
 
 async function createDestination(
   _prevState: DestinationFormState,
@@ -28,10 +30,47 @@ async function createDestination(
   }
 
   const photosRaw = String(formData.get("photos") ?? "");
-  const photos = photosRaw
+  const manualPhotos = photosRaw
     .split(/\r?\n|,/)
     .map((value) => value.trim())
     .filter(Boolean);
+
+  const photoFiles = formData
+    .getAll("photoFiles")
+    .filter((value): value is File => value instanceof File && value.size > 0);
+
+  const uploadedPhotos: string[] = [];
+  const uploadErrors: string[] = [];
+
+  for (const file of photoFiles) {
+    try {
+      assertImage(file);
+      const ext = sanitizeExt(file.type);
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const imageUrl = await storeDestinationPhoto(String(session.user.id), ext, buffer, {
+        originalName: file.name,
+      });
+      uploadedPhotos.push(imageUrl);
+    } catch (error) {
+      console.error("Erro ao enviar foto de destino", error);
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível enviar o arquivo.";
+      uploadErrors.push(`${file.name || "Arquivo"}: ${message}`);
+    }
+  }
+
+  if (uploadErrors.length > 0) {
+    return {
+      status: "error",
+      message: "Não foi possível enviar todas as imagens selecionadas.",
+      errors: { photoFiles: uploadErrors },
+    };
+  }
+
+  const photos = Array.from(new Set([...manualPhotos, ...uploadedPhotos]));
 
   const parsed = destinationFormSchema.safeParse({
     name: formData.get("name"),

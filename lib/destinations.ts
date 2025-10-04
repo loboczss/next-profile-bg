@@ -27,7 +27,7 @@ export const destinationFormSchema = z
       .max(5, "A nota máxima é 5."),
     photos: z
       .array(z.string().url("Informe URLs válidas para as fotos."))
-      .min(1, "Informe pelo menos uma foto."),
+      .min(1, "Envie pelo menos uma foto ou informe uma URL válida."),
   })
   .refine(
     (data) => data.endDate >= data.startDate,

@@ -36,7 +36,7 @@ export function Navbar({ user }: NavbarProps) {
       icon: Home,
     },
     {
-      href: "#destinos",
+      href: "/destinos",
       label: "Destinos",
       icon: MapPin,
     },

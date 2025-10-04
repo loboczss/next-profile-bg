@@ -1,8 +1,13 @@
 import Link from "next/link";
 
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { DropboxConnectionTest } from "@/components/DropboxConnectionTest";
+import { DestinationGrid } from "@/components/destinations/destination-grid";
+import { auth } from "@/lib/auth";
+import {
+  serializeDestination,
+  type SerializedDestination,
+} from "@/lib/destinations";
+import { prisma } from "@/lib/prisma";
 
 export default async function HomePage() {
   const session = await auth();
@@ -16,6 +21,16 @@ export default async function HomePage() {
     backgroundUrl = settings?.backgroundUrl ?? null;
   } catch {
     backgroundUrl = null;
+  }
+
+  let destinations: SerializedDestination[] = [];
+  try {
+    const destinationsFromDb = await prisma.destination.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+    destinations = destinationsFromDb.map(serializeDestination);
+  } catch {
+    destinations = [];
   }
 
   return (
@@ -73,6 +88,31 @@ export default async function HomePage() {
                 </p>
               )}
             </div>
+
+            <section
+              id="destinos"
+              className="rounded-lg bg-white/80 p-6 shadow"
+            >
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                  <div>
+                    <h3 className="text-xl font-semibold text-slate-900">
+                      Destinos disponíveis
+                    </h3>
+                    <p className="text-sm text-slate-600">
+                      Confira as últimas experiências cadastradas e inspire-se para a próxima viagem.
+                    </p>
+                  </div>
+                  <Link
+                    href="/destinos"
+                    className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                  >
+                    Ver todos os destinos
+                  </Link>
+                </div>
+                <DestinationGrid destinations={destinations} />
+              </div>
+            </section>
 
             <DropboxConnectionTest />
           </div>

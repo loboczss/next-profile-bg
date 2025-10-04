@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition, type MouseEvent } from "react";
 
 import {
   CalendarRange,
@@ -27,16 +27,22 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { buttonVariants } from "@/components/ui/button";
-import type { SerializedDestination } from "@/lib/destinations";
+import { Button, buttonVariants } from "@/components/ui/button";
+import type {
+  DestinationActionResult,
+  SerializedDestination,
+} from "@/lib/destinations";
 import { cn } from "@/lib/utils";
 
 interface DestinationCardProps {
   destination: SerializedDestination;
+  onDelete?: () => Promise<DestinationActionResult>;
 }
 
-export function DestinationCard({ destination }: DestinationCardProps) {
+export function DestinationCard({ destination, onDelete }: DestinationCardProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeleting, startTransition] = useTransition();
 
   const photos = destination.photos.length > 0 ? destination.photos : ["/placeholder.jpg"];
 
@@ -74,6 +80,38 @@ export function DestinationCard({ destination }: DestinationCardProps) {
   const formattedEndDate = dateFormatter.format(new Date(destination.endDate));
 
   const stayLabel = `${formattedStartDate} - ${formattedEndDate}`;
+
+  const handleDelete = (event: MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!onDelete) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Tem certeza de que deseja excluir o destino "${destination.name}"?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    startTransition(async () => {
+      try {
+        const result = await onDelete();
+        if (result?.status === "error") {
+          setDeleteError(result.message ?? "Não foi possível excluir o destino.");
+          return;
+        }
+
+        setDeleteError(null);
+      } catch (error) {
+        console.error("Erro ao excluir destino", error);
+        setDeleteError("Não foi possível excluir o destino.");
+      }
+    });
+  };
 
   return (
     <Dialog>
@@ -161,6 +199,21 @@ export function DestinationCard({ destination }: DestinationCardProps) {
                 {destination.peopleCount} pessoas
               </span>
             </div>
+            {onDelete && (
+              <div className="space-y-2">
+                <Button
+                  variant="destructive"
+                  className="w-full"
+                  disabled={isDeleting}
+                  onClick={handleDelete}
+                >
+                  {isDeleting ? "Excluindo..." : "Excluir destino"}
+                </Button>
+                {deleteError && (
+                  <p className="text-xs text-red-600">{deleteError}</p>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       </DialogTrigger>
@@ -221,7 +274,18 @@ export function DestinationCard({ destination }: DestinationCardProps) {
           </div>
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+          {onDelete && (
+            <Button
+              variant="destructive"
+              disabled={isDeleting}
+              onClick={(event) => {
+                handleDelete(event);
+              }}
+            >
+              {isDeleting ? "Excluindo..." : "Excluir destino"}
+            </Button>
+          )}
           <button
             type="button"
             className={cn(buttonVariants({ variant: "outline" }), "min-w-[140px]")}
@@ -235,6 +299,9 @@ export function DestinationCard({ destination }: DestinationCardProps) {
             Ver no mapa
           </button>
         </div>
+        {onDelete && deleteError && (
+          <p className="text-sm text-red-600">{deleteError}</p>
+        )}
       </DialogContent>
     </Dialog>
   );

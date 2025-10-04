@@ -60,8 +60,14 @@ export type SerializedDestination = {
   endDate: string;
   rating: number;
   photos: string[];
+  userId: number;
   createdAt: string;
   updatedAt: string;
+};
+
+export type DestinationActionResult = {
+  status: "success" | "error";
+  message?: string;
 };
 
 export function serializeDestination(
@@ -78,6 +84,7 @@ export function serializeDestination(
     endDate: destination.endDate.toISOString(),
     rating: destination.rating,
     photos: destination.photos,
+    userId: destination.userId,
     createdAt: destination.createdAt.toISOString(),
     updatedAt: destination.updatedAt.toISOString(),
   };

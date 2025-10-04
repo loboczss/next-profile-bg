@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { useFormState } from "react-dom";
+import { useActionState, useEffect, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +19,10 @@ interface CreateDestinationFormProps {
 
 export function CreateDestinationForm({ action }: CreateDestinationFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
-  const [state, formAction] = useFormState(action, destinationFormInitialState);
+  const [state, formAction] = useActionState(
+    action,
+    destinationFormInitialState
+  );
 
   useEffect(() => {
     if (state.status === "success") {

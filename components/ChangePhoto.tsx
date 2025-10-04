@@ -140,6 +140,7 @@ export function ChangePhoto() {
         const response = await fetch("/api/profile/photo", {
           method: "POST",
           body: formData,
+          credentials: "include",
         });
 
         const data = await response.json();
@@ -203,7 +204,7 @@ export function ChangePhoto() {
             onChange={(event) => setFile(event.target.files?.[0] ?? null)}
             className="block w-full text-sm"
           />
-          <p className="text-xs text-slate-600 mt-1">JPEG, PNG ou WebP até 2MB.</p>
+          <p className="text-xs text-slate-600 mt-1">JPEG, PNG ou WebP até 10MB.</p>
         </div>
         <button
           type="submit"

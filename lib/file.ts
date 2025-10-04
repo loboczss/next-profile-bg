@@ -4,7 +4,7 @@ export const ALLOWED_MIME = new Set([
   "image/webp",
 ]);
 
-export const MAX_SIZE = 2 * 1024 * 1024; // 2MB
+export const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
 export function assertImage(file: File) {
   if (!ALLOWED_MIME.has(file.type)) {
@@ -12,7 +12,7 @@ export function assertImage(file: File) {
   }
 
   if (file.size > MAX_SIZE) {
-    throw new Error("Arquivo muito grande. O limite é 2MB.");
+    throw new Error("Arquivo muito grande. O limite é 10MB.");
   }
 }
 

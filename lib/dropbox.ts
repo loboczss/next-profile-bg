@@ -46,6 +46,11 @@ export function getDropboxCredentialsStatus(): CredentialsStatus {
   return resolveCredentialsStatus();
 }
 
+function resetDropboxClient() {
+  dropboxClient = null;
+  lastAuthMode = null;
+}
+
 export function getDropbox() {
   const status = resolveCredentialsStatus();
 
@@ -104,19 +109,60 @@ async function ensureSharedLink(client: Dropbox, path: string) {
 type WriteModeTag = Exclude<files.WriteMode[".tag"], "update">;
 type WriteModeInput = files.WriteMode | WriteModeTag;
 
-export async function uploadBuffer(path: string, buffer: Buffer, mode: WriteModeInput = "overwrite") {
+type DropboxAuthError = Error & {
+  status?: number;
+  error?: { error_summary?: string };
+};
+
+function isAuthError(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const authError = error as DropboxAuthError;
+  if (authError.status === 401) {
+    return true;
+  }
+
+  const summary = authError.error?.error_summary;
+  if (typeof summary === "string") {
+    return summary.includes("invalid_access_token") || summary.includes("expired_access_token");
+  }
+
+  return false;
+}
+
+async function withDropboxClient<T>(
+  operation: (client: Dropbox) => Promise<T>,
+  retryOnAuthError = true,
+): Promise<T> {
   const client = getDropbox();
-  const writeMode: files.WriteMode =
-    typeof mode === "string" ? { ".tag": mode } : mode;
 
-  await client.filesUpload({
-    path,
-    contents: buffer,
-    mode: writeMode,
-    autorename: false,
-    mute: true,
+  try {
+    return await operation(client);
+  } catch (error) {
+    if (retryOnAuthError && isAuthError(error)) {
+      resetDropboxClient();
+      return withDropboxClient(operation, false);
+    }
+    throw error;
+  }
+}
+
+export async function uploadBuffer(path: string, buffer: Buffer, mode: WriteModeInput = "overwrite") {
+  return withDropboxClient(async (client) => {
+    const writeMode: files.WriteMode =
+      typeof mode === "string" ? { ".tag": mode } : mode;
+
+    await client.filesUpload({
+      path,
+      contents: buffer,
+      mode: writeMode,
+      autorename: false,
+      mute: true,
+    });
+
+    const shared = await ensureSharedLink(client, path);
+    return normalizeSharedUrl(shared);
   });
-
-  const shared = await ensureSharedLink(client, path);
-  return normalizeSharedUrl(shared);
 }

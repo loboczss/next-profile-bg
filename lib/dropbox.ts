@@ -122,12 +122,17 @@ function normalizeSharedUrl(url: string) {
 }
 
 async function ensureSharedLink(client: Dropbox, path: string) {
+  // 1) tenta achar link já existente
   const links = await client.sharingListSharedLinks({ path, direct_only: true });
   if (links.result.links.length > 0) {
     return links.result.links[0].url;
   }
 
-  const created = await client.sharingCreateSharedLinkWithSettings({ path });
+  // 2) cria com visibilidade pública (evita default team_only)
+  const created = await client.sharingCreateSharedLinkWithSettings({
+    path,
+    settings: { requested_visibility: { ".tag": "public" } },
+  });
   return created.result.url;
 }
 

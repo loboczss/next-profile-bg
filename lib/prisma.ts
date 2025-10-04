@@ -3,6 +3,7 @@ import type { Prisma } from "@prisma/client";
 
 type PrismaGlobal = { prisma?: Prisma.DefaultPrismaClient };
 
+
 const globalForPrisma = globalThis as typeof globalThis & PrismaGlobal;
 
 export const prisma: Prisma.DefaultPrismaClient =

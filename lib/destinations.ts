@@ -49,6 +49,20 @@ export const destinationFormInitialState: DestinationFormState = {
   status: "idle",
 };
 
+export type DestinationDeleteState = {
+  status: "idle" | "success" | "error";
+  message?: string;
+};
+
+export const destinationDeleteInitialState: DestinationDeleteState = {
+  status: "idle",
+};
+
+export type DestinationDeleteAction = (
+  state: DestinationDeleteState,
+  formData: FormData
+) => Promise<DestinationDeleteState>;
+
 export type SerializedDestination = {
   id: number;
   name: string;

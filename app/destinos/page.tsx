@@ -6,6 +6,7 @@ import { DestinationGrid } from "@/components/destinations/destination-grid";
 import {
   DestinationFormState,
   destinationFormSchema,
+  type DestinationDeleteState,
   serializeDestination,
   type SerializedDestination,
 } from "@/lib/destinations";
@@ -85,6 +86,70 @@ async function createDestination(
   };
 }
 
+async function deleteDestination(
+  _prevState: DestinationDeleteState,
+  formData: FormData
+): Promise<DestinationDeleteState> {
+  "use server";
+
+  const session = await auth();
+  if (!session?.user?.id) {
+    return {
+      status: "error",
+      message: "Você precisa estar autenticado para excluir um destino.",
+    };
+  }
+
+  const destinationIdRaw = formData.get("destinationId");
+  const destinationId = Number(destinationIdRaw);
+
+  if (!destinationIdRaw || Number.isNaN(destinationId) || !Number.isInteger(destinationId)) {
+    return {
+      status: "error",
+      message: "Destino inválido.",
+    };
+  }
+
+  try {
+    const destination = await prisma.destination.findUnique({
+      where: { id: destinationId },
+      select: { id: true, userId: true },
+    });
+
+    if (!destination) {
+      return {
+        status: "error",
+        message: "Destino não encontrado.",
+      };
+    }
+
+    if (destination.userId !== Number(session.user.id)) {
+      return {
+        status: "error",
+        message: "Você não tem permissão para excluir este destino.",
+      };
+    }
+
+    await prisma.destination.delete({
+      where: { id: destinationId },
+    });
+  } catch (error) {
+    console.error("Erro ao excluir destino", error);
+    return {
+      status: "error",
+      message: "Não foi possível excluir o destino. Tente novamente mais tarde.",
+    };
+  }
+
+  revalidatePath("/destinos");
+  revalidatePath("/");
+
+  return {
+    status: "success",
+    message: "Destino excluído com sucesso!",
+  };
+}
+
 export default async function DestinationsPage() {
   const session = await auth();
 
@@ -136,7 +201,10 @@ export default async function DestinationsPage() {
               Não foi possível carregar os destinos no momento. Tente novamente mais tarde.
             </p>
           ) : (
-            <DestinationGrid destinations={destinations} />
+            <DestinationGrid
+              destinations={destinations}
+              onDelete={session?.user ? deleteDestination : undefined}
+            />
           )}
         </div>
       </section>

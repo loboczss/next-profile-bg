@@ -94,20 +94,26 @@ async function tryDropboxUpload(
   );
 
   try {
-    const url = await dropbox.uploadBuffer(dropboxPath, buffer, "overwrite");
-    if (url) {
-      logs?.push(
-        createLog("success", successMessage ?? "Upload concluído no Dropbox."),
-      );
-    } else {
-      logs?.push(
-        createLog(
-          "warning",
-          `Dropbox não retornou uma URL válida para o ${description}. Prosseguindo com armazenamento local.`,
-        ),
-      );
+    const result = await dropbox.uploadBuffer(dropboxPath, buffer, "overwrite");
+    let publicUrl = result.sharedUrl;
+
+    if (!publicUrl) {
+      const warningMessage =
+        result.warning === "missing_scope"
+          ? "Dropbox sem permissão para criar links compartilhados. Usando proxy interno."
+          : result.warning === "auth"
+            ? "Dropbox não autorizou a criação do link compartilhado. Usando proxy interno."
+            : "Não foi possível gerar link compartilhado no Dropbox. Usando proxy interno.";
+
+      logs?.push(createLog("warning", warningMessage));
+      publicUrl = dropbox.createProxyUrl(result.path, Date.now());
     }
-    return url;
+
+    logs?.push(
+      createLog("success", successMessage ?? "Upload concluído no Dropbox."),
+    );
+
+    return publicUrl;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Erro desconhecido";
     console.error("Falha ao enviar arquivo ao Dropbox", error);

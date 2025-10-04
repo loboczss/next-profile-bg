@@ -107,6 +107,7 @@ export function ChangeBackground({
               URL do background (https)
             </label>
             <input
+              key="url-input"
               id="background-url"
               type="url"
               value={url}
@@ -122,6 +123,7 @@ export function ChangeBackground({
               Arquivo do background
             </label>
             <input
+              key="file-input"
               id="background-file"
               type="file"
               accept="image/jpeg,image/png,image/webp"

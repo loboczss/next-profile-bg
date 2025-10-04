@@ -12,7 +12,7 @@ export function ChangeBackground({
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("url");
-  const [url, setUrl] = useState<string>("");
+  const [url, setUrl] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -69,19 +69,31 @@ export function ChangeBackground({
     });
   };
 
+  const handleModeChange = (newMode: Mode) => {
+    setMode(newMode);
+    setMessage(null);
+    setError(null);
+
+    if (newMode === "url") {
+      setFile(null);
+    } else {
+      setUrl("");
+    }
+  };
+
   return (
     <div className="border rounded-lg p-4 space-y-3 bg-white/80 shadow">
       <div className="flex gap-2">
         <button
           type="button"
-          onClick={() => setMode("url")}
+          onClick={() => handleModeChange("url")}
           className={`flex-1 rounded-md px-3 py-2 text-sm font-medium ${mode === "url" ? "bg-blue-600 text-white" : "bg-slate-200"}`}
         >
           Usar URL
         </button>
         <button
           type="button"
-          onClick={() => setMode("upload")}
+          onClick={() => handleModeChange("upload")}
           className={`flex-1 rounded-md px-3 py-2 text-sm font-medium ${mode === "upload" ? "bg-blue-600 text-white" : "bg-slate-200"}`}
         >
           Enviar arquivo
@@ -98,7 +110,7 @@ export function ChangeBackground({
               id="background-url"
               type="url"
               value={url}
-              onChange={(event) => setUrl(event.currentTarget.value)}
+              onChange={(event) => setUrl(event.currentTarget.value || "")}
               placeholder="https://exemplo.com/imagem.jpg"
               className="w-full rounded-md border px-3 py-2 text-sm"
               required

@@ -93,7 +93,7 @@ export default async function HomePage() {
             </div>
 
             {session?.user && <ChangePhoto />}
-            <ChangeBackground />
+            {session?.user && <ChangeBackground isAuthenticated />}
             <DropboxConnectionTest />
           </div>
         </section>

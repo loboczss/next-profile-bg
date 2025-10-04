@@ -5,14 +5,22 @@ import { useRouter } from "next/navigation";
 
 type Mode = "url" | "upload";
 
-export function ChangeBackground() {
+export function ChangeBackground({
+  isAuthenticated,
+}: {
+  isAuthenticated: boolean;
+}) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("url");
-  const [url, setUrl] = useState("");
+  const [url, setUrl] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -90,7 +98,7 @@ export function ChangeBackground() {
               id="background-url"
               type="url"
               value={url}
-              onChange={(event) => setUrl(event.target.value)}
+              onChange={(event) => setUrl(event.currentTarget.value)}
               placeholder="https://exemplo.com/imagem.jpg"
               className="w-full rounded-md border px-3 py-2 text-sm"
               required

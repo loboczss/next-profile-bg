@@ -5,15 +5,20 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 
+// Página de login responsável por autenticar usuários via credenciais.
 export default function LoginPage() {
+  // Hook de navegação do Next para redirecionar após o login.
   const router = useRouter();
+  // Obtém parâmetros da URL para respeitar o callback de retorno.
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/";
+  // Estados controlados para armazenar os valores dos campos do formulário.
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Envia as credenciais para a estratégia "credentials" do NextAuth.
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
@@ -43,6 +48,7 @@ export default function LoginPage() {
   };
 
   return (
+    // Estrutura centralizada contendo o formulário de login.
     <main className="min-h-dvh flex items-center justify-center bg-slate-100 px-4">
       <div className="w-full max-w-md rounded-lg border bg-white p-6 shadow-sm space-y-4">
         <div className="space-y-1 text-center">

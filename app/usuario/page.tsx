@@ -4,10 +4,13 @@ import { redirect } from "next/navigation";
 import { ChangePhoto } from "@/components/ChangePhoto";
 import { auth } from "@/lib/auth";
 
+// Página de perfil que permite ao usuário visualizar dados básicos e alterar a foto.
 export default async function UsuarioPage() {
+  // Recupera a sessão atual para obter dados do usuário autenticado.
   const session = await auth();
 
   if (!session?.user) {
+    // Usuários não autenticados são redirecionados para a tela de login.
     redirect("/login");
   }
 
@@ -15,6 +18,7 @@ export default async function UsuarioPage() {
   const displayName = user.name?.trim() ? user.name : "Usuário";
 
   return (
+    // Layout principal com o cartão de informações e o formulário de upload de foto.
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-10">
       <div className="rounded-lg bg-white/80 p-6 shadow">
         <h1 className="text-2xl font-semibold">Perfil do usuário</h1>
@@ -47,6 +51,7 @@ export default async function UsuarioPage() {
         </div>
       </div>
 
+      {/* Formulário que permite atualizar a foto de perfil salva no banco. */}
       <ChangePhoto />
     </div>
   );

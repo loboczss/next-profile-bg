@@ -1,5 +1,5 @@
 import Link from "next/link";
-
+import Hero from "components/hero";
 import { DestinationGrid } from "@/components/destinations/destination-grid";
 import { auth } from "@/lib/auth";
 import {
@@ -7,126 +7,134 @@ import {
   type SerializedDestination,
 } from "@/lib/destinations";
 import { prisma } from "@/lib/prisma";
+import { MapPin, Hotel, Wand2, Headphones, Sparkles } from "lucide-react";
 
-// Página inicial pública que apresenta o projeto e exibe os últimos destinos cadastrados.
 export default async function HomePage() {
-  // Recupera a sessão atual para personalizar o conteúdo quando o usuário está logado.
   const session = await auth();
 
+  // 1) Background "global" (opcional)
   let backgroundUrl: string | null = null;
   try {
-    // Busca a URL do background global configurado pelo administrador.
     const settings = await prisma.globalSetting.findUnique({
       where: { id: 1 },
       select: { backgroundUrl: true },
     });
     backgroundUrl = settings?.backgroundUrl ?? null;
   } catch {
-    // Em caso de erro na consulta, apenas ignora e mantém o fundo padrão.
     backgroundUrl = null;
   }
 
+  // 2) Destinos
   let destinations: SerializedDestination[] = [];
   try {
-    // Carrega os destinos cadastrados, ordenando pelos mais recentes.
     const destinationsFromDb = await prisma.destination.findMany({
       orderBy: { createdAt: "desc" },
+      take: 12,
     });
-    // Converte os registros do banco para o formato serializado utilizado nos componentes de UI.
     destinations = destinationsFromDb.map(serializeDestination);
   } catch {
-    // Caso a consulta falhe, mantém a lista vazia e o componente lidará com a ausência de dados.
     destinations = [];
   }
 
+  // 3) Monta lista de slides do hero: background global + imagens dos destinos
+  const heroImages: string[] = [];
+  if (backgroundUrl) heroImages.push(backgroundUrl);
+
+  for (const d of destinations) {
+    const candidate =
+      // ajuste conforme seu serializer
+      (d as any).coverUrl ||
+      (d as any).imageUrl ||
+      (Array.isArray((d as any).photos) && (d as any).photos[0]) ||
+      null;
+    if (typeof candidate === "string") heroImages.push(candidate);
+  }
+
+  // Fallback com links da internet (Unsplash)
+  if (!heroImages.length) {
+    heroImages.push(
+      "https://images.unsplash.com/photo-1505761671935-60b3a7427bad?q=80&w=1920&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1920&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?q=80&w=1920&auto=format&fit=crop",
+    );
+  }
+
   return (
-    // Estrutura principal com o fundo configurável pelo administrador.
-    <main
-      className="min-h-dvh bg-slate-100 text-slate-900"
-      style={
-        backgroundUrl
-          ? {
-              backgroundImage: `url(${backgroundUrl})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }
-          : undefined
-      }
-    >
-      <div className="min-h-dvh bg-white/70 flex flex-col">
-        <section className="flex-1">
-          <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-10">
-            {/* Cartão inicial com as principais ações disponíveis para usuários logados ou visitantes. */}
-            <div className="rounded-lg bg-white/80 p-6 shadow">
-              <h2 className="text-2xl font-semibold">Bem-vindo!</h2>
-              <p className="mt-2 text-sm text-slate-600">
-                Gerencie sua identidade visual no Next Profile BG alterando a foto de perfil e o background global.
+    <main className="min-h-dvh bg-background text-foreground">
+      {/* HERO premium com carrossel (componente em ./components/hero) */}
+      <Hero images={heroImages} userName={session?.user?.name ?? null} />
+
+      {/* Seção de destinos com “look” premium */}
+      <section
+        id="destinos"
+        className="relative mx-auto -mt-14 w-full max-w-7xl px-6 pb-16"
+      >
+        <div className="rounded-3xl border border-white/10 bg-white/60 p-6 shadow-xl backdrop-blur-md dark:bg-white/[0.04] md:p-8">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                <Sparkles className="size-3.5" />
+                Seleção Evastur
+              </div>
+              <h2 className="text-balance text-3xl font-semibold tracking-tight md:text-4xl">
+                Destinos que contam histórias
+              </h2>
+              <p className="mt-2 max-w-prose text-sm text-muted-foreground md:text-base">
+                Curadoria fina, charme local e experiências que você só descobre
+                com quem entende do assunto.
               </p>
-              {/* Conteúdo condicional que exibe ações específicas para usuários autenticados. */}
-              {session?.user ? (
-                <div className="mt-4 space-y-4">
-                  <p className="text-sm text-slate-700">
-                    Usuário logado: <strong>{session.user.name ?? "Usuário"}</strong>
-                  </p>
-                  {session.user.image && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={session.user.image}
-                      alt="Foto atual"
-                      className="h-20 w-20 rounded-full border object-cover"
-                    />
-                  )}
-                  <div className="flex flex-wrap gap-3">
-                    <Link
-                      href="/usuario"
-                      className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
-                    >
-                      Acessar página do usuário
-                    </Link>
-                    <Link
-                      href="/dashboard"
-                      className="inline-flex items-center justify-center rounded-md border border-blue-600 px-4 py-2 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-50"
-                    >
-                      Ir para o painel admin
-                    </Link>
-                  </div>
-                </div>
-              ) : (
-                <p className="mt-4 text-sm text-slate-700">
-                  Não possui conta? <Link className="text-blue-600" href="/signup">Cadastre-se</Link>.
-                </p>
-              )}
             </div>
 
-            {/* Seção com listagem dos destinos armazenados no banco. */}
-            <section
-              id="destinos"
-              className="rounded-lg bg-white/80 p-6 shadow"
+            <Link
+              href="/destinos"
+              className="group inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-medium backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/20"
             >
-              <div className="flex flex-col gap-4">
-                <div className="flex flex-wrap items-end justify-between gap-3">
-                  <div>
-                    <h3 className="text-xl font-semibold text-slate-900">
-                      Destinos disponíveis
-                    </h3>
-                    <p className="text-sm text-slate-600">
-                      Confira as últimas experiências cadastradas e inspire-se para a próxima viagem.
-                    </p>
-                  </div>
-                  <Link
-                    href="/destinos"
-                    className="text-sm font-medium text-blue-600 hover:text-blue-700"
-                  >
-                    Ver todos os destinos
-                  </Link>
-                </div>
-                <DestinationGrid destinations={destinations} />
-              </div>
-            </section>
-
+              <MapPin className="size-4 transition-transform duration-300 group-hover:-translate-y-0.5" />
+              Ver todos os destinos
+            </Link>
           </div>
-        </section>
-      </div>
+
+          <div className="mt-6 md:mt-8">
+            <DestinationGrid destinations={destinations} />
+          </div>
+        </div>
+      </section>
+
+      {/* Seção “confiança/selos” com ícones (todos locais → substituídos por ícones Lucide) */}
+      <section className="mx-auto w-full max-w-7xl px-6 pb-20">
+        <div className="grid gap-4 rounded-3xl border border-white/10 bg-white/60 p-6 backdrop-blur md:grid-cols-3 md:p-8 dark:bg-white/[0.04]">
+          {[
+            {
+              title: "Hospedagens selecionadas",
+              desc: "Parcerias com hotéis e villas de alto padrão.",
+              Icon: Hotel,
+            },
+            {
+              title: "Experiências exclusivas",
+              desc: "Roteiros imersivos com toque local.",
+              Icon: Wand2,
+            },
+            {
+              title: "Suporte 24/7",
+              desc: "Antes, durante e depois da viagem.",
+              Icon: Headphones,
+            },
+          ].map(({ title, desc, Icon }, i) => (
+            <div
+              key={i}
+              className="group flex items-start gap-4 rounded-2xl border border-white/10 bg-white/40 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/60 dark:bg-white/[0.03] dark:hover:bg-white/[0.06]"
+            >
+              <div className="relative grid size-12 place-items-center overflow-hidden rounded-2xl border border-white/10 bg-white/60 dark:bg-white/[0.06]">
+                <Icon className="size-6 opacity-80 transition-transform duration-300 group-hover:scale-110" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold">{title}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
     </main>
   );
 }

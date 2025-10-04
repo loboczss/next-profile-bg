@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { CreateDestinationForm } from "@/components/destinations/create-destination-form";
 import { DestinationGrid } from "@/components/destinations/destination-grid";
 import {
+  DestinationActionResult,
   DestinationFormState,
   destinationFormSchema,
   serializeDestination,
@@ -85,8 +86,55 @@ async function createDestination(
   };
 }
 
+async function deleteDestination(destinationId: number): Promise<DestinationActionResult> {
+  "use server";
+
+  const session = await auth();
+  const userId = Number(session?.user?.id ?? NaN);
+
+  if (!Number.isInteger(userId)) {
+    return {
+      status: "error",
+      message: "Você precisa estar autenticado para excluir um destino.",
+    };
+  }
+
+  try {
+    const destination = await prisma.destination.findUnique({
+      where: { id: destinationId },
+      select: { userId: true },
+    });
+
+    if (!destination || destination.userId !== userId) {
+      return {
+        status: "error",
+        message: "Você não tem permissão para excluir este destino.",
+      };
+    }
+
+    await prisma.destination.delete({
+      where: { id: destinationId },
+    });
+  } catch (error) {
+    console.error("Erro ao excluir destino", error);
+    return {
+      status: "error",
+      message: "Não foi possível excluir o destino. Tente novamente mais tarde.",
+    };
+  }
+
+  revalidatePath("/destinos");
+  revalidatePath("/");
+
+  return {
+    status: "success",
+    message: "Destino excluído com sucesso!",
+  };
+}
+
 export default async function DestinationsPage() {
   const session = await auth();
+  const userId = session?.user?.id ? Number(session.user.id) : null;
 
   let destinations: SerializedDestination[] = [];
   let destinationsError = false;
@@ -136,7 +184,11 @@ export default async function DestinationsPage() {
               Não foi possível carregar os destinos no momento. Tente novamente mais tarde.
             </p>
           ) : (
-            <DestinationGrid destinations={destinations} />
+            <DestinationGrid
+              destinations={destinations}
+              deleteDestinationAction={deleteDestination}
+              currentUserId={userId}
+            />
           )}
         </div>
       </section>

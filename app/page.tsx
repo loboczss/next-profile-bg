@@ -1,6 +1,5 @@
 import Link from "next/link";
 
-import { DropboxConnectionTest } from "@/components/DropboxConnectionTest";
 import { DestinationGrid } from "@/components/destinations/destination-grid";
 import { auth } from "@/lib/auth";
 import {
@@ -114,7 +113,6 @@ export default async function HomePage() {
               </div>
             </section>
 
-            <DropboxConnectionTest />
           </div>
         </section>
       </div>

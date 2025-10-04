@@ -1,15 +1,79 @@
 import { Dropbox, files } from "dropbox";
 
 let dropboxClient: Dropbox | null = null;
+type DropboxAuthMode = "access_token" | "refresh_token";
+let lastAuthMode: DropboxAuthMode | null = null;
 
-export function getDropbox() {
-  const token = process.env.DROPBOX_ACCESS_TOKEN;
-  if (!token) {
-    throw new Error("DROPBOX_ACCESS_TOKEN não configurado.");
+interface CredentialsStatus {
+  configured: boolean;
+  mode?: DropboxAuthMode;
+  missing?: string[];
+}
+
+function resolveCredentialsStatus(): CredentialsStatus {
+  const refreshToken = process.env.DROPBOX_REFRESH_TOKEN?.trim();
+  const appKey = process.env.DROPBOX_APP_KEY?.trim();
+  const appSecret = process.env.DROPBOX_APP_SECRET?.trim();
+
+  if (refreshToken || appKey || appSecret) {
+    const missing: string[] = [];
+    if (!refreshToken) missing.push("DROPBOX_REFRESH_TOKEN");
+    if (!appKey) missing.push("DROPBOX_APP_KEY");
+    if (!appSecret) missing.push("DROPBOX_APP_SECRET");
+
+    if (missing.length === 0) {
+      return { configured: true, mode: "refresh_token" };
+    }
+
+    return { configured: false, missing };
   }
 
-  if (!dropboxClient) {
-    dropboxClient = new Dropbox({ accessToken: token, fetch });
+  const accessToken = process.env.DROPBOX_ACCESS_TOKEN?.trim();
+  if (accessToken) {
+    return { configured: true, mode: "access_token" };
+  }
+
+  return {
+    configured: false,
+    missing: [
+      "DROPBOX_ACCESS_TOKEN",
+      "ou (DROPBOX_REFRESH_TOKEN, DROPBOX_APP_KEY, DROPBOX_APP_SECRET)",
+    ],
+  };
+}
+
+export function getDropboxCredentialsStatus(): CredentialsStatus {
+  return resolveCredentialsStatus();
+}
+
+export function getDropbox() {
+  const status = resolveCredentialsStatus();
+
+  if (!status.configured || !status.mode) {
+    const missing = status.missing?.join(", ") ?? "credenciais";
+    throw new Error(`Credenciais do Dropbox não configuradas. Faltando: ${missing}.`);
+  }
+
+  if (!dropboxClient || lastAuthMode !== status.mode) {
+    if (dropboxClient && lastAuthMode !== status.mode) {
+      dropboxClient = null;
+    }
+
+    if (status.mode === "access_token") {
+      dropboxClient = new Dropbox({
+        accessToken: process.env.DROPBOX_ACCESS_TOKEN!,
+        fetch,
+      });
+    } else {
+      dropboxClient = new Dropbox({
+        clientId: process.env.DROPBOX_APP_KEY!,
+        clientSecret: process.env.DROPBOX_APP_SECRET!,
+        refreshToken: process.env.DROPBOX_REFRESH_TOKEN!,
+        fetch,
+      });
+    }
+
+    lastAuthMode = status.mode;
   }
 
   return dropboxClient;

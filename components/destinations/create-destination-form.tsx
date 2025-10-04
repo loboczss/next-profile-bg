@@ -36,6 +36,7 @@ export function CreateDestinationForm({ action }: CreateDestinationFormProps) {
     <form
       ref={formRef}
       action={formAction}
+      encType="multipart/form-data"
       className="space-y-6 rounded-xl border border-slate-200 bg-white/80 p-6 shadow-sm"
     >
       <div className="space-y-1">
@@ -209,15 +210,37 @@ export function CreateDestinationForm({ action }: CreateDestinationFormProps) {
         </div>
 
         <div className="md:col-span-2 space-y-2">
+          <label htmlFor="photoFiles" className="text-sm font-medium text-slate-700">
+            Envie fotos do destino
+          </label>
+          <Input
+            id="photoFiles"
+            name="photoFiles"
+            type="file"
+            multiple
+            accept="image/jpeg,image/png,image/webp"
+            aria-invalid={getError("photoFiles").length > 0}
+          />
+          <p className="text-xs text-slate-500">
+            Formatos aceitos: JPG, PNG ou WebP com até 10MB por arquivo. As imagens são
+            salvas automaticamente no Dropbox quando configurado.
+          </p>
+          {getError("photoFiles").map((message) => (
+            <p key={message} className="text-xs text-red-600">
+              {message}
+            </p>
+          ))}
+        </div>
+
+        <div className="md:col-span-2 space-y-2">
           <label htmlFor="photos" className="text-sm font-medium text-slate-700">
-            URLs das fotos (uma por linha)
+            URLs das fotos (opcional, uma por linha)
           </label>
           <Textarea
             id="photos"
             name="photos"
             placeholder={"https://exemplo.com/foto-1.jpg\nhttps://exemplo.com/foto-2.jpg"}
             aria-invalid={getError("photos").length > 0}
-            required
           />
           {getError("photos").map((message) => (
             <p key={message} className="text-xs text-red-600">

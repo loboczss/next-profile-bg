@@ -212,3 +212,32 @@ export async function storeBackgroundImage(ext: string, buffer: Buffer) {
   await removeByPrefix(dirPath, "background-");
   return saveLocalFile(dir, fileName, buffer);
 }
+
+export async function storeDestinationPhoto(
+  userId: string,
+  ext: string,
+  buffer: Buffer,
+  options: { originalName?: string } = {},
+) {
+  const safeUserId = sanitizeSegment(userId);
+  const baseName = options.originalName
+    ? sanitizeSegment(path.parse(options.originalName).name)
+    : "destino";
+  const fileName = `${Date.now()}-${baseName}.${ext}`;
+  const dropboxPath = `/apps/${appName}/destinations/${safeUserId}/${fileName}`;
+
+  const dropboxUrl = await tryDropboxUpload(dropboxPath, buffer, {
+    itemDescription: "foto de destino",
+    successMessage: "Upload da foto de destino concluído no Dropbox.",
+    skipMessage:
+      "Credenciais do Dropbox não configuradas. Salvando foto de destino localmente.",
+  });
+
+  if (dropboxUrl) {
+    return dropboxUrl;
+  }
+
+  const dir = ["uploads", "destinations", safeUserId];
+  const imageUrl = await saveLocalFile(dir, fileName, buffer);
+  return imageUrl;
+}

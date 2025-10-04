@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
-import { storeBackgroundImage } from "@/lib/storage";
+import { DropboxUploadError, storeBackgroundImage } from "@/lib/storage";
 import { assertImage, sanitizeExt } from "@/lib/file";
 
 const RATE_LIMIT_WINDOW = 10 * 60 * 1000;
@@ -101,6 +101,24 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ backgroundUrl });
   } catch (error) {
     console.error("Erro ao atualizar background", error);
+
+    if (error instanceof DropboxUploadError) {
+      return NextResponse.json(
+        {
+          error: error.message,
+          errorDetails: {
+            message: error.message,
+            stack: error.stack,
+            stage: error.stage,
+            dropboxPath: error.dropboxPath,
+            causeMessage: error.causeMessage,
+            causeStack: error.causeStack,
+          },
+        },
+        { status: 500 },
+      );
+    }
+
     return NextResponse.json({ error: "Erro ao atualizar background" }, { status: 500 });
   }
 }

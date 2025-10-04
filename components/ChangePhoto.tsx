@@ -3,7 +3,13 @@
 import { FormEvent, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
-import type { UploadLogEntry, UploadLogLevel } from "@/types/upload";
+import type {
+  UploadErrorDetails,
+  UploadLogEntry,
+  UploadLogLevel,
+} from "@/types/upload";
+import { normalizeUploadErrorDetails } from "@/lib/upload-error";
+import { UploadErrorDialog } from "./UploadErrorDialog";
 
 type UploadAttemptStatus = "pending" | "success" | "error";
 
@@ -91,12 +97,18 @@ export function ChangePhoto() {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [attempts, setAttempts] = useState<UploadAttempt[]>([]);
+  const [errorDetails, setErrorDetails] = useState<UploadErrorDetails | null>(
+    null,
+  );
+  const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     const form = event.currentTarget;
     event.preventDefault();
     setMessage(null);
     setError(null);
+    setErrorDetails(null);
+    setIsErrorDialogOpen(false);
 
     if (!file) {
       setError("Selecione uma imagem primeiro.");
@@ -147,6 +159,10 @@ export function ChangePhoto() {
         const serverLogs = normalizeServerLogs(data.logs);
 
         if (!response.ok) {
+          const normalizedDetails = normalizeUploadErrorDetails(
+            data.errorDetails,
+          );
+
           appendToAttempt(
             [
               ...serverLogs,
@@ -155,6 +171,11 @@ export function ChangePhoto() {
             "error",
           );
           setError(data.error ?? "Erro ao enviar foto.");
+
+          if (normalizedDetails) {
+            setErrorDetails(normalizedDetails);
+            setIsErrorDialogOpen(true);
+          }
           return;
         }
 
@@ -218,6 +239,16 @@ export function ChangePhoto() {
       </form>
 
       <UploadLogPanel attempts={sortedAttempts} />
+      <UploadErrorDialog
+        open={isErrorDialogOpen}
+        onOpenChange={(open) => {
+          setIsErrorDialogOpen(open);
+          if (!open) {
+            setErrorDetails(null);
+          }
+        }}
+        details={errorDetails}
+      />
     </div>
   );
 }

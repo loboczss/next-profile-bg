@@ -5,3 +5,18 @@ export interface UploadLogEntry {
   level: UploadLogLevel;
   timestamp: string;
 }
+
+export type UploadErrorStage =
+  | "credentials"
+  | "client_initialization"
+  | "upload"
+  | string;
+
+export interface UploadErrorDetails {
+  message: string;
+  stack?: string;
+  stage?: UploadErrorStage;
+  dropboxPath?: string;
+  causeMessage?: string;
+  causeStack?: string;
+}

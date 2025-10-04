@@ -3,6 +3,10 @@
 import { FormEvent, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
+import type { UploadErrorDetails } from "@/types/upload";
+import { normalizeUploadErrorDetails } from "@/lib/upload-error";
+import { UploadErrorDialog } from "./UploadErrorDialog";
+
 type Mode = "url" | "upload";
 
 export function ChangeBackground({
@@ -17,6 +21,10 @@ export function ChangeBackground({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [errorDetails, setErrorDetails] = useState<UploadErrorDetails | null>(
+    null,
+  );
+  const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false);
 
   if (!isAuthenticated) {
     return null;
@@ -26,6 +34,8 @@ export function ChangeBackground({
     event.preventDefault();
     setMessage(null);
     setError(null);
+    setErrorDetails(null);
+    setIsErrorDialogOpen(false);
 
     startTransition(async () => {
       try {
@@ -55,6 +65,14 @@ export function ChangeBackground({
         const data = await response.json();
         if (!response.ok) {
           setError(data.error ?? "Erro ao atualizar background");
+          const normalizedDetails = normalizeUploadErrorDetails(
+            data.errorDetails,
+          );
+
+          if (normalizedDetails) {
+            setErrorDetails(normalizedDetails);
+            setIsErrorDialogOpen(true);
+          }
           return;
         }
 
@@ -143,6 +161,16 @@ export function ChangeBackground({
         {message && <p className="text-sm text-green-600">{message}</p>}
         {error && <p className="text-sm text-red-600">{error}</p>}
       </form>
+      <UploadErrorDialog
+        open={isErrorDialogOpen}
+        onOpenChange={(open) => {
+          setIsErrorDialogOpen(open);
+          if (!open) {
+            setErrorDetails(null);
+          }
+        }}
+        details={errorDetails}
+      />
     </div>
   );
 }

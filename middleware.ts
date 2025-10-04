@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 
-const protectedMatchers = ["/dashboard", "/api/profile"];
+const protectedMatchers = ["/dashboard", "/api/profile", "/usuario"];
 
 export default auth((request) => {
   const { pathname } = request.nextUrl;
@@ -22,5 +22,5 @@ export default auth((request) => {
 });
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/api/profile/:path*"],
+  matcher: ["/dashboard/:path*", "/api/profile/:path*", "/usuario/:path*"],
 };

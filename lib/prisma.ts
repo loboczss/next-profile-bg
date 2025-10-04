@@ -1,7 +1,7 @@
-import { Prisma, PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 
 declare global {
-  var prismaGlobal: Prisma.DefaultPrismaClient | undefined;
+  var prismaGlobal: PrismaClient | undefined;
 }
 
 const prismaClient =

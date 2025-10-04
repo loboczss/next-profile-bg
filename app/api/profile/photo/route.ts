@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { storeProfileImage } from "@/lib/storage";
-import { UploadLogEntry } from "@/types/upload";
+import { DropboxUploadError, storeProfileImage } from "@/lib/storage";
+import { UploadLogEntry, UploadErrorDetails } from "@/types/upload";
 import { assertImage, sanitizeExt } from "@/lib/file";
 
 export async function POST(request: Request) {
@@ -57,12 +57,33 @@ export async function POST(request: Request) {
     return NextResponse.json({ imageUrl: updated.imageUrl, logs });
   } catch (error) {
     console.error("Erro ao atualizar foto de perfil", error);
-    logs.push({
+
+    let responseLogs: UploadLogEntry[] = [...logs];
+    let errorDetails: UploadErrorDetails | undefined;
+    let errorMessage = "Erro ao enviar arquivo";
+
+    if (error instanceof DropboxUploadError) {
+      responseLogs = [...error.uploadLogs];
+      errorMessage = error.message;
+      errorDetails = {
+        message: error.message,
+        stack: error.stack,
+        stage: error.stage,
+        dropboxPath: error.dropboxPath,
+        causeMessage: error.causeMessage,
+        causeStack: error.causeStack,
+      };
+    }
+
+    responseLogs.push({
       level: "error",
       message: "Falha ao atualizar a foto de perfil. Tente novamente.",
       timestamp: new Date().toISOString(),
     });
 
-    return NextResponse.json({ error: "Erro ao enviar arquivo", logs }, { status: 500 });
+    return NextResponse.json(
+      { error: errorMessage, logs: responseLogs, errorDetails },
+      { status: 500 },
+    );
   }
 }

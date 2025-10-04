@@ -1,8 +1,50 @@
-import fs from "node:fs/promises";
 import path from "node:path";
 
 import { UploadLogEntry } from "@/types/upload";
 import { getDropboxCredentialsStatus } from "./dropbox";
+
+export type DropboxUploadStage =
+  | "credentials"
+  | "client_initialization"
+  | "upload";
+
+export class DropboxUploadError extends Error {
+  readonly stage: DropboxUploadStage;
+  readonly dropboxPath: string;
+  readonly uploadLogs: UploadLogEntry[];
+  readonly causeMessage?: string;
+  readonly causeStack?: string;
+
+  constructor(
+    message: string,
+    {
+      stage,
+      dropboxPath,
+      logs,
+      cause,
+    }: {
+      stage: DropboxUploadStage;
+      dropboxPath: string;
+      logs?: UploadLogEntry[];
+      cause?: unknown;
+    },
+  ) {
+    super(message);
+    this.name = "DropboxUploadError";
+    this.stage = stage;
+    this.dropboxPath = dropboxPath;
+    this.uploadLogs = logs ?? [];
+
+    if (cause instanceof Error) {
+      this.causeMessage = cause.message;
+      this.causeStack = cause.stack;
+    } else if (typeof cause === "string") {
+      this.causeMessage = cause;
+    }
+
+    Object.setPrototypeOf(this, DropboxUploadError.prototype);
+  }
+}
 
 const appName = process.env.APP_NAME ?? "next-profile-bg";
 
@@ -18,30 +60,30 @@ interface DropboxUploadOptions {
   logs?: UploadLogEntry[];
   itemDescription?: string;
   successMessage?: string;
-  skipMessage?: string;
 }
 
 async function tryDropboxUpload(
   dropboxPath: string,
   buffer: Buffer,
-  { logs, itemDescription = "arquivo", successMessage, skipMessage }: DropboxUploadOptions = {},
-) {
+  { logs, itemDescription = "arquivo", successMessage }: DropboxUploadOptions = {},
+): Promise<string> {
   const description = itemDescription;
+  const logEntries = logs ?? [];
 
-  logs?.push(
+  logEntries.push(
     createLog("info", "Verificando configuração das credenciais do Dropbox..."),
   );
 
   const credentials = getDropboxCredentialsStatus();
   if (!credentials.configured) {
-    logs?.push(
-      createLog(
-        "warning",
-        skipMessage ??
-          "Credenciais do Dropbox não configuradas. O arquivo será salvo localmente.",
-      ),
-    );
-    return null;
+    const message =
+      "Credenciais do Dropbox não configuradas. Configure-as antes de tentar novamente.";
+    logEntries.push(createLog("error", message));
+    throw new DropboxUploadError(message, {
+      stage: "credentials",
+      dropboxPath,
+      logs: logEntries,
+    });
   }
 
   const authDescription =
@@ -51,20 +93,20 @@ async function tryDropboxUpload(
         ? "via token de acesso"
         : "em modo desconhecido";
 
-  logs?.push(
+  logEntries.push(
     createLog(
       "success",
       `Credenciais do Dropbox configuradas (${authDescription}).`,
     ),
   );
 
-  logs?.push(createLog("info", "Inicializando cliente do Dropbox..."));
+  logEntries.push(createLog("info", "Inicializando cliente do Dropbox..."));
 
   let dropbox: typeof import("./dropbox") | null = null;
   try {
     dropbox = await import("./dropbox");
     dropbox.getDropbox();
-    logs?.push(
+    logEntries.push(
       createLog(
         "success",
         "Cliente do Dropbox inicializado com sucesso.",
@@ -73,20 +115,27 @@ async function tryDropboxUpload(
   } catch (error) {
     const message = error instanceof Error ? error.message : "Erro desconhecido";
     console.error("Falha ao inicializar cliente do Dropbox", error);
-    logs?.push(
-      createLog(
-        "error",
-        `Falha ao inicializar o cliente do Dropbox: ${message}. Prosseguindo com armazenamento local.`,
-      ),
-    );
-    return null;
+    const logMessage = `Falha ao inicializar o cliente do Dropbox: ${message}.`;
+    logEntries.push(createLog("error", logMessage));
+    throw new DropboxUploadError(logMessage, {
+      stage: "client_initialization",
+      dropboxPath,
+      logs: logEntries,
+      cause: error,
+    });
   }
 
   if (!dropbox) {
-    return null;
+    const message = "Cliente do Dropbox não foi inicializado.";
+    logEntries.push(createLog("error", message));
+    throw new DropboxUploadError(message, {
+      stage: "client_initialization",
+      dropboxPath,
+      logs: logEntries,
+    });
   }
 
-  logs?.push(
+  logEntries.push(
     createLog(
       "info",
       `Enviando ${description} para o Dropbox no caminho ${dropboxPath}...`,
@@ -105,11 +154,11 @@ async function tryDropboxUpload(
             ? "Dropbox não autorizou a criação do link compartilhado. Usando proxy interno."
             : "Não foi possível gerar link compartilhado no Dropbox. Usando proxy interno.";
 
-      logs?.push(createLog("warning", warningMessage));
+      logEntries.push(createLog("warning", warningMessage));
       publicUrl = dropbox.createProxyUrl(result.path, Date.now());
     }
 
-    logs?.push(
+    logEntries.push(
       createLog("success", successMessage ?? "Upload concluído no Dropbox."),
     );
 
@@ -117,44 +166,15 @@ async function tryDropboxUpload(
   } catch (error) {
     const message = error instanceof Error ? error.message : "Erro desconhecido";
     console.error("Falha ao enviar arquivo ao Dropbox", error);
-    logs?.push(
-      createLog(
-        "error",
-        `Falha ao enviar ${description} para o Dropbox: ${message}. Prosseguindo com armazenamento local.`,
-      ),
-    );
-    return null;
+    const errorMessage = `Falha ao enviar ${description} para o Dropbox: ${message}.`;
+    logEntries.push(createLog("error", errorMessage));
+    throw new DropboxUploadError(errorMessage, {
+      stage: "upload",
+      dropboxPath,
+      logs: logEntries,
+      cause: error,
+    });
   }
-}
-
-async function ensureDir(dirSegments: string[]) {
-  const dirPath = path.join(process.cwd(), "public", ...dirSegments);
-  await fs.mkdir(dirPath, { recursive: true });
-  return dirPath;
-}
-
-async function removeByPrefix(dirPath: string, prefix: string) {
-  try {
-    const entries = await fs.readdir(dirPath);
-    await Promise.all(
-      entries
-        .filter((entry) => entry.startsWith(prefix))
-        .map((entry) => fs.rm(path.join(dirPath, entry)).catch(() => undefined)),
-    );
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException)?.code !== "ENOENT") {
-      console.error("Falha ao remover arquivos antigos", error);
-    }
-  }
-}
-
-async function saveLocalFile(dirSegments: string[], fileName: string, buffer: Buffer) {
-  const dirPath = await ensureDir(dirSegments);
-  await fs.writeFile(path.join(dirPath, fileName), buffer);
-  const urlPath = ["", ...dirSegments, fileName]
-    .map((segment) => segment.replace(/\\/g, "/"))
-    .join("/");
-  return `${urlPath}?v=${Date.now()}`;
 }
 
 function sanitizeSegment(value: string) {
@@ -170,47 +190,17 @@ export async function storeProfileImage(userId: string, ext: string, buffer: Buf
     logs,
     itemDescription: "foto de perfil",
     successMessage: "Upload da foto concluído no Dropbox.",
-    skipMessage:
-      "Credenciais do Dropbox não configuradas. Salvando foto de perfil localmente.",
   });
 
-  if (dropboxUrl) {
-    return { imageUrl: dropboxUrl, logs };
-  }
-
-  logs.push(createLog("info", "Preparando armazenamento local para a foto de perfil..."));
-
-  const dir = ["uploads", "profiles"];
-  const safeId = sanitizeSegment(userId);
-  const fileName = `${safeId}-${Date.now()}.${ext}`;
-  const dirPath = path.join(process.cwd(), "public", ...dir);
-
-  await removeByPrefix(dirPath, `${safeId}-`);
-  logs.push(createLog("info", "Fotos antigas removidas do armazenamento local."));
-
-  const imageUrl = await saveLocalFile(dir, fileName, buffer);
-  logs.push(createLog("success", "Foto salva com sucesso no armazenamento local."));
-
-  return { imageUrl, logs };
+  return { imageUrl: dropboxUrl, logs };
 }
 
 export async function storeBackgroundImage(ext: string, buffer: Buffer) {
   const dropboxPath = `/apps/${appName}/backgrounds/current.${ext}`;
-  const dropboxUrl = await tryDropboxUpload(dropboxPath, buffer, {
+  return tryDropboxUpload(dropboxPath, buffer, {
     itemDescription: "background",
     successMessage: "Upload do background concluído no Dropbox.",
-    skipMessage:
-      "Credenciais do Dropbox não configuradas. Salvando background localmente.",
   });
-  if (dropboxUrl) {
-    return dropboxUrl;
-  }
-
-  const dir = ["uploads", "backgrounds"];
-  const fileName = `background-${Date.now()}.${ext}`;
-  const dirPath = path.join(process.cwd(), "public", ...dir);
-  await removeByPrefix(dirPath, "background-");
-  return saveLocalFile(dir, fileName, buffer);
 }
 
 export async function storeDestinationPhoto(
@@ -226,18 +216,8 @@ export async function storeDestinationPhoto(
   const fileName = `${Date.now()}-${baseName}.${ext}`;
   const dropboxPath = `/apps/${appName}/destinations/${safeUserId}/${fileName}`;
 
-  const dropboxUrl = await tryDropboxUpload(dropboxPath, buffer, {
+  return tryDropboxUpload(dropboxPath, buffer, {
     itemDescription: "foto de destino",
     successMessage: "Upload da foto de destino concluído no Dropbox.",
-    skipMessage:
-      "Credenciais do Dropbox não configuradas. Salvando foto de destino localmente.",
   });
-
-  if (dropboxUrl) {
-    return dropboxUrl;
-  }
-
-  const dir = ["uploads", "destinations", safeUserId];
-  const imageUrl = await saveLocalFile(dir, fileName, buffer);
-  return imageUrl;
 }

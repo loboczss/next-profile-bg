@@ -15,6 +15,8 @@ import { prisma } from "@/lib/prisma";
 import { assertImage, sanitizeExt } from "@/lib/file";
 import { storeDestinationPhoto } from "@/lib/storage";
 
+export const runtime = "nodejs";
+
 // Ação server-side responsável por criar novos destinos a partir do formulário da página.
 async function createDestination(
   _prevState: DestinationFormState,

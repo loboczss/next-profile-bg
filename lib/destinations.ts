@@ -1,6 +1,28 @@
 import type { Destination } from "@prisma/client";
 import { z } from "zod";
 
+const photoUrlSchema = z
+  .string()
+  .trim()
+  .refine(
+    (value) => {
+      if (!value) {
+        return false;
+      }
+
+      try {
+        const url = new URL(value);
+        return url.protocol === "http:" || url.protocol === "https:";
+      } catch {
+        return value.startsWith("/");
+      }
+    },
+    {
+      message:
+        "Informe URLs completas (http/https) ou caminhos relativos gerados pelo sistema.",
+    },
+  );
+
 export const destinationFormSchema = z
   .object({
     name: z.string().min(1, "O nome do destino é obrigatório.").trim(),
@@ -25,9 +47,10 @@ export const destinationFormSchema = z
       .number({ invalid_type_error: "Informe uma nota válida." })
       .min(0, "A nota mínima é 0.")
       .max(5, "A nota máxima é 5."),
-    photos: z
-      .array(z.string().url("Informe URLs válidas para as fotos."))
-      .min(1, "Envie pelo menos uma foto ou informe uma URL válida."),
+    photos: z.array(photoUrlSchema).min(
+      1,
+      "Envie pelo menos uma foto ou informe uma URL válida.",
+    ),
   })
   .refine(
     (data) => data.endDate >= data.startDate,

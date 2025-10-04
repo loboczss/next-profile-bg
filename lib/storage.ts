@@ -28,6 +28,10 @@ async function tryDropboxUpload(
 ) {
   const description = itemDescription;
 
+  logs?.push(
+    createLog("info", "Verificando configuração das credenciais do Dropbox..."),
+  );
+
   const credentials = getDropboxCredentialsStatus();
   if (!credentials.configured) {
     logs?.push(
@@ -40,10 +44,56 @@ async function tryDropboxUpload(
     return null;
   }
 
-  logs?.push(createLog("info", `Enviando ${description} para o Dropbox...`));
+  const authDescription =
+    credentials.mode === "refresh_token"
+      ? "via token de atualização"
+      : credentials.mode === "access_token"
+        ? "via token de acesso"
+        : "em modo desconhecido";
+
+  logs?.push(
+    createLog(
+      "success",
+      `Credenciais do Dropbox configuradas (${authDescription}).`,
+    ),
+  );
+
+  logs?.push(createLog("info", "Inicializando cliente do Dropbox..."));
+
+  let dropbox: typeof import("./dropbox") | null = null;
+  try {
+    dropbox = await import("./dropbox");
+    dropbox.getDropbox();
+    logs?.push(
+      createLog(
+        "success",
+        "Cliente do Dropbox inicializado com sucesso.",
+      ),
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Erro desconhecido";
+    console.error("Falha ao inicializar cliente do Dropbox", error);
+    logs?.push(
+      createLog(
+        "error",
+        `Falha ao inicializar o cliente do Dropbox: ${message}. Prosseguindo com armazenamento local.`,
+      ),
+    );
+    return null;
+  }
+
+  if (!dropbox) {
+    return null;
+  }
+
+  logs?.push(
+    createLog(
+      "info",
+      `Enviando ${description} para o Dropbox no caminho ${dropboxPath}...`,
+    ),
+  );
 
   try {
-    const dropbox = await import("./dropbox");
     const url = await dropbox.uploadBuffer(dropboxPath, buffer, "overwrite");
     if (url) {
       logs?.push(

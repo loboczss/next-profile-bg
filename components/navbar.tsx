@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 
 import type { Session } from "next-auth";
-import { signOut } from "@/lib/auth";
+import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
 interface NavbarProps {
@@ -26,6 +26,10 @@ interface NavbarProps {
 export function Navbar({ user }: NavbarProps) {
   const pathname = usePathname();
   const isAuthenticated = Boolean(user);
+
+  const handleSignOut = () => {
+    void signOut({ redirectTo: "/" });
+  };
 
   const primaryLinks = [
     { href: "/", label: "Início", icon: Home },
@@ -154,15 +158,14 @@ export function Navbar({ user }: NavbarProps) {
                   <Crown className="ml-1 size-3 opacity-60 group-hover/admin:opacity-100 transition-opacity duration-300" />
                 </Link>
 
-                <form action={signOut.bind(null, { redirectTo: "/" })}>
-                  <button
-                    type="submit"
+                <button
+                  type="button"
+                  onClick={handleSignOut}
                     className="group/logout inline-flex items-center gap-2 rounded-full border border-red-500/20 bg-red-500/[0.06] px-4 py-2 text-sm font-medium text-red-500 shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:-translate-y-0.5 hover:border-red-500/30 hover:bg-red-500/10"
-                  >
-                    <LogOut className="size-4 transition-transform duration-300 group-hover/logout:scale-110" />
-                    Sair
-                  </button>
-                </form>
+                >
+                  <LogOut className="size-4 transition-transform duration-300 group-hover/logout:scale-110" />
+                  Sair
+                </button>
               </div>
             ) : (
               <Link

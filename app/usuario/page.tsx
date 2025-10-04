@@ -40,11 +40,9 @@ export default async function UsuarioPage() {
             <p>
               <strong>Nome:</strong> {displayName}
             </p>
-            {user.email && (
-              <p>
-                <strong>E-mail:</strong> {user.email}
-              </p>
-            )}
+            <p>
+              <strong>ID do usuário:</strong> {user.id}
+            </p>
           </div>
         </div>
       </div>

@@ -156,6 +156,13 @@ async function tryDropboxUpload(
 
       logEntries.push(createLog("warning", warningMessage));
       publicUrl = dropbox.createProxyUrl(result.path, Date.now());
+    } else if (result.warning === "missing_scope_temporary_link") {
+      logEntries.push(
+        createLog(
+          "warning",
+          "Dropbox sem permissão para criar links compartilhados. Gerando link temporário diretamente do Dropbox.",
+        ),
+      );
     }
 
     logEntries.push(

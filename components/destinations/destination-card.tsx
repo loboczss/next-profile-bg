@@ -3,12 +3,14 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 
-import CalendarRange from "lucide-react/icons/calendar-range";
-import ChevronLeft from "lucide-react/icons/chevron-left";
-import ChevronRight from "lucide-react/icons/chevron-right";
-import MapPin from "lucide-react/icons/map-pin";
-import Star from "lucide-react/icons/star";
-import Users from "lucide-react/icons/users";
+import {
+  CalendarRange,
+  ChevronLeft,
+  ChevronRight,
+  MapPin,
+  Star,
+  Users,
+} from "lucide-react";
 
 import {
   Dialog,

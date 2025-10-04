@@ -4,6 +4,11 @@ let dropboxClient: Dropbox | null = null;
 type DropboxAuthMode = "access_token" | "refresh_token";
 let lastAuthMode: DropboxAuthMode | null = null;
 
+interface DropboxResponseErrorLike {
+  status?: number;
+  error?: { error_summary?: string };
+}
+
 interface CredentialsStatus {
   configured: boolean;
   mode?: DropboxAuthMode;
@@ -109,10 +114,7 @@ async function ensureSharedLink(client: Dropbox, path: string) {
 type WriteModeTag = Exclude<files.WriteMode[".tag"], "update">;
 type WriteModeInput = files.WriteMode | WriteModeTag;
 
-type DropboxAuthError = Error & {
-  status?: number;
-  error?: { error_summary?: string };
-};
+type DropboxAuthError = Error & DropboxResponseErrorLike;
 
 function isAuthError(error: unknown) {
   if (!error || typeof error !== "object") {
@@ -132,6 +134,24 @@ function isAuthError(error: unknown) {
   return false;
 }
 
+function isMissingScopeError(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const dropboxError = error as DropboxResponseErrorLike;
+  const summary = dropboxError.error?.error_summary;
+  return typeof summary === "string" && summary.includes("missing_scope");
+}
+
+export function getDropboxErrorStatus(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return undefined;
+  }
+
+  return (error as DropboxResponseErrorLike).status;
+}
+
 async function withDropboxClient<T>(
   operation: (client: Dropbox) => Promise<T>,
   retryOnAuthError = true,
@@ -149,7 +169,17 @@ async function withDropboxClient<T>(
   }
 }
 
-export async function uploadBuffer(path: string, buffer: Buffer, mode: WriteModeInput = "overwrite") {
+export interface DropboxUploadResult {
+  path: string;
+  sharedUrl: string | null;
+  warning?: "missing_scope" | "auth";
+}
+
+export async function uploadBuffer(
+  path: string,
+  buffer: Buffer,
+  mode: WriteModeInput = "overwrite",
+): Promise<DropboxUploadResult> {
   return withDropboxClient(async (client) => {
     const writeMode: files.WriteMode =
       typeof mode === "string" ? { ".tag": mode } : mode;
@@ -162,7 +192,104 @@ export async function uploadBuffer(path: string, buffer: Buffer, mode: WriteMode
       mute: true,
     });
 
-    const shared = await ensureSharedLink(client, path);
-    return normalizeSharedUrl(shared);
+    try {
+      const shared = await ensureSharedLink(client, path);
+      return {
+        path,
+        sharedUrl: normalizeSharedUrl(shared),
+      };
+    } catch (error) {
+      if (isMissingScopeError(error)) {
+        return { path, sharedUrl: null, warning: "missing_scope" };
+      }
+
+      if (isAuthError(error)) {
+        return { path, sharedUrl: null, warning: "auth" };
+      }
+
+      throw error;
+    }
+  });
+}
+
+function encodeBase64Url(value: string) {
+  return Buffer.from(value, "utf8")
+    .toString("base64")
+    .replace(/=+$/u, "")
+    .replace(/\+/gu, "-")
+    .replace(/\//gu, "_");
+}
+
+function decodeBase64Url(value: string) {
+  const normalized = value.replace(/-/gu, "+").replace(/_/gu, "/");
+  const padding = normalized.length % 4;
+  const padded =
+    padding === 0 ? normalized : normalized + "=".repeat(4 - padding);
+  return Buffer.from(padded, "base64").toString("utf8");
+}
+
+export function encodeDropboxPath(path: string) {
+  return encodeBase64Url(path);
+}
+
+export function decodeDropboxPath(encoded: string) {
+  return decodeBase64Url(encoded);
+}
+
+export function createProxyUrl(path: string, cacheBuster?: number) {
+  const query = new URLSearchParams({ path: encodeDropboxPath(path) });
+  if (cacheBuster) {
+    query.set("v", cacheBuster.toString());
+  }
+  return `/api/storage/dropbox?${query.toString()}`;
+}
+
+async function toBuffer(data: unknown): Promise<Buffer | null> {
+  if (!data) {
+    return null;
+  }
+
+  if (Buffer.isBuffer(data)) {
+    return data;
+  }
+
+  if (data instanceof Uint8Array) {
+    return Buffer.from(data);
+  }
+
+  if (data instanceof ArrayBuffer) {
+    return Buffer.from(data);
+  }
+
+  if (typeof Blob !== "undefined" && data instanceof Blob) {
+    const arrayBuffer = await data.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  }
+
+  return null;
+}
+
+export async function downloadFile(path: string): Promise<{
+  metadata: files.FileMetadata;
+  buffer: Buffer;
+}> {
+  return withDropboxClient(async (client) => {
+    const response = await client.filesDownload({ path });
+    const result = response.result as files.FileMetadata & {
+      fileBinary?: Buffer | ArrayBuffer;
+      fileBlob?: Blob;
+    };
+
+    const binary =
+      (await toBuffer(result.fileBinary)) ??
+      (await toBuffer(result.fileBlob)) ??
+      // @ts-expect-error - dropbox sdk also exposes fileBinary on response directly
+      (await toBuffer((response as unknown as { fileBinary?: Buffer | ArrayBuffer }).fileBinary));
+
+    if (!binary) {
+      throw new Error("Dropbox não retornou o conteúdo do arquivo.");
+    }
+
+    return { metadata: result, buffer: binary };
   });
 }

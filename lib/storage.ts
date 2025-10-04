@@ -164,8 +164,9 @@ function sanitizeSegment(value: string) {
 
 export async function storeProfileImage(userId: string, ext: string, buffer: Buffer) {
   const logs: UploadLogEntry[] = [];
+  const safeUserId = sanitizeSegment(userId);
 
-  const dropboxPath = `/apps/${appName}/profiles/${userId}.${ext}`;
+  const dropboxPath = `/${appName}/profiles/${safeUserId}.${ext}`;
   const dropboxUrl = await tryDropboxUpload(dropboxPath, buffer, {
     logs,
     itemDescription: "foto de perfil",
@@ -181,11 +182,10 @@ export async function storeProfileImage(userId: string, ext: string, buffer: Buf
   logs.push(createLog("info", "Preparando armazenamento local para a foto de perfil..."));
 
   const dir = ["uploads", "profiles"];
-  const safeId = sanitizeSegment(userId);
-  const fileName = `${safeId}-${Date.now()}.${ext}`;
+  const fileName = `${safeUserId}-${Date.now()}.${ext}`;
   const dirPath = path.join(process.cwd(), "public", ...dir);
 
-  await removeByPrefix(dirPath, `${safeId}-`);
+  await removeByPrefix(dirPath, `${safeUserId}-`);
   logs.push(createLog("info", "Fotos antigas removidas do armazenamento local."));
 
   const imageUrl = await saveLocalFile(dir, fileName, buffer);
@@ -195,7 +195,7 @@ export async function storeProfileImage(userId: string, ext: string, buffer: Buf
 }
 
 export async function storeBackgroundImage(ext: string, buffer: Buffer) {
-  const dropboxPath = `/apps/${appName}/backgrounds/current.${ext}`;
+  const dropboxPath = `/${appName}/backgrounds/current.${ext}`;
   const dropboxUrl = await tryDropboxUpload(dropboxPath, buffer, {
     itemDescription: "background",
     successMessage: "Upload do background concluído no Dropbox.",

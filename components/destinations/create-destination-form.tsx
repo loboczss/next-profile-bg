@@ -36,7 +36,6 @@ export function CreateDestinationForm({ action }: CreateDestinationFormProps) {
     <form
       ref={formRef}
       action={formAction}
-      encType="multipart/form-data"
       className="space-y-6 rounded-xl border border-slate-200 bg-white/80 p-6 shadow-sm"
     >
       <div className="space-y-1">

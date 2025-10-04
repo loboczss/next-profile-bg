@@ -4,14 +4,18 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+// Página de cadastro que cria novos usuários via API interna.
 export default function SignupPage() {
+  // Hook de navegação para redirecionar o usuário após concluir o cadastro.
   const router = useRouter();
+  // Estados controlados que armazenam dados do formulário e feedback para o usuário.
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Submete os dados para a rota /api/signup que realiza a persistência no banco.
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
@@ -44,6 +48,7 @@ export default function SignupPage() {
   };
 
   return (
+    // Layout centralizado com o formulário de criação de conta.
     <main className="min-h-dvh flex items-center justify-center bg-slate-100 px-4">
       <div className="w-full max-w-md rounded-lg border bg-white p-6 shadow-sm space-y-4">
         <div className="space-y-1 text-center">

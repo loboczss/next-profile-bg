@@ -1,7 +1,9 @@
 import Link from "next/link";
 
+// Página institucional com informações sobre a equipe e missão da plataforma.
 export default function AboutPage() {
   return (
+    // Estrutura com múltiplas seções explicando valores da empresa.
     <main className="min-h-dvh bg-slate-100 text-slate-900">
       <div className="min-h-dvh bg-white/80">
         <section className="mx-auto flex w-full max-w-5xl flex-col gap-12 px-5 pb-16 pt-32">
@@ -21,6 +23,7 @@ export default function AboutPage() {
           </header>
 
           <div className="grid gap-8 md:grid-cols-3">
+            {/* Cartões que destacam missão, valores e compromisso da empresa. */}
             <div className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-sm">
               <h2 className="text-xl font-semibold text-slate-900">Nossa missão</h2>
               <p className="mt-3 text-sm text-slate-600">
@@ -57,6 +60,7 @@ export default function AboutPage() {
           </div>
 
           <section className="grid gap-8 rounded-2xl border border-slate-200 bg-white/90 p-8 shadow-sm md:grid-cols-[1.2fr_1fr]">
+            {/* Seção que apresenta a equipe e canais de contato. */}
             <div className="space-y-4">
               <h2 className="text-2xl font-semibold text-slate-900">
                 Uma equipe que acredita no poder das imagens
@@ -96,6 +100,7 @@ export default function AboutPage() {
           </section>
 
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-sm">
+            {/* Chamada final para direcionar o usuário ao login. */}
             <div>
               <h2 className="text-xl font-semibold text-slate-900">
                 Pronto para criar memórias visuais marcantes?

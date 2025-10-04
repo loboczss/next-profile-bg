@@ -5,16 +5,19 @@ import { auth } from "@/lib/auth";
 
 import "./globals.css";
 
+// Metadados globais utilizados pelo Next.js para configurar título e descrição padrão.
 export const metadata: Metadata = {
   title: "Next Profile BG",
   description: "Gerencie foto de perfil e background com Next.js",
 };
 
+// Layout raiz que envolve todas as páginas com a barra de navegação e estilos globais.
 export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Recupera a sessão para passar o usuário autenticado ao componente Navbar.
   const session = await auth();
 
   return (

@@ -40,14 +40,25 @@ export default async function HomePage() {
   const heroImages: string[] = [];
   if (backgroundUrl) heroImages.push(backgroundUrl);
 
-  for (const d of destinations) {
-    const candidate =
-      // ajuste conforme seu serializer
-      (d as any).coverUrl ||
-      (d as any).imageUrl ||
-      (Array.isArray((d as any).photos) && (d as any).photos[0]) ||
-      null;
-    if (typeof candidate === "string") heroImages.push(candidate);
+  for (const destination of destinations) {
+    const destinationRecord = destination as Record<string, unknown>;
+
+    const coverUrl = destinationRecord.coverUrl;
+    if (typeof coverUrl === "string" && coverUrl.trim()) {
+      heroImages.push(coverUrl);
+      continue;
+    }
+
+    const imageUrl = destinationRecord.imageUrl;
+    if (typeof imageUrl === "string" && imageUrl.trim()) {
+      heroImages.push(imageUrl);
+      continue;
+    }
+
+    const firstPhoto = destination.photos.find((photo) => photo.trim());
+    if (typeof firstPhoto === "string" && firstPhoto.trim()) {
+      heroImages.push(firstPhoto);
+    }
   }
 
   // Fallback com links da internet (Unsplash)

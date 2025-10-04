@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getDropbox } from "@/lib/dropbox";
+import { getDropbox, getDropboxCredentialsStatus } from "@/lib/dropbox";
 
 interface LogEntry {
   level: "info" | "success" | "warning" | "error";
@@ -46,17 +46,34 @@ export async function POST() {
 
   try {
     currentStage = "Validação do token";
+    const credentials = getDropboxCredentialsStatus();
+    const credentialDetails: Record<string, string> = { etapa: currentStage };
+    if (credentials.mode) {
+      credentialDetails.modo = credentials.mode;
+    }
+    if (!credentials.configured && credentials.missing?.length) {
+      credentialDetails.faltando = credentials.missing.join(", ");
+    }
+
     appendLog(
       "info",
-      "Verificando configuração do token DROPBOX_ACCESS_TOKEN.",
-      { etapa: currentStage },
+      "Verificando configuração das credenciais do Dropbox.",
+      credentialDetails,
     );
+
+    if (!credentials.configured) {
+      throw new Error(
+        credentials.missing?.length
+          ? `Credenciais incompletas. Faltando: ${credentials.missing.join(", ")}.`
+          : "Credenciais do Dropbox não configuradas.",
+      );
+    }
 
     const client = getDropbox();
     appendLog(
       "success",
-      "Token válido. Cliente do Dropbox inicializado com sucesso.",
-      { etapa: currentStage },
+      "Credenciais válidas. Cliente do Dropbox inicializado com sucesso.",
+      { etapa: currentStage, modo: credentials.mode ?? "indefinido" },
     );
 
     currentStage = "Envio do arquivo de teste";

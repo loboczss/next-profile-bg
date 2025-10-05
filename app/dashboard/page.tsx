@@ -100,7 +100,6 @@ export default async function DashboardPage() {
                     {/* Usamos Image para carregar com qualidade se for permitido; se não, cai no bg div */}
                     {/* Como backgroundUrl vem do banco e pode ser externo, o Next/Image pode precisar de domain config.
                         Se não estiver configurado, substitua por um <div style={{ backgroundImage }} /> como seu original. */}
-                    {/* @ts-expect-error - caso o domínio não esteja na config, troque para <div> abaixo */}
                     <Image
                       src={backgroundUrl}
                       alt="Background atual"

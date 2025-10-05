@@ -74,7 +74,7 @@ export default async function HomePage() {
       {/* Seção de destinos com estética alinhada à página /destinos */}
       <section
         id="destinos"
-        className="relative mx-auto -mt-12 w-full max-w-7xl px-4 pb-16 pt-10 sm:px-6 sm:pt-14 md:-mt-14 lg:px-8"
+        className="relative mx-auto -mt-12 w-full max-w-7xl px-4 pb-16 pt-5 sm:px-6 sm:pt-9 md:-mt-14 lg:px-8"
       >
         <div className="group relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/70 to-white/50 p-5 shadow-2xl shadow-black/5 backdrop-blur-xl transition-all duration-500 hover:shadow-3xl dark:from-white/[0.06] dark:to-white/[0.03] sm:p-6 md:p-8 lg:p-10">
           {/* Glow suave no hover */}

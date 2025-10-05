@@ -75,6 +75,8 @@ export function DestinationCard({ destination }: DestinationCardProps) {
 
   const stayLabel = `${formattedStartDate} - ${formattedEndDate}`;
 
+  const heroPhoto = photos[0];
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -167,79 +169,125 @@ export function DestinationCard({ destination }: DestinationCardProps) {
           </CardContent>
         </Card>
       </DialogTrigger>
-      <DialogContent className="max-w-3xl space-y-6 rounded-3xl border border-white/40 bg-white/95 p-8 shadow-[0_40px_80px_-35px_rgba(15,118,190,0.45)]">
-        <DialogHeader className="space-y-2">
-          <DialogTitle className="text-3xl font-bold text-slate-900">
-            {destination.name}
-          </DialogTitle>
-          <DialogDescription className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700">
-            <MapPin className="size-4" />
-            <span>{destination.city}</span>
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-5 text-sm text-slate-700">
-            <p className="flex items-center gap-2 text-base font-semibold text-slate-900">
-              <CalendarRange className="size-4 text-primary" />
-              {stayLabel}
-            </p>
-            <p className="flex items-center gap-2">
-              <Users className="size-4 text-primary" />
-              Acomoda até {destination.peopleCount} pessoa(s)
-            </p>
-            <p className="flex items-center gap-2">
-              <Star className="size-4 text-amber-500" />
-              Nota média: {destination.rating.toFixed(1)}
-            </p>
-            <p>
-              <span className="font-medium text-slate-900">Investimento:</span> {formattedPrice}
-            </p>
-          </div>
-          <div className="space-y-3">
-            <h4 className="text-base font-semibold text-slate-900">Descrição</h4>
-            <p className="rounded-2xl border border-slate-200 bg-white/80 p-4 text-sm leading-relaxed text-slate-700">
-              {destination.description}
-            </p>
+      <DialogContent className="max-w-4xl overflow-hidden rounded-3xl border border-white/40 bg-gradient-to-br from-white via-white/95 to-sky-50/60 p-0 shadow-[0_45px_90px_-40px_rgba(2,132,199,0.55)]">
+        <div className="relative aspect-[16/10] w-full bg-slate-100 sm:aspect-[16/7]">
+          <Image
+            src={heroPhoto}
+            alt={`${destination.name} - destaque`}
+            fill
+            className="object-cover"
+            sizes="(min-width: 1280px) 640px, (min-width: 768px) 540px, 100vw"
+            priority={false}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/65 via-slate-900/20 to-transparent" />
+          <div className="absolute bottom-4 left-4 flex flex-wrap items-center gap-3 text-white">
+            <span className="rounded-full bg-white/15 px-4 py-1 text-sm font-semibold backdrop-blur">
+              {destination.city}
+            </span>
+            <span className="inline-flex items-center gap-2 rounded-full bg-amber-400/90 px-4 py-1 text-sm font-semibold text-slate-900 shadow-lg">
+              <Star className="size-4" />
+              {destination.rating.toFixed(1)}
+            </span>
           </div>
         </div>
 
-        <div className="space-y-3">
-          <h4 className="text-base font-semibold text-slate-900">Galeria de fotos</h4>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {photos.map((photo, index) => (
-              <div
-                key={`${photo}-${index}`}
-                className="group relative aspect-video overflow-hidden rounded-2xl border border-white/60 bg-slate-100 shadow-inner"
-              >
-                <Image
-                  src={photo}
-                  alt={`${destination.name} - foto ${index + 1}`}
-                  fill
-                  className="object-cover"
-                  sizes="(min-width: 1280px) 480px, (min-width: 768px) 380px, 100vw"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
+        <div className="flex max-h-[80vh] flex-col gap-6 overflow-y-auto p-6 sm:p-8">
+          <DialogHeader className="space-y-3 text-left">
+            <DialogTitle className="text-3xl font-bold text-slate-900">
+              {destination.name}
+            </DialogTitle>
+            <DialogDescription className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
+              <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-2 font-medium text-blue-700">
+                <MapPin className="size-4" />
+                <span>{destination.city}</span>
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 font-medium text-slate-700">
+                <CalendarRange className="size-4 text-primary" />
+                {stayLabel}
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 font-medium text-slate-700">
+                <Users className="size-4 text-primary" />
+                Até {destination.peopleCount} pessoas
+              </span>
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="flex justify-end">
-          <button
-            type="button"
-            className={cn(
-              buttonVariants({ variant: "outline" }),
-              "min-w-[160px] rounded-full border-primary/40 bg-primary/5 text-primary hover:bg-primary/10"
-            )}
-            onClick={() => {
-              const url = `https://www.google.com/maps/search/${encodeURIComponent(
-                destination.city
-              )}`;
-              window.open(url, "_blank");
-            }}
-          >
-            Ver no mapa
-          </button>
+          <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-white/80 p-5 shadow-lg shadow-sky-100">
+              <p className="text-sm text-slate-600">
+                <span className="font-semibold text-slate-900">Investimento total:</span> {formattedPrice}
+              </p>
+              <p className="text-sm leading-relaxed text-slate-600">
+                <span className="font-semibold text-slate-900">Descrição do destino:</span>
+              </p>
+              <p className="text-sm leading-relaxed text-slate-700">{destination.description}</p>
+            </div>
+
+            <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-gradient-to-br from-slate-50 via-white to-blue-50/60 p-5 text-sm text-slate-700 shadow-lg shadow-slate-100">
+              <h4 className="text-base font-semibold text-slate-900">Destaques rápidos</h4>
+              <ul className="space-y-3">
+                <li className="flex items-start gap-3">
+                  <CalendarRange className="mt-0.5 size-4 text-primary" />
+                  <span>Período ideal de viagem entre {stayLabel}</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Users className="mt-0.5 size-4 text-primary" />
+                  <span>Planejado para receber confortavelmente até {destination.peopleCount} viajante(s)</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Star className="mt-0.5 size-4 text-amber-500" />
+                  <span>Experiência avaliada com nota média {destination.rating.toFixed(1)}</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <h4 className="text-base font-semibold text-slate-900">Galeria de fotos</h4>
+              <span className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                {photos.length} {photos.length === 1 ? "imagem" : "imagens"}
+              </span>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {photos.map((photo, index) => (
+                <div
+                  key={`${photo}-${index}`}
+                  className="group relative aspect-video overflow-hidden rounded-2xl border border-white/60 bg-slate-100 shadow-inner transition-transform duration-300 hover:-translate-y-1"
+                >
+                  <Image
+                    src={photo}
+                    alt={`${destination.name} - foto ${index + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="(min-width: 1280px) 320px, (min-width: 768px) 280px, 100vw"
+                  />
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 border-t border-slate-200/80 pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-slate-600">
+              Deseja visualizar o destino no mapa? Abra o Google Maps em uma nova aba.
+            </p>
+            <button
+              type="button"
+              className={cn(
+                buttonVariants({ variant: "outline" }),
+                "min-w-[160px] rounded-full border-primary/40 bg-primary/5 text-primary transition hover:bg-primary/10"
+              )}
+              onClick={() => {
+                const url = `https://www.google.com/maps/search/${encodeURIComponent(
+                  destination.city
+                )}`;
+                window.open(url, "_blank");
+              }}
+            >
+              Ver no mapa
+            </button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

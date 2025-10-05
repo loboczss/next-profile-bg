@@ -186,9 +186,12 @@ export function Navbar({ user }: NavbarProps) {
                     className="group/user inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-gradient-to-br from-white/[0.05] to-white/[0.02] px-3 py-2 text-sm font-medium shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:-translate-y-0.5 hover:border-cyan-400/30 hover:bg-cyan-500/5 hover:shadow-lg hover:shadow-cyan-500/10"
                   >
                     {user?.image ? (
-                      <img
+                      <Image
                         src={user.image}
                         alt={userDisplayName}
+                        width={32}
+                        height={32}
+                        unoptimized
                         className="size-8 rounded-full border-2 border-white/20 object-cover ring-2 ring-cyan-400/20 transition-all duration-300 group-hover/user:scale-[1.08] group-hover/user:border-cyan-400/40 group-hover/user:ring-cyan-400/40"
                       />
                     ) : (
@@ -324,9 +327,12 @@ export function Navbar({ user }: NavbarProps) {
                   <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.05] to-white/[0.02] p-4 shadow-[inset_0_1px_0_theme(colors.white/10)]">
                     <div className="mb-3 flex items-center gap-3">
                       {user?.image ? (
-                        <img
+                        <Image
                           src={user.image}
                           alt={userDisplayName}
+                          width={48}
+                          height={48}
+                          unoptimized
                           className="size-12 rounded-full border-2 border-white/20 object-cover ring-2 ring-cyan-400/20"
                         />
                       ) : (

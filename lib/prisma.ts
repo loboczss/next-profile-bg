@@ -1,15 +1,10 @@
-import { Prisma, PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 
-type ExtendedPrismaClient = PrismaClient & {
-  destination: Prisma.DestinationDelegate;
-};
-
-type PrismaGlobal = { prisma?: ExtendedPrismaClient };
+type PrismaGlobal = { prisma?: PrismaClient };
 
 const globalForPrisma = globalThis as typeof globalThis & PrismaGlobal;
 
-export const prisma =
-  globalForPrisma.prisma ?? (new PrismaClient() as ExtendedPrismaClient);
+export const prisma = globalForPrisma.prisma ?? new PrismaClient();
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;

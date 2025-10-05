@@ -151,7 +151,7 @@ export function QuoteForm() {
       {...formMotion}
       transition={{ duration: 0.6, ease: "easeOut" }}
       onSubmit={handleSubmit}
-      className="relative overflow-hidden rounded-3xl border border-white/20 bg-white/15 p-6 shadow-[0_35px_120px_-45px_rgba(15,23,42,0.9)] backdrop-blur-xl sm:p-7 md:p-8"
+      className="relative w-full overflow-hidden rounded-3xl border border-white/20 bg-white/15 p-6 shadow-[0_35px_120px_-45px_rgba(15,23,42,0.9)] backdrop-blur-xl sm:p-7 md:p-8"
     >
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 via-blue-500/10 to-purple-500/10" />
       <div className="pointer-events-none absolute -left-10 top-24 size-36 rounded-full bg-blue-400/20 blur-3xl" />

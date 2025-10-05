@@ -154,7 +154,7 @@ export default function Hero({ images, userName }: HeroProps) {
 
       {/* Conteúdo principal */}
       <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 sm:py-20 md:py-24 lg:px-8">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start xl:grid-cols-[minmax(0,1fr)_460px]">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_520px] lg:items-start xl:grid-cols-[minmax(0,1fr)_600px] 2xl:grid-cols-[minmax(0,1fr)_640px]">
           <div className="flex flex-col gap-6 sm:gap-8 lg:pr-8 xl:pr-12">
             {/* Badge */}
             <div className="group inline-flex w-fit animate-[fadeIn_1s_ease-out] items-center gap-2.5 rounded-full border border-white/25 bg-white/15 px-4 py-2 text-xs font-medium text-white shadow-lg backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-white/40 hover:bg-white/20 sm:text-sm">

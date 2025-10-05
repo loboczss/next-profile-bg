@@ -15,7 +15,11 @@ export default async function UsuarioPage() {
   }
 
   const { user } = session;
-  const displayName = user.name?.trim() ? user.name : "Usuário";
+  const displayName = user.fullName?.trim()
+    ? user.fullName
+    : user.name?.trim()
+      ? user.name
+      : "Usuário";
 
   return (
     // Layout principal com o cartão de informações e o formulário de upload de foto.
@@ -43,6 +47,15 @@ export default async function UsuarioPage() {
           <div className="space-y-1 text-sm text-slate-700">
             <p>
               <strong>Nome:</strong> {displayName}
+            </p>
+            <p>
+              <strong>Usuário:</strong> {user.username}
+            </p>
+            <p>
+              <strong>E-mail:</strong> {user.email ?? "Não informado"}
+            </p>
+            <p>
+              <strong>Perfil:</strong> {user.role === "admin" ? "Administrador" : "Comum"}
             </p>
             <p>
               <strong>ID do usuário:</strong> {user.id}

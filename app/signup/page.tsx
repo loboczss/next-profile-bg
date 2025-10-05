@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Sparkles,
   Plane,
@@ -13,20 +14,55 @@ import {
   ArrowRight,
   ShieldCheck,
   UserPlus,
+  Mail,
+  LockKeyhole,
+  UserCog,
+  UserRound,
 } from "lucide-react";
+
+const ADMIN_CODE = "258790" as const;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const fieldMotion = {
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -12 },
+};
+const fieldTransition = { duration: 0.32, ease: "easeOut" as const };
 
 export default function SignupPage() {
   const router = useRouter();
 
-  // estado do formulário (backend inalterado)
+  // estado do formulário
   const [username, setUsername] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [profileType, setProfileType] = useState<"user" | "admin">("user");
+  const [adminCode, setAdminCode] = useState("");
 
   // UI states
   const [showPass, setShowPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const profileOptions = [
+    {
+      value: "user" as const,
+      label: "Perfil comum",
+      description: "Visualiza destinos e gerencia apenas o próprio perfil.",
+      icon: UserRound,
+    },
+    {
+      value: "admin" as const,
+      label: "Administrador",
+      description: "Acessa o dashboard completo e edita todos os conteúdos.",
+      icon: UserCog,
+    },
+  ];
 
   // força simples da senha (apenas UI)
   const strength = useMemo(() => {
@@ -54,13 +90,34 @@ export default function SignupPage() {
     setError(null);
     setSuccess(null);
 
+    const normalizedUsername = username.trim();
+    const normalizedFullName = fullName.trim();
+    const normalizedEmail = email.trim();
+    const normalizedAdminCode = adminCode.trim();
+
     // pequenas validações de UX (front-only)
-    if (username.trim().length < 3) {
+    if (normalizedFullName.length < 3) {
+      setError("Informe seu nome completo com pelo menos 3 caracteres.");
+      return;
+    }
+    if (!EMAIL_REGEX.test(normalizedEmail)) {
+      setError("Informe um e-mail válido.");
+      return;
+    }
+    if (normalizedUsername.length < 3) {
       setError("O usuário deve ter pelo menos 3 caracteres.");
       return;
     }
     if (password.length < 6) {
       setError("A senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("As senhas precisam ser iguais.");
+      return;
+    }
+    if (profileType === "admin" && normalizedAdminCode !== ADMIN_CODE) {
+      setError("Código de administrador incorreto.");
       return;
     }
 
@@ -69,7 +126,15 @@ export default function SignupPage() {
       const response = await fetch("/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({
+          username: normalizedUsername,
+          fullName: normalizedFullName,
+          email: normalizedEmail,
+          password,
+          confirmPassword,
+          profileType,
+          adminCode: profileType === "admin" ? normalizedAdminCode : undefined,
+        }),
       });
 
       const data = await response.json();
@@ -78,10 +143,19 @@ export default function SignupPage() {
         return;
         }
 
-      setSuccess("Cadastro realizado com sucesso! Redirecionando para o login…");
+      setSuccess(
+        profileType === "admin"
+          ? "Administrador cadastrado com sucesso! Redirecionando para o login…"
+          : "Cadastro realizado com sucesso! Redirecionando para o login…",
+      );
       setUsername("");
+      setFullName("");
+      setEmail("");
       setPassword("");
-      setTimeout(() => router.push("/login"), 1000);
+      setConfirmPassword("");
+      setProfileType("user");
+      setAdminCode("");
+      setTimeout(() => router.push("/login"), 1200);
     } catch (err) {
       console.error(err);
       setError("Erro inesperado ao cadastrar.");
@@ -129,65 +203,154 @@ export default function SignupPage() {
           </div>
 
           {/* alertas */}
-          {error && (
-            <div className="mb-4 flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-              <AlertCircle className="h-4 w-4" />
-              <span>{error}</span>
-            </div>
-          )}
-          {success && (
-            <div className="mb-4 flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-              <CheckCircle2 className="h-4 w-4" />
-              <span>{success}</span>
-            </div>
-          )}
+          <AnimatePresence mode="wait">
+            {error && (
+              <motion.div
+                key="error"
+                initial={fieldMotion.initial}
+                animate={fieldMotion.animate}
+                exit={fieldMotion.exit}
+                transition={fieldTransition}
+                className="mb-4 flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+              >
+                <AlertCircle className="h-4 w-4" />
+                <span>{error}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <AnimatePresence mode="wait">
+            {success && (
+              <motion.div
+                key="success"
+                initial={fieldMotion.initial}
+                animate={fieldMotion.animate}
+                exit={fieldMotion.exit}
+                transition={fieldTransition}
+                className="mb-4 flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                <span>{success}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* usuário */}
-            <div className="space-y-1.5">
+            <motion.div
+              initial={fieldMotion.initial}
+              animate={fieldMotion.animate}
+              transition={fieldTransition}
+              className="space-y-1.5"
+            >
+              <label htmlFor="fullName" className="text-sm font-medium text-slate-800">
+                Nome completo
+              </label>
+              <div className="relative">
+                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                  <UserPlus className="h-4 w-4" />
+                </span>
+                <input
+                  id="fullName"
+                  name="fullName"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="João Silva"
+                  autoComplete="name"
+                  required
+                  className="w-full rounded-xl border border-slate-200 bg-white/90 py-2.5 pl-9 pr-3.5 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.15)]"
+                />
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={fieldMotion.initial}
+              animate={fieldMotion.animate}
+              transition={fieldTransition}
+              className="space-y-1.5"
+            >
+              <label htmlFor="email" className="text-sm font-medium text-slate-800">
+                E-mail
+              </label>
+              <div className="relative">
+                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                  <Mail className="h-4 w-4" />
+                </span>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="voce@empresa.com"
+                  autoComplete="email"
+                  required
+                  className="w-full rounded-xl border border-slate-200 bg-white/90 py-2.5 pl-9 pr-3.5 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.15)]"
+                />
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={fieldMotion.initial}
+              animate={fieldMotion.animate}
+              transition={fieldTransition}
+              className="space-y-1.5"
+            >
               <label htmlFor="username" className="text-sm font-medium text-slate-800">
                 Usuário
               </label>
-              <input
-                id="username"
-                name="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="username"
-                required
-                className="w-full rounded-xl border border-slate-200 bg-white/90 px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.15)]"
-              />
-            </div>
-
-            {/* senha */}
-            <div className="space-y-1.5">
-              <label htmlFor="password" className="text-sm font-medium text-slate-800">
-                Senha
-              </label>
               <div className="relative">
+                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                  <UserRound className="h-4 w-4" />
+                </span>
                 <input
-                  id="password"
-                  name="password"
-                  type={showPass ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="new-password"
+                  id="username"
+                  name="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="usuario.evastur"
+                  autoComplete="username"
                   required
-                  className="w-full rounded-xl border border-slate-200 bg-white/90 px-3.5 py-2.5 pr-10 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.15)]"
+                  className="w-full rounded-xl border border-slate-200 bg-white/90 py-2.5 pl-9 pr-3.5 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.15)]"
                 />
-                <button
-                  type="button"
-                  aria-label={showPass ? "Ocultar senha" : "Mostrar senha"}
-                  onClick={() => setShowPass((v) => !v)}
-                  className="absolute inset-y-0 right-0 grid w-10 place-items-center text-slate-500 transition hover:text-slate-700"
-                >
-                  {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
               </div>
+            </motion.div>
 
-              {/* força da senha (apenas visual) */}
-              <div className="mt-2 space-y-1">
+            <motion.div
+              initial={fieldMotion.initial}
+              animate={fieldMotion.animate}
+              transition={fieldTransition}
+              className="space-y-2"
+            >
+              <div className="space-y-1.5">
+                <label htmlFor="password" className="text-sm font-medium text-slate-800">
+                  Senha
+                </label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                    <LockKeyhole className="h-4 w-4" />
+                  </span>
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPass ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Crie uma senha segura"
+                    autoComplete="new-password"
+                    required
+                    className="w-full rounded-xl border border-slate-200 bg-white/90 py-2.5 pl-9 pr-12 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.15)]"
+                  />
+                  <button
+                    type="button"
+                    aria-label={showPass ? "Ocultar senha" : "Mostrar senha"}
+                    onClick={() => setShowPass((v) => !v)}
+                    className="absolute inset-y-0 right-0 grid w-10 place-items-center text-slate-500 transition hover:text-slate-700"
+                  >
+                    {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-1">
                 <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
                   <div
                     className={`h-full ${strengthBarClass} transition-all`}
@@ -196,16 +359,133 @@ export default function SignupPage() {
                 </div>
                 <div className="flex items-center gap-2 text-xs text-slate-600">
                   <ShieldCheck className="h-3.5 w-3.5 text-blue-600" />
-                  <span>Força da senha: <strong>{strengthLabel}</strong></span>
+                  <span>
+                    Força da senha: <strong>{strengthLabel}</strong>
+                  </span>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
-            {/* botão */}
-            <button
+            <motion.div
+              initial={fieldMotion.initial}
+              animate={fieldMotion.animate}
+              transition={fieldTransition}
+              className="space-y-1.5"
+            >
+              <label htmlFor="confirmPassword" className="text-sm font-medium text-slate-800">
+                Confirmar senha
+              </label>
+              <div className="relative">
+                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                  <LockKeyhole className="h-4 w-4" />
+                </span>
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPass ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Repita a senha"
+                  autoComplete="new-password"
+                  required
+                  className="w-full rounded-xl border border-slate-200 bg-white/90 py-2.5 pl-9 pr-12 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.15)]"
+                />
+                <button
+                  type="button"
+                  aria-label={showConfirmPass ? "Ocultar confirmação" : "Mostrar confirmação"}
+                  onClick={() => setShowConfirmPass((v) => !v)}
+                  className="absolute inset-y-0 right-0 grid w-10 place-items-center text-slate-500 transition hover:text-slate-700"
+                >
+                  {showConfirmPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={fieldMotion.initial}
+              animate={fieldMotion.animate}
+              transition={fieldTransition}
+              className="space-y-2"
+            >
+              <p className="text-sm font-medium text-slate-800">Tipo de perfil</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {profileOptions.map((option) => {
+                  const OptionIcon = option.icon;
+                  const isActive = profileType === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setProfileType(option.value)}
+                      aria-pressed={isActive}
+                      className={`group flex w-full flex-col items-start gap-2 rounded-2xl border px-4 py-3 text-left transition-all ${
+                        isActive
+                          ? "border-blue-400 bg-blue-50/80 text-blue-900 shadow-lg shadow-blue-500/20"
+                          : "border-slate-200 bg-white/70 text-slate-700 hover:border-blue-200 hover:bg-blue-50/40"
+                      }`}
+                    >
+                      <div
+                        className={`grid h-10 w-10 place-items-center rounded-xl transition-colors ${
+                          isActive ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        <OptionIcon className="h-5 w-5" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold">{option.label}</p>
+                        <p className="text-xs text-slate-500">{option.description}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+
+            <AnimatePresence initial={false}>
+              {profileType === "admin" && (
+                <motion.div
+                  key="admin-code"
+                  initial={fieldMotion.initial}
+                  animate={fieldMotion.animate}
+                  exit={fieldMotion.exit}
+                  transition={fieldTransition}
+                  className="space-y-1.5"
+                >
+                  <label htmlFor="adminCode" className="text-sm font-medium text-slate-800">
+                    Código de administrador
+                  </label>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                      <ShieldCheck className="h-4 w-4" />
+                    </span>
+                    <input
+                      id="adminCode"
+                      name="adminCode"
+                      type="password"
+                      value={adminCode}
+                      onChange={(e) => setAdminCode(e.target.value)}
+                      placeholder="Informe o código 258790"
+                      autoComplete="one-time-code"
+                      required
+                      className="w-full rounded-xl border border-slate-200 bg-white/90 py-2.5 pl-9 pr-3.5 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.15)]"
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    Apenas gestores autorizados podem criar contas administrativas.
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <motion.button
               type="submit"
               disabled={loading}
-              className="group inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-blue-500/30 disabled:opacity-60"
+              initial={fieldMotion.initial}
+              animate={fieldMotion.animate}
+              transition={{ ...fieldTransition, delay: 0.05 }}
+              whileHover={{ translateY: loading ? 0 : -2 }}
+              whileTap={{ scale: loading ? 1 : 0.98 }}
+              className="group inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all hover:shadow-blue-500/30 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? (
                 <>
@@ -218,7 +498,7 @@ export default function SignupPage() {
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </>
               )}
-            </button>
+            </motion.button>
           </form>
 
           {/* rodapé do card */}

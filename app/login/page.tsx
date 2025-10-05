@@ -4,7 +4,30 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { Plane, Sparkles, Eye, EyeOff, ArrowRight, AlertCircle } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Plane,
+  Sparkles,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  AlertCircle,
+  CheckCircle2,
+  UserRound,
+  LockKeyhole,
+} from "lucide-react";
+
+const fieldMotion = {
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -12 },
+};
+const fieldTransition = { duration: 0.3, ease: "easeOut" as const };
+const ERROR_MESSAGES: Record<string, string> = {
+  user_not_found: "Usuário não encontrado.",
+  invalid_password: "Senha incorreta.",
+  CredentialsSignin: "Credenciais inválidas. Verifique usuário e senha.",
+};
 
 export default function LoginPage() {
   // Navegação / callback (mesmo backend)
@@ -17,34 +40,81 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Submit (mesmo signIn + redirects)
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+    setSuccess(null);
     setLoading(true);
 
-    const result = await signIn("credentials", {
-      redirect: false,
-      username,
-      password,
-      callbackUrl,
-    });
+    const normalizedUsername = username.trim();
+    if (!normalizedUsername) {
+      setError("Informe seu usuário.");
+      setLoading(false);
+      return;
+    }
 
-    setLoading(false);
+    if (!password) {
+      setError("Informe sua senha.");
+      setLoading(false);
+      return;
+    }
 
-    if (!result) {
+    try {
+      const result = await signIn("credentials", {
+        redirect: false,
+        username: normalizedUsername,
+        password,
+        callbackUrl,
+      });
+
+      if (!result) {
+        setError("Erro inesperado ao fazer login.");
+        return;
+      }
+
+      if (!result.ok) {
+        const message =
+          (result.code && ERROR_MESSAGES[result.code]) ??
+          (result.error && ERROR_MESSAGES[result.error]) ??
+          "Não foi possível entrar. Confira suas credenciais.";
+        setError(message);
+        return;
+      }
+
+      setSuccess("Login realizado com sucesso! Redirecionando...");
+
+      try {
+        const response = await fetch("/api/auth/session");
+        if (response.ok) {
+          const session = await response.json();
+          const role = session?.user?.role === "admin" ? "admin" : "user";
+          const destination =
+            callbackUrl && callbackUrl !== "/"
+              ? callbackUrl
+              : role === "admin"
+                ? "/dashboard"
+                : "/usuario";
+
+          router.push(destination);
+          router.refresh();
+          return;
+        }
+      } catch (sessionError) {
+        console.error("Falha ao recuperar sessão após login", sessionError);
+      }
+
+      router.push(callbackUrl);
+      router.refresh();
+    } catch (authError) {
+      console.error("Falha ao fazer login", authError);
       setError("Erro inesperado ao fazer login.");
-      return;
+    } finally {
+      setLoading(false);
     }
-    if (result.error) {
-      setError("Credenciais inválidas.");
-      return;
-    }
-
-    router.push(result.url ?? callbackUrl);
-    router.refresh();
   };
 
   return (
@@ -86,38 +156,78 @@ export default function LoginPage() {
             <p className="mt-1 text-sm text-slate-600">Use seu usuário e senha para continuar.</p>
           </div>
 
-          {/* Erro (quando houver) */}
-          {error && (
-            <div className="mb-4 flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-              <AlertCircle className="h-4 w-4" />
-              <span>{error}</span>
-            </div>
-          )}
+          {/* feedbacks */}
+          <AnimatePresence mode="wait">
+            {error && (
+              <motion.div
+                key="login-error"
+                initial={fieldMotion.initial}
+                animate={fieldMotion.animate}
+                exit={fieldMotion.exit}
+                transition={fieldTransition}
+                className="mb-4 flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+              >
+                <AlertCircle className="h-4 w-4" />
+                <span>{error}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <AnimatePresence mode="wait">
+            {success && (
+              <motion.div
+                key="login-success"
+                initial={fieldMotion.initial}
+                animate={fieldMotion.animate}
+                exit={fieldMotion.exit}
+                transition={fieldTransition}
+                className="mb-4 flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                <span>{success}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Formulário (fluxo idêntico ao seu) */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Usuário */}
-            <div className="space-y-1.5">
+            <motion.div
+              initial={fieldMotion.initial}
+              animate={fieldMotion.animate}
+              transition={fieldTransition}
+              className="space-y-1.5"
+            >
               <label htmlFor="username" className="text-sm font-medium text-slate-800">
                 Usuário
               </label>
-              <input
-                id="username"
-                name="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="username"
-                required
-                className="w-full rounded-xl border border-slate-200 bg-white/90 px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.15)]"
-              />
-            </div>
+              <div className="relative">
+                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                  <UserRound className="h-4 w-4" />
+                </span>
+                <input
+                  id="username"
+                  name="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="username"
+                  required
+                  className="w-full rounded-xl border border-slate-200 bg-white/90 py-2.5 pl-9 pr-3.5 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.15)]"
+                />
+              </div>
+            </motion.div>
 
-            {/* Senha */}
-            <div className="space-y-1.5">
+            <motion.div
+              initial={fieldMotion.initial}
+              animate={fieldMotion.animate}
+              transition={fieldTransition}
+              className="space-y-1.5"
+            >
               <label htmlFor="password" className="text-sm font-medium text-slate-800">
                 Senha
               </label>
               <div className="relative">
+                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                  <LockKeyhole className="h-4 w-4" />
+                </span>
                 <input
                   id="password"
                   name="password"
@@ -126,7 +236,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
                   required
-                  className="w-full rounded-xl border border-slate-200 bg-white/90 px-3.5 py-2.5 pr-10 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.15)]"
+                  className="w-full rounded-xl border border-slate-200 bg-white/90 py-2.5 pl-9 pr-12 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.15)]"
                 />
                 <button
                   type="button"
@@ -137,13 +247,17 @@ export default function LoginPage() {
                   {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-            </div>
+            </motion.div>
 
-            {/* Ações */}
-            <button
+            <motion.button
               type="submit"
               disabled={loading}
-              className="group inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-blue-500/30 disabled:opacity-60"
+              initial={fieldMotion.initial}
+              animate={fieldMotion.animate}
+              transition={{ ...fieldTransition, delay: 0.05 }}
+              whileHover={{ translateY: loading ? 0 : -2 }}
+              whileTap={{ scale: loading ? 1 : 0.98 }}
+              className="group inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all hover:shadow-blue-500/30 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? (
                 <>
@@ -156,7 +270,7 @@ export default function LoginPage() {
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </>
               )}
-            </button>
+            </motion.button>
           </form>
 
           {/* Links auxiliares */}

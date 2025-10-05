@@ -7,7 +7,7 @@ import "./globals.css";
 
 // Metadados globais utilizados pelo Next.js para configurar título e descrição padrão.
 export const metadata: Metadata = {
-  title: "Next Profile BG",
+  title: "Evastur",
   description: "Gerencie foto de perfil e background com Next.js",
 };
 

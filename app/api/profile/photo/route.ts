@@ -6,6 +6,8 @@ import { DropboxUploadError, storeProfileImage } from "@/lib/storage";
 import { UploadLogEntry, UploadErrorDetails } from "@/types/upload";
 import { assertImage, sanitizeExt } from "@/lib/file";
 
+export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   const session = await auth();
 

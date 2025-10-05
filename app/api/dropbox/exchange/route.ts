@@ -1,6 +1,8 @@
 // app/api/dropbox/exchange/route.ts
 import { NextResponse } from "next/server";
 
+export const runtime = "nodejs";
+
 function basicAuth(appKey: string, appSecret: string) {
   return Buffer.from(`${appKey}:${appSecret}`).toString("base64");
 }

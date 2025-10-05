@@ -5,6 +5,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/hash";
 
+export const runtime = "nodejs";
+
 const signupSchema = z.object({
   username: z
     .string()

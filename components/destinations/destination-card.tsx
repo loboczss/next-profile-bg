@@ -34,9 +34,13 @@ import { cn } from "@/lib/utils";
 
 interface DestinationCardProps {
   destination: SerializedDestination;
+  fullHeight?: boolean;
 }
 
-export function DestinationCard({ destination }: DestinationCardProps) {
+export function DestinationCard({
+  destination,
+  fullHeight = true,
+}: DestinationCardProps) {
   const [activeIndex, setActiveIndex] = useState(0);
 
   const photos = destination.photos.length > 0 ? destination.photos : ["/placeholder.jpg"];
@@ -81,7 +85,12 @@ export function DestinationCard({ destination }: DestinationCardProps) {
     <Dialog>
       <DialogTrigger asChild>
         {/* CARD (gatilho) — sem mudanças de contrato */}
-        <Card className="group relative flex h-full min-w-0 cursor-pointer flex-col overflow-hidden rounded-3xl border border-white/30 bg-white/80 shadow-[0_25px_50px_-25px_rgba(14,116,144,0.35)] transition-all duration-500 hover:-translate-y-3 hover:shadow-[0_40px_80px_-30px_rgba(2,132,199,0.45)]">
+        <Card
+          className={cn(
+            "group relative flex min-w-0 cursor-pointer flex-col overflow-hidden rounded-3xl border border-white/30 bg-white/80 shadow-[0_25px_50px_-25px_rgba(14,116,144,0.35)] transition-all duration-500 hover:-translate-y-3 hover:shadow-[0_40px_80px_-30px_rgba(2,132,199,0.45)]",
+            fullHeight ? "h-full" : "h-auto"
+          )}
+        >
           <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-cyan-500/20" />
           </div>

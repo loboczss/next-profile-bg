@@ -30,7 +30,7 @@ import { cn } from "@/lib/utils";
 
 // --- Helpers de animação simples ---
 function useInView<T extends HTMLElement>(
-  ref: React.RefObject<T>,
+  ref: React.RefObject<T | null>,
   margin = "0px 0px -20% 0px"
 ) {
   const [inView, setInView] = useState(false);

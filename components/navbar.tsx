@@ -1,8 +1,9 @@
-"use client"; // necessário para usar usePathname (torna Client Component)
+"use client";
 
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import {
   Home,
   Info,
@@ -13,6 +14,10 @@ import {
   User,
   Sparkles,
   Crown,
+  Menu,
+  X,
+  ChevronDown,
+  BookmarkIcon,
 } from "lucide-react";
 
 import type { Session } from "next-auth";
@@ -26,25 +31,33 @@ interface NavbarProps {
 export function Navbar({ user }: NavbarProps) {
   const pathname = usePathname();
   const isAuthenticated = Boolean(user);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const handleSignOut = () => {
     void signOut({ redirectTo: "/" });
   };
 
   const primaryLinks = [
-    { href: "/", label: "Início", icon: Home },
-    { href: "/destinos", label: "Destinos", icon: MapPin },
-    { href: "/sobre-nos", label: "Sobre nós", icon: Info },
+    { href: "/", label: "Início", icon: Home, color: "text-blue-400" },
+    { href: "/destinos", label: "Destinos", icon: MapPin, color: "text-emerald-400" },
+    { href: "/sobre-nos", label: "Sobre nós", icon: Info, color: "text-purple-400" },
   ];
 
   const userDisplayName = user?.name?.trim() ? user.name : "Usuário";
+  const userFirstName = userDisplayName.split(" ")[0];
 
   const adminLink = {
     href: "/dashboard",
     label: "Painel Admin",
     icon: LayoutDashboard,
+    color: "text-amber-400",
   } as const;
   const AdminIcon = adminLink.icon;
+
+  const closeMobileMenu = () => setMobileMenuOpen(false);
+  const toggleUserMenu = () => setUserMenuOpen(!userMenuOpen);
+  const closeUserMenu = () => setUserMenuOpen(false);
 
   return (
     <header
@@ -54,40 +67,63 @@ export function Navbar({ user }: NavbarProps) {
       )}
     >
       <div className="relative border-b border-white/10 bg-gradient-to-b from-background/60 to-background/30 backdrop-blur-xl supports-[backdrop-filter]:bg-background/50">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 md:py-4">
-          {/* LOGO */}
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-5 md:py-4">
+          {/* LOGO - Compacta e Elegante */}
           <Link
             href="/"
-            className="group relative flex items-center gap-3 rounded-2xl px-2 py-1 transition-transform duration-300 hover:-translate-y-0.5"
+            onClick={closeMobileMenu}
+            className="group relative flex items-center gap-3 px-2 py-1.5 transition-all duration-300 hover:-translate-y-1"
           >
-            <span className="relative grid size-12 place-items-center overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-primary/15 to-primary/5 shadow-[inset_0_1px_0_theme(colors.white/10)]">
-              <span className="pointer-events-none absolute -inset-[120%] bg-[conic-gradient(from_90deg,theme(colors.primary/0),theme(colors.primary/25),theme(colors.primary/0))] animate-[spin_8s_linear_infinite]" />
+            {/* Logo com animações sutis */}
+            <span className="relative">
+              {/* Glow azul suave de fundo */}
+              <span className="pointer-events-none absolute -inset-3 blur-xl opacity-0 transition-all duration-500 group-hover:opacity-60">
+                <span className="absolute inset-0 bg-blue-500/40" />
+                <span className="absolute inset-0 bg-red-500/25" />
+              </span>
+              
+              {/* Anel de luz rotativo único */}
+              <span className="pointer-events-none absolute -inset-6 opacity-0 transition-opacity duration-500 group-hover:opacity-70">
+                <span className="absolute inset-0 animate-[spin_6s_linear_infinite] bg-[conic-gradient(from_0deg,transparent_0deg,theme(colors.blue.400/30)_90deg,transparent_180deg,theme(colors.red.400/30)_270deg,transparent_360deg)]" />
+              </span>
+              
+              {/* Logo principal */}
               <Image
                 src="/evastur-logo.png"
                 alt="Evastur"
-                width={32}
-                height={32}
+                width={120}
+                height={24}
                 priority
-                className="relative z-10 size-8 select-none object-contain drop-shadow-sm transition-transform duration-300 group-hover:scale-[1.06]"
+                className="relative z-10 h-6 w-auto select-none object-contain drop-shadow-[0_0_8px_rgba(59,130,246,0.3)] transition-all duration-300 group-hover:scale-105 group-hover:drop-shadow-[0_0_16px_rgba(59,130,246,0.6)] sm:h-7"
+                style={{
+                  filter: 'drop-shadow(0 0 4px rgba(239, 68, 68, 0.25)) contrast(1.05) brightness(1.03)',
+                  imageRendering: 'crisp-edges',
+                }}
               />
+              
+              {/* Partículas de brilho sutis */}
+              <span className="pointer-events-none absolute -right-2 -top-1 size-1.5 rounded-full bg-blue-400 opacity-0 shadow-[0_0_6px_theme(colors.blue.400)] transition-all duration-500 group-hover:opacity-80 group-hover:animate-ping" />
+              <span className="pointer-events-none absolute -left-1 bottom-0 size-1 rounded-full bg-red-400 opacity-0 shadow-[0_0_4px_theme(colors.red.400)] transition-all duration-500 group-hover:opacity-80 group-hover:animate-ping" style={{ animationDelay: '0.3s' }} />
             </span>
-            <span className="flex flex-col">
-              <span className="inline-flex items-center gap-1.5 text-lg font-semibold tracking-tight">
-                <span className="bg-gradient-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
+
+            {/* Texto ao lado da logo */}
+            <span className="hidden flex-col sm:flex">
+              <span className="inline-flex items-center gap-2 text-lg font-bold tracking-tight">
+                <span className="bg-gradient-to-r from-blue-500 via-blue-400 to-red-500 bg-clip-text text-transparent">
                   Evastur
                 </span>
-                <Sparkles className="size-4 opacity-0 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:opacity-100" />
+                <Sparkles className="size-4 text-yellow-400 opacity-0 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:opacity-100 group-hover:drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]" />
               </span>
-              <span className="text-[11px] font-medium leading-4 text-muted-foreground">
+              <span className="text-[11px] font-medium leading-tight text-muted-foreground transition-colors duration-300 group-hover:text-blue-300/60">
                 Experiências que brilham ✦
               </span>
             </span>
           </Link>
 
-          {/* NAV LINKS */}
-          <nav className="flex flex-1 items-center justify-end gap-2 md:gap-3">
-            <div className="hidden items-center gap-1 md:flex">
-              {primaryLinks.map(({ href, label, icon: Icon }) => {
+          {/* DESKTOP NAV */}
+          <nav className="hidden flex-1 items-center justify-end gap-2 lg:flex lg:gap-3">
+            <div className="flex items-center gap-1">
+              {primaryLinks.map(({ href, label, icon: Icon, color }) => {
                 const isActive =
                   pathname === href || pathname.startsWith(href + "/");
                 return (
@@ -95,25 +131,23 @@ export function Navbar({ user }: NavbarProps) {
                     key={href}
                     href={href}
                     className={cn(
-                      "group/nav relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium border border-white/10 bg-white/[0.02] shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/5",
-                      isActive && "text-primary border-primary/30 bg-primary/5",
+                      "group/nav relative inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.02] px-4 py-2 text-sm font-medium shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/5",
+                      isActive && "border-primary/30 bg-primary/5 text-primary",
                     )}
                   >
-                    {/* highlight radial */}
                     <span
                       className={cn(
-                        "pointer-events-none absolute inset-0 rounded-full opacity-0 transition-opacity duration-300 group-hover/nav:opacity-100 bg-[radial-gradient(60%_120%_at_50%_150%,theme(colors.primary/20),transparent)]",
+                        "pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(60%_120%_at_50%_150%,theme(colors.primary/20),transparent)] opacity-0 transition-opacity duration-300 group-hover/nav:opacity-100",
                         isActive && "opacity-100",
                       )}
                     />
                     <Icon
                       className={cn(
                         "size-4 transition-transform duration-300 group-hover/nav:scale-110",
-                        isActive && "text-primary",
+                        isActive ? "text-primary" : color,
                       )}
                     />
                     <span>{label}</span>
-                    {/* sublinhado persistente */}
                     <span
                       className={cn(
                         "pointer-events-none absolute -bottom-px left-1/2 h-[2px] w-0 -translate-x-1/2 rounded bg-primary/70 transition-all duration-500 group-hover/nav:w-4/5",
@@ -125,43 +159,92 @@ export function Navbar({ user }: NavbarProps) {
               })}
             </div>
 
-            {/* AÇÕES DO USUÁRIO */}
+            {/* DESKTOP USER ACTIONS - Melhorado */}
             {isAuthenticated ? (
               <div className="flex items-center gap-2">
                 <Link
-                  href="/usuario"
-                  className="group/user inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.02] px-3 py-2 text-sm font-medium shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/5"
-                >
-                  {user?.image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={user.image}
-                      alt={userDisplayName}
-                      className="size-8 rounded-full border border-white/15 object-cover transition-transform duration-300 group-hover/user:scale-[1.06]"
-                    />
-                  ) : (
-                    <User className="size-4 transition-transform duration-300 group-hover/user:scale-110" />
-                  )}
-                  <span className="font-medium">{userDisplayName}</span>
-                </Link>
-
-                <Link
                   href={adminLink.href}
                   className={cn(
-                    "group/admin inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.02] px-4 py-2 text-sm font-medium shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/5",
+                    "group/admin inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.02] px-4 py-2 text-sm font-medium shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:-translate-y-0.5 hover:border-amber-400/30 hover:bg-amber-500/5",
                     pathname.startsWith("/dashboard") &&
-                      "text-primary border-primary/30 bg-primary/5",
+                      "border-amber-400/30 bg-amber-500/5 text-primary",
                   )}
                 >
-                  <AdminIcon className="size-4 transition-transform duration-300 group-hover/admin:scale-110" />
+                  <AdminIcon className={cn(
+                    "size-4 transition-transform duration-300 group-hover/admin:scale-110",
+                    pathname.startsWith("/dashboard") ? "text-primary" : adminLink.color
+                  )} />
                   {adminLink.label}
-                  <Crown className="ml-1 size-3 opacity-60 group-hover/admin:opacity-100 transition-opacity duration-300" />
+                  <Crown className="ml-1 size-3 text-amber-400 opacity-60 transition-opacity duration-300 group-hover/admin:opacity-100" />
                 </Link>
+
+                {/* Dropdown do Usuário */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={toggleUserMenu}
+                    className="group/user inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-gradient-to-br from-white/[0.05] to-white/[0.02] px-3 py-2 text-sm font-medium shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:-translate-y-0.5 hover:border-cyan-400/30 hover:bg-cyan-500/5 hover:shadow-lg hover:shadow-cyan-500/10"
+                  >
+                    {user?.image ? (
+                      <img
+                        src={user.image}
+                        alt={userDisplayName}
+                        className="size-8 rounded-full border-2 border-white/20 object-cover ring-2 ring-cyan-400/20 transition-all duration-300 group-hover/user:scale-[1.08] group-hover/user:border-cyan-400/40 group-hover/user:ring-cyan-400/40"
+                      />
+                    ) : (
+                      <span className="grid size-8 place-items-center rounded-full border-2 border-white/20 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 ring-2 ring-cyan-400/20 transition-all duration-300 group-hover/user:scale-[1.08] group-hover/user:border-cyan-400/40 group-hover/user:ring-cyan-400/40">
+                        <User className="size-4 text-cyan-400" />
+                      </span>
+                    )}
+                    <span className="flex flex-col items-start">
+                      <span className="text-xs text-muted-foreground">Olá,</span>
+                      <span className="font-semibold leading-tight">{userFirstName}</span>
+                    </span>
+                    <ChevronDown className={cn(
+                      "size-4 text-muted-foreground transition-transform duration-300",
+                      userMenuOpen && "rotate-180"
+                    )} />
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {userMenuOpen && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-40" 
+                        onClick={closeUserMenu}
+                      />
+                      <div className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-2xl border border-white/10 bg-background/95 shadow-xl shadow-black/20 backdrop-blur-xl">
+                        <div className="border-b border-white/10 p-4">
+                          <p className="text-sm font-semibold">{userDisplayName}</p>
+                          <p className="text-xs text-muted-foreground">{user?.email}</p>
+                        </div>
+                        <div className="p-2">
+                          <Link
+                            href="/usuario"
+                            onClick={closeUserMenu}
+                            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors hover:bg-white/5"
+                          >
+                            <User className="size-4 text-cyan-400" />
+                            Meu Perfil
+                          </Link>
+                          <Link
+                            href="/usuario/favoritos"
+                            onClick={closeUserMenu}
+                            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors hover:bg-white/5"
+                          >
+                            <BookmarkIcon className="size-4 text-pink-400" />
+                            Favoritos
+                          </Link>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
 
                 <button
                   type="button"
                   onClick={handleSignOut}
-                    className="group/logout inline-flex items-center gap-2 rounded-full border border-red-500/20 bg-red-500/[0.06] px-4 py-2 text-sm font-medium text-red-500 shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:-translate-y-0.5 hover:border-red-500/30 hover:bg-red-500/10"
+                  className="group/logout inline-flex items-center gap-2 rounded-full border border-red-500/20 bg-red-500/[0.06] px-4 py-2 text-sm font-medium text-red-500 shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:-translate-y-0.5 hover:border-red-500/30 hover:bg-red-500/10"
                 >
                   <LogOut className="size-4 transition-transform duration-300 group-hover/logout:scale-110" />
                   Sair
@@ -171,15 +254,163 @@ export function Navbar({ user }: NavbarProps) {
               <Link
                 href="/login"
                 className={cn(
-                  "group/login inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.02] px-4 py-2 text-sm font-medium shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/5",
+                  "group/login inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.02] px-4 py-2 text-sm font-medium shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:-translate-y-0.5 hover:border-green-400/30 hover:bg-green-500/5",
                   pathname.startsWith("/login") &&
-                    "text-primary border-primary/30 bg-primary/5",
+                    "border-primary/30 bg-primary/5 text-primary",
                 )}
               >
-                <LogIn className="size-4 transition-transform duration-300 group-hover/login:scale-110" />
+                <LogIn className={cn(
+                  "size-4 transition-transform duration-300 group-hover/login:scale-110",
+                  pathname.startsWith("/login") ? "text-primary" : "text-green-400"
+                )} />
                 Entrar
               </Link>
             )}
+          </nav>
+
+          {/* MOBILE MENU BUTTON */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.02] p-2.5 text-foreground shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:border-primary/30 hover:bg-primary/5 lg:hidden"
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? (
+              <X className="size-5" />
+            ) : (
+              <Menu className="size-5" />
+            )}
+          </button>
+        </div>
+
+        {/* MOBILE MENU */}
+        <div
+          className={cn(
+            "overflow-hidden transition-all duration-300 ease-in-out lg:hidden",
+            mobileMenuOpen ? "max-h-[800px] opacity-100" : "max-h-0 opacity-0",
+          )}
+        >
+          <nav className="border-t border-white/10 bg-background/95 px-4 py-4 backdrop-blur-xl">
+            <div className="flex flex-col gap-2">
+              {primaryLinks.map(({ href, label, icon: Icon, color }) => {
+                const isActive =
+                  pathname === href || pathname.startsWith(href + "/");
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={closeMobileMenu}
+                    className={cn(
+                      "group/nav relative flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-base font-medium shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:border-primary/30 hover:bg-primary/5",
+                      isActive && "border-primary/30 bg-primary/5 text-primary",
+                    )}
+                  >
+                    <Icon
+                      className={cn(
+                        "size-5 transition-transform duration-300 group-hover/nav:scale-110",
+                        isActive ? "text-primary" : color,
+                      )}
+                    />
+                    <span>{label}</span>
+                  </Link>
+                );
+              })}
+
+              {isAuthenticated ? (
+                <>
+                  <div className="my-2 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                  
+                  {/* Card do Usuário no Mobile */}
+                  <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.05] to-white/[0.02] p-4 shadow-[inset_0_1px_0_theme(colors.white/10)]">
+                    <div className="mb-3 flex items-center gap-3">
+                      {user?.image ? (
+                        <img
+                          src={user.image}
+                          alt={userDisplayName}
+                          className="size-12 rounded-full border-2 border-white/20 object-cover ring-2 ring-cyan-400/20"
+                        />
+                      ) : (
+                        <span className="grid size-12 place-items-center rounded-full border-2 border-white/20 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 ring-2 ring-cyan-400/20">
+                          <User className="size-6 text-cyan-400" />
+                        </span>
+                      )}
+                      <div className="flex-1">
+                        <p className="font-semibold">{userDisplayName}</p>
+                        <p className="text-xs text-muted-foreground">{user?.email}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col gap-1">
+                      <Link
+                        href="/usuario"
+                        onClick={closeMobileMenu}
+                        className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors hover:bg-white/5"
+                      >
+                        <User className="size-4 text-cyan-400" />
+                        Meu Perfil
+                      </Link>
+                      <Link
+                        href="/usuario/favoritos"
+                        onClick={closeMobileMenu}
+                        className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors hover:bg-white/5"
+                      >
+                        <BookmarkIcon className="size-4 text-pink-400" />
+                        Favoritos
+                      </Link>
+                    </div>
+                  </div>
+
+                  <Link
+                    href={adminLink.href}
+                    onClick={closeMobileMenu}
+                    className={cn(
+                      "group/admin flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-base font-medium shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:border-primary/30 hover:bg-primary/5",
+                      pathname.startsWith("/dashboard") &&
+                        "border-primary/30 bg-primary/5 text-primary",
+                    )}
+                  >
+                    <AdminIcon className={cn(
+                      "size-5",
+                      pathname.startsWith("/dashboard") ? "text-primary" : adminLink.color
+                    )} />
+                    <span className="flex-1">{adminLink.label}</span>
+                    <Crown className="size-4 text-amber-400 opacity-60" />
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeMobileMenu();
+                      handleSignOut();
+                    }}
+                    className="flex items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/[0.06] px-4 py-3 text-base font-medium text-red-500 shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:border-red-500/30 hover:bg-red-500/10"
+                  >
+                    <LogOut className="size-5" />
+                    <span>Sair</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="my-2 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                  
+                  <Link
+                    href="/login"
+                    onClick={closeMobileMenu}
+                    className={cn(
+                      "group/login flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-base font-medium shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:border-primary/30 hover:bg-primary/5",
+                      pathname.startsWith("/login") &&
+                        "border-primary/30 bg-primary/5 text-primary",
+                    )}
+                  >
+                    <LogIn className={cn(
+                      "size-5",
+                      pathname.startsWith("/login") ? "text-primary" : "text-green-400"
+                    )} />
+                    <span>Entrar</span>
+                  </Link>
+                </>
+              )}
+            </div>
           </nav>
         </div>
       </div>

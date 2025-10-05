@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -11,6 +11,12 @@ import {
   CalendarCheck2,
   Ticket,
   ArrowRight,
+  Zap,
+  Shield,
+  ChevronLeft,
+  ChevronRight,
+  PauseCircle,
+  PlayCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,155 +26,236 @@ type HeroProps = {
 };
 
 export default function Hero({ images, userName }: HeroProps) {
-  const slides = useMemo(
-    () => (images?.length ? images.slice(0, 6) : []),
-    [images],
-  );
-
+  const slides = useMemo(() => (images?.length ? images.slice(0, 6) : []), [images]);
   const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const containerRef = useRef<HTMLElement>(null);
 
-  // auto-rotate a cada 5.5s
+  // Auto-rotate (mantido), com pausa por foco/hover e respeito a prefers-reduced-motion
   useEffect(() => {
     if (!slides.length) return;
-    const t = setInterval(
-      () => setActive((p) => (p + 1) % slides.length),
-      5500,
-    );
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (media.matches || paused) return;
+
+    const t = setInterval(() => setActive((p) => (p + 1) % slides.length), 5500);
     return () => clearInterval(t);
-  }, [slides]);
+  }, [slides, paused]);
+
+  // Acessibilidade: setas do teclado (←/→) para navegar
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!containerRef.current) return;
+      if (!containerRef.current.contains(document.activeElement)) return;
+      if (e.key === "ArrowRight") setActive((p) => (p + 1) % slides.length);
+      if (e.key === "ArrowLeft") setActive((p) => (p - 1 + slides.length) % slides.length);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [slides.length]);
 
   return (
-    <section className="relative isolate min-h-[86dvh] overflow-clip rounded-b-[2.5rem] border-b border-white/10 bg-black/60">
-      {/* Slides como camadas */}
+    <section
+      ref={containerRef}
+      className="relative isolate min-h-[86dvh] overflow-clip rounded-b-[2.5rem] border-b border-white/10 bg-black/60 sm:min-h-[88dvh] md:rounded-b-[3rem]"
+      aria-label="Destaques Evastur"
+      tabIndex={0}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={() => setPaused(false)}
+    >
+      {/* Slides em camadas com transição suave */}
       <div className="absolute inset-0 -z-10">
         {slides.map((src, idx) => (
           <div
             key={`${src}-${idx}`}
             className={cn(
-              "absolute inset-0 transition-opacity duration-[1500ms] ease-out",
-              active === idx ? "opacity-100" : "opacity-0",
+              "absolute inset-0 transition-all duration-[1800ms] ease-in-out will-change-transform",
+              active === idx ? "scale-100 opacity-100" : "scale-105 opacity-0",
             )}
             aria-hidden={active !== idx}
           >
-            {/* Next/Image como background cover */}
             <Image
               src={src}
               alt="Paisagem de destino"
               fill
               priority={idx === 0}
               className="object-cover"
+              quality={90}
+              sizes="100vw"
             />
-            {/* máscara de gradiente para legibilidade */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/35 to-black/70" />
-            {/* brilhos sutis */}
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_50%_at_50%_0%,rgba(255,255,255,0.25),transparent)] mix-blend-overlay opacity-20" />
+            {/* Máscaras para legibilidade */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/45 to-black/80" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/25" />
+
+            {/* Brilhos decorativos */}
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.16),transparent_50%)] mix-blend-overlay" />
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(168,85,247,0.12),transparent_50%)] mix-blend-overlay" />
           </div>
         ))}
       </div>
 
-      {/* Partículas simples (decorativo) */}
-      <div className="pointer-events-none absolute inset-0 -z-10 opacity-40 [mask-image:radial-gradient(60%_60%_at_50%_40%,black,transparent)]">
-        <div className="absolute left-1/2 top-1/3 size-64 -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
+      {/* Partículas/blur blobs sutis (respeitam reduced-motion implicitamente) */}
+      <div className="pointer-events-none absolute inset-0 -z-10 opacity-40">
+        <div className="absolute left-1/3 top-1/4 size-72 animate-pulse rounded-full bg-blue-500/20 blur-3xl" />
+        <div
+          className="absolute bottom-1/4 right-1/3 size-64 animate-pulse rounded-full bg-purple-500/15 blur-3xl"
+          style={{ animationDelay: "1s" }}
+        />
       </div>
 
-      {/* Conteúdo */}
-      <div className="mx-auto flex max-w-7xl flex-col gap-8 px-6 py-20 sm:py-24 lg:gap-10">
-        {/* Badge/label */}
-        <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs text-white/90 backdrop-blur">
-          <Sparkles className="size-3.5" />
+      {/* Controles do carrossel (acessíveis) */}
+      {slides.length > 1 && (
+        <div className="absolute inset-x-0 bottom-6 z-10 flex items-center justify-center gap-3 md:bottom-8">
+          <button
+            type="button"
+            aria-label="Slide anterior"
+            onClick={() => setActive((p) => (p - 1 + slides.length) % slides.length)}
+            className="inline-flex items-center justify-center rounded-full border border-white/30 bg-black/40 p-2 text-white backdrop-blur transition hover:scale-105 hover:border-white/50"
+          >
+            <ChevronLeft className="size-5" />
+          </button>
+          <button
+            type="button"
+            aria-label={paused ? "Retomar rotação automática" : "Pausar rotação automática"}
+            onClick={() => setPaused((v) => !v)}
+            className="inline-flex items-center justify-center rounded-full border border-white/30 bg-black/40 p-2 text-white backdrop-blur transition hover:scale-105 hover:border-white/50"
+          >
+            {paused ? <PlayCircle className="size-5" /> : <PauseCircle className="size-5" />}
+          </button>
+          <button
+            type="button"
+            aria-label="Próximo slide"
+            onClick={() => setActive((p) => (p + 1) % slides.length)}
+            className="inline-flex items-center justify-center rounded-full border border-white/30 bg-black/40 p-2 text-white backdrop-blur transition hover:scale-105 hover:border-white/50"
+          >
+            <ChevronRight className="size-5" />
+          </button>
+        </div>
+      )}
+
+      {/* Conteúdo principal */}
+      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-16 sm:gap-8 sm:px-6 sm:py-20 md:py-24 lg:gap-10 lg:px-8">
+        {/* Badge */}
+        <div className="group inline-flex w-fit animate-[fadeIn_1s_ease-out] items-center gap-2.5 rounded-full border border-white/25 bg-white/15 px-4 py-2 text-xs font-medium text-white shadow-lg backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-white/40 hover:bg-white/20 sm:text-sm">
+          <Sparkles className="size-3.5 animate-pulse text-yellow-300 sm:size-4" />
           <span>Agência boutique • experiências sob medida</span>
+          <span className="size-1.5 animate-pulse rounded-full bg-green-400 shadow-[0_0_8px_theme(colors.green.400)]" />
         </div>
 
         {/* Headline */}
-        <div className="max-w-3xl">
-          <h1 className="text-balance text-4xl font-semibold leading-tight tracking-tight text-white drop-shadow md:text-6xl">
+        <div className="max-w-3xl animate-[fadeIn_1.2s_ease-out]">
+          <h1 className="text-balance text-3xl font-bold leading-tight tracking-tight text-white drop-shadow-2xl sm:text-4xl md:text-5xl lg:text-6xl">
             Descubra o mundo com a{" "}
-            <span className="bg-gradient-to-r from-primary via-primary/90 to-white/90 bg-clip-text text-transparent">
-              Evastur
+            <span className="relative inline-block">
+              <span className="relative z-10 bg-gradient-to-r from-blue-400 via-blue-300 to-purple-400 bg-clip-text text-transparent">
+                Evastur
+              </span>
+              <span
+                aria-hidden
+                className="absolute inset-0 bg-gradient-to-r from-blue-400 via-blue-300 to-purple-400 opacity-50 blur-xl"
+              />
             </span>
             : viagens premium, memórias eternas.
           </h1>
-          <p className="mt-5 max-w-xl text-pretty text-base text-white/80 md:text-lg">
+
+          <p className="mt-4 max-w-xl text-pretty text-sm leading-relaxed text-white/90 drop-shadow-lg sm:mt-5 sm:text-base md:text-lg md:leading-relaxed">
             {userName ? (
               <>
-                {userName.split(" ")[0]}, planejamos sua próxima jornada com
-                curadoria, conforto e autenticidade — do primeiro clique ao
-                último pôr do sol.
+                <span className="font-semibold text-white">{userName.split(" ")[0]}</span>, planejamos sua próxima jornada com
+                curadoria, conforto e autenticidade — do primeiro clique ao último pôr do sol.
               </>
             ) : (
-              <>
-                Do primeiro clique ao último pôr do sol: roteiros exclusivos,
-                hotéis selecionados a dedo e suporte 24/7.
-              </>
+              <>Do primeiro clique ao último pôr do sol: roteiros exclusivos, hotéis selecionados a dedo e suporte 24/7.</>
             )}
           </p>
         </div>
 
         {/* CTAs */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex animate-[fadeIn_1.4s_ease-out] flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
           <Link
             href="/destinos"
             className={cn(
-              "group inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/15 px-6 py-3 text-sm font-medium text-white backdrop-blur transition-all duration-300",
-              "hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/30",
+              "group relative inline-flex items-center justify-center gap-2.5 overflow-hidden rounded-full border border-white/30 bg-gradient-to-r from-blue-500/90 to-purple-500/90 px-6 py-3.5 text-sm font-semibold text-white shadow-xl backdrop-blur transition-all duration-300",
+              "hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-500/50 sm:px-7 sm:py-3.5 sm:text-base",
             )}
           >
-            <Plane className="size-4 transition-transform duration-300 group-hover:translate-x-0.5" />
-            Explorar destinos
-            <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
+            <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+            <Plane className="relative z-10 size-4 transition-transform duration-300 group-hover:translate-x-0.5 sm:size-5" />
+            <span className="relative z-10">Explorar destinos</span>
+            <ArrowRight className="relative z-10 size-4 transition-transform duration-300 group-hover:translate-x-1 sm:size-5" />
           </Link>
 
           <Link
             href="/sobre-nos"
-            className="group inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-medium text-white/90 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-white/30 hover:bg-white/10"
+            className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-3 text-sm font-medium text-white/95 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-white/40 hover:bg-white/20 hover:shadow-lg sm:px-6 sm:text-base"
           >
-            <Compass className="size-4" />
-            Conheça a Evastur
+            <Compass className="size-4 transition-transform duration-300 group-hover:rotate-12 sm:size-5" />
+            <span>Conheça a Evastur</span>
           </Link>
 
           <Link
             href="/contato"
-            className="group inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/15 px-5 py-3 text-sm font-medium text-emerald-50 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:bg-emerald-400/25"
+            className="group inline-flex items-center justify-center gap-2 rounded-full border border-emerald-400/40 bg-gradient-to-r from-emerald-500/20 to-emerald-400/20 px-5 py-3 text-sm font-medium text-emerald-50 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-emerald-400/60 hover:from-emerald-500/30 hover:to-emerald-400/30 hover:shadow-lg hover:shadow-emerald-500/30 sm:px-6 sm:text-base"
           >
-            <CalendarCheck2 className="size-4" />
-            Montar roteiro
+            <CalendarCheck2 className="size-4 transition-transform duration-300 group-hover:scale-110 sm:size-5" />
+            <span>Montar roteiro</span>
           </Link>
         </div>
 
         {/* Chips/benefícios */}
-        <ul className="mt-4 flex flex-wrap items-center gap-2 text-xs text-white/85">
-          <li className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/10 px-3 py-1 backdrop-blur">
-            <Ticket className="size-3.5" />
-            Tarifas negociadas
+        <ul className="mt-2 flex animate-[fadeIn_1.6s_ease-out] flex-wrap items-center gap-2 text-xs font-medium text-white/90 sm:mt-4 sm:gap-3 sm:text-sm">
+          <li className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/15 px-3.5 py-1.5 backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-white/30 hover:bg-white/20">
+            <Ticket className="size-3.5 text-yellow-300 sm:size-4" />
+            <span>Tarifas negociadas</span>
           </li>
-          <li className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/10 px-3 py-1 backdrop-blur">
-            <MapPin className="size-3.5" />
-            Curadoria local autêntica
+          <li className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/15 px-3.5 py-1.5 backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-white/30 hover:bg-white/20">
+            <MapPin className="size-3.5 text-red-400 sm:size-4" />
+            <span>Curadoria local autêntica</span>
           </li>
-          <li className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/10 px-3 py-1 backdrop-blur">
-            <Plane className="size-3.5" />
-            Suporte ponta a ponta
+          <li className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/15 px-3.5 py-1.5 backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-white/30 hover:bg-white/20">
+            <Zap className="size-3.5 text-blue-400 sm:size-4" />
+            <span>Suporte ponta a ponta</span>
+          </li>
+          <li className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/15 px-3.5 py-1.5 backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-white/30 hover:bg-white/20">
+            <Shield className="size-3.5 text-green-400 sm:size-4" />
+            <span>100% seguro</span>
           </li>
         </ul>
 
-        {/* Bullets/indicadores do carrossel */}
+        {/* Indicadores do carrossel */}
         {slides.length > 1 && (
-          <div className="mt-2 flex items-center gap-2">
+          <div className="mt-2 flex animate-[fadeIn_1.8s_ease-out] items-center gap-2.5 sm:mt-4" role="tablist" aria-label="Seleção de slides">
             {slides.map((_, i) => (
               <button
                 key={i}
-                aria-label={`Slide ${i + 1}`}
+                role="tab"
+                aria-selected={active === i}
+                aria-controls={`hero-slide-${i}`}
+                aria-label={`Ir para o slide ${i + 1}`}
                 onClick={() => setActive(i)}
                 className={cn(
-                  "h-1.5 w-6 rounded-full transition-all duration-500",
+                  "group relative h-1.5 rounded-full transition-all duration-500",
                   active === i
-                    ? "bg-primary/90"
-                    : "bg-white/40 hover:bg-white/60",
+                    ? "w-10 bg-gradient-to-r from-blue-400 to-purple-400 shadow-lg shadow-blue-500/50"
+                    : "w-6 bg-white/40 hover:w-8 hover:bg-white/60",
                 )}
-              />
+              >
+                {active === i && <span className="absolute inset-0 animate-pulse rounded-full bg-white/30" />}
+              </button>
             ))}
           </div>
         )}
+      </div>
+
+      {/* Indicador de scroll */}
+      <div className="absolute bottom-8 left-1/2 hidden -translate-x-1/2 animate-bounce md:block">
+        <div className="flex flex-col items-center gap-2">
+          <div className="size-6 rounded-full border-2 border-white/40 p-1">
+            <div className="size-full animate-pulse rounded-full bg-white/60" />
+          </div>
+          <span className="text-xs font-medium text-white/60">Role para explorar</span>
+        </div>
       </div>
     </section>
   );

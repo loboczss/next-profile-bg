@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import Image from "next/image";
-import { Eye, EyeOff, Loader2, Save, UploadCloud } from "lucide-react";
+import { Ban, Eye, EyeOff, Loader2, PlusCircle, Save, Trash2, UploadCloud } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { BackgroundApiResponse, BackgroundImageItem, BackgroundMode } from "@/types/background";
@@ -12,19 +12,79 @@ type BackgroundWithDraft = BackgroundImageItem & {
   draftGroup: string;
   draftUrl: string;
   isSaving: boolean;
+  pendingAction?: "save" | "visibility" | "delete";
   error?: string | null;
   success?: string | null;
 };
+
+type DisplayedBackground = BackgroundImageItem & { isFallback?: boolean };
+
+const toBackgroundWithDraft = (item: BackgroundImageItem): BackgroundWithDraft => ({
+  ...item,
+  draftTitle: item.title ?? "",
+  draftGroup: item.groupKey ?? "",
+  draftUrl: item.url,
+  isSaving: false,
+  pendingAction: undefined,
+  error: null,
+  success: null,
+});
 
 export function BackgroundGalleryManager() {
   const [mode, setMode] = useState<BackgroundMode>("ALL");
   const [group, setGroup] = useState("");
   const [imageId, setImageId] = useState<number | null>(null);
   const [backgrounds, setBackgrounds] = useState<BackgroundWithDraft[]>([]);
+  const [activeBackgrounds, setActiveBackgrounds] = useState<BackgroundImageItem[]>([]);
+  const [fallbackBackgroundUrl, setFallbackBackgroundUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
+  const [modeError, setModeError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [newBackgroundUrl, setNewBackgroundUrl] = useState("");
+  const [newBackgroundTitle, setNewBackgroundTitle] = useState("");
+  const [newBackgroundGroup, setNewBackgroundGroup] = useState("");
+  const [addError, setAddError] = useState<string | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
   const [isModePending, startModeTransition] = useTransition();
+
+  const applySettings = (settings: BackgroundApiResponse | null) => {
+    if (!settings) {
+      setMode("ALL");
+      setGroup("");
+      setImageId(null);
+      setActiveBackgrounds([]);
+      setFallbackBackgroundUrl(null);
+      return;
+    }
+
+    setMode(settings.mode ?? "ALL");
+    setGroup(settings.group ?? "");
+    setImageId(settings.imageId ?? null);
+    const selected = Array.isArray(settings.selectedBackgrounds)
+      ? settings.selectedBackgrounds
+      : [];
+    setActiveBackgrounds(selected);
+    setFallbackBackgroundUrl(
+      typeof settings.backgroundUrl === "string" && settings.backgroundUrl.trim().length > 0
+        ? settings.backgroundUrl
+        : null,
+    );
+  };
+
+  const refreshSettings = async () => {
+    try {
+      const response = await fetch("/api/background", { cache: "no-store" });
+      if (!response.ok) {
+        return;
+      }
+      const data = (await response.json()) as BackgroundApiResponse;
+      applySettings(data);
+    } catch (err) {
+      console.error("Erro ao atualizar configurações de background", err);
+    }
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -44,26 +104,13 @@ export function BackgroundGalleryManager() {
 
         const settings = (await settingsResponse.json()) as BackgroundApiResponse;
         const gallery = (await galleryResponse.json()) as { images?: BackgroundImageItem[] };
-
-        setMode(settings.mode ?? "ALL");
-        setGroup(settings.group ?? "");
-        setImageId(settings.imageId ?? null);
+        applySettings(settings);
 
         const items = Array.isArray(gallery.images) ? gallery.images : [];
-        setBackgrounds(
-          items.map((item) => ({
-            ...item,
-            draftTitle: item.title ?? "",
-            draftGroup: item.groupKey ?? "",
-            draftUrl: item.url,
-            isSaving: false,
-            error: null,
-            success: null,
-          })),
-        );
+        setBackgrounds(items.map(toBackgroundWithDraft));
       } catch (err) {
         console.error(err);
-        setError(err instanceof Error ? err.message : "Erro desconhecido");
+        setStatusError(err instanceof Error ? err.message : "Erro desconhecido");
       } finally {
         setIsLoading(false);
       }
@@ -83,16 +130,30 @@ export function BackgroundGalleryManager() {
   }, [backgrounds]);
 
   const selectedIds = useMemo(() => {
-    if (mode === "SINGLE" && imageId) {
-      return new Set([imageId]);
+    return new Set(activeBackgrounds.map((item) => item.id));
+  }, [activeBackgrounds]);
+
+  const displayedBackgrounds = useMemo<DisplayedBackground[]>(() => {
+    const mapped = activeBackgrounds.map((item) => ({ ...item, isFallback: false }));
+
+    if (!mapped.length && fallbackBackgroundUrl) {
+      mapped.push({
+        id: -1,
+        url: fallbackBackgroundUrl,
+        title: "Background padrão",
+        groupKey: null,
+        isVisible: true,
+        createdAt: "1970-01-01T00:00:00.000Z",
+        updatedAt: "1970-01-01T00:00:00.000Z",
+        isFallback: true,
+      });
     }
-    if (mode === "GROUP" && group.trim()) {
-      return new Set(
-        backgrounds.filter((item) => item.groupKey === group.trim()).map((item) => item.id),
-      );
-    }
-    return new Set(backgrounds.filter((item) => item.isVisible).map((item) => item.id));
-  }, [backgrounds, mode, imageId, group]);
+
+    return mapped;
+  }, [activeBackgrounds, fallbackBackgroundUrl]);
+
+  const hasDisplayedBackgrounds = displayedBackgrounds.length > 0;
+  const canClearBackgrounds = hasDisplayedBackgrounds;
 
   const updateDraft = (id: number, field: "draftTitle" | "draftGroup" | "draftUrl", value: string) => {
     setBackgrounds((current) =>
@@ -120,6 +181,7 @@ export function BackgroundGalleryManager() {
               draftGroup: updated.groupKey ?? "",
               draftUrl: updated.url,
               isSaving: false,
+              pendingAction: undefined,
               error: null,
               success: "Atualizado com sucesso!",
             }
@@ -162,7 +224,9 @@ export function BackgroundGalleryManager() {
 
     setBackgrounds((current) =>
       current.map((item) =>
-        item.id === id ? { ...item, isSaving: true, error: null, success: null } : item,
+        item.id === id
+          ? { ...item, isSaving: true, pendingAction: "save", error: null, success: null }
+          : item,
       ),
     );
 
@@ -181,6 +245,7 @@ export function BackgroundGalleryManager() {
 
       syncBackground(data.image);
       setFeedback("Imagem atualizada!");
+      await refreshSettings();
     } catch (err) {
       setBackgrounds((current) =>
         current.map((item) =>
@@ -188,6 +253,7 @@ export function BackgroundGalleryManager() {
             ? {
                 ...item,
                 isSaving: false,
+                pendingAction: undefined,
                 error: err instanceof Error ? err.message : "Erro inesperado",
               }
             : item,
@@ -200,7 +266,7 @@ export function BackgroundGalleryManager() {
     setBackgrounds((current) =>
       current.map((item) =>
         item.id === id
-          ? { ...item, isSaving: true, error: null, success: null }
+          ? { ...item, isSaving: true, pendingAction: "visibility", error: null, success: null }
           : item,
       ),
     );
@@ -219,6 +285,7 @@ export function BackgroundGalleryManager() {
 
       syncBackground(data.image);
       setFeedback(nextVisible ? "Imagem exibida" : "Imagem ocultada");
+      await refreshSettings();
     } catch (err) {
       setBackgrounds((current) =>
         current.map((item) =>
@@ -226,6 +293,7 @@ export function BackgroundGalleryManager() {
             ? {
                 ...item,
                 isSaving: false,
+                pendingAction: undefined,
                 error: err instanceof Error ? err.message : "Erro inesperado",
               }
             : item,
@@ -234,16 +302,147 @@ export function BackgroundGalleryManager() {
     }
   };
 
+  const handleDelete = async (id: number) => {
+    setBackgrounds((current) =>
+      current.map((item) =>
+        item.id === id
+          ? { ...item, isSaving: true, pendingAction: "delete", error: null, success: null }
+          : item,
+      ),
+    );
+
+    try {
+      const response = await fetch(`/api/background/gallery/${id}`, {
+        method: "DELETE",
+      });
+      const data = (await response.json().catch(() => ({}))) as { image?: BackgroundImageItem; error?: string };
+
+      if (!response.ok || !data.image) {
+        throw new Error(data.error ?? "Não foi possível excluir a imagem");
+      }
+
+      setBackgrounds((current) => current.filter((item) => item.id !== id));
+      setFeedback("Imagem removida");
+      await refreshSettings();
+    } catch (err) {
+      setBackgrounds((current) =>
+        current.map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                isSaving: false,
+                pendingAction: undefined,
+                error: err instanceof Error ? err.message : "Erro inesperado",
+              }
+            : item,
+        ),
+      );
+    }
+  };
+
+  const handleAddBackground = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setAddError(null);
+    setFeedback(null);
+
+    const trimmedUrl = newBackgroundUrl.trim();
+    const trimmedTitle = newBackgroundTitle.trim();
+    const trimmedGroup = newBackgroundGroup.trim();
+
+    if (!trimmedUrl) {
+      setAddError("Informe a URL da imagem");
+      return;
+    }
+
+    if (!trimmedUrl.startsWith("https://")) {
+      setAddError("Use uma URL com HTTPS");
+      return;
+    }
+
+    const payload: Record<string, unknown> = { url: trimmedUrl };
+    if (trimmedTitle.length) {
+      payload.title = trimmedTitle;
+    }
+    if (trimmedGroup.length) {
+      payload.groupKey = trimmedGroup;
+    }
+
+    setIsAdding(true);
+
+    try {
+      const response = await fetch("/api/background/gallery", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = (await response.json().catch(() => ({}))) as {
+        image?: BackgroundImageItem;
+        error?: string;
+      };
+
+      if (!response.ok || !data.image) {
+        throw new Error(data.error ?? "Não foi possível adicionar a imagem");
+      }
+
+      setBackgrounds((current) => [toBackgroundWithDraft(data.image), ...current]);
+      setNewBackgroundUrl("");
+      setNewBackgroundTitle("");
+      setNewBackgroundGroup("");
+      setFeedback("Imagem adicionada!");
+      await refreshSettings();
+    } catch (err) {
+      setAddError(err instanceof Error ? err.message : "Erro inesperado");
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  const handleClearAll = async () => {
+    setStatusError(null);
+    setModeError(null);
+    setFeedback(null);
+    setIsClearing(true);
+
+    try {
+      const response = await fetch("/api/background", { method: "DELETE" });
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Não foi possível limpar os backgrounds");
+      }
+
+      setBackgrounds((current) =>
+        current.map((item) => ({
+          ...item,
+          isVisible: false,
+          isSaving: false,
+          pendingAction: undefined,
+          success: null,
+          error: null,
+        })),
+      );
+      setActiveBackgrounds([]);
+      setFeedback("Todas as imagens foram removidas do site");
+      await refreshSettings();
+    } catch (err) {
+      setStatusError(err instanceof Error ? err.message : "Erro inesperado");
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
   const handleModeSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFeedback(null);
-    setError(null);
+    setModeError(null);
+    setStatusError(null);
 
     const payload: Record<string, unknown> = { mode };
 
     if (mode === "GROUP") {
       if (!group.trim()) {
-        setError("Informe um grupo para exibir");
+        setModeError("Informe um grupo para exibir");
         return;
       }
       payload.group = group.trim();
@@ -251,7 +450,7 @@ export function BackgroundGalleryManager() {
 
     if (mode === "SINGLE") {
       if (!imageId) {
-        setError("Selecione uma imagem");
+        setModeError("Selecione uma imagem");
         return;
       }
       payload.imageId = imageId;
@@ -272,8 +471,9 @@ export function BackgroundGalleryManager() {
         }
 
         setFeedback("Modo de exibição atualizado");
+        await refreshSettings();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Erro inesperado");
+        setModeError(err instanceof Error ? err.message : "Erro inesperado");
       }
     });
   };
@@ -293,12 +493,29 @@ export function BackgroundGalleryManager() {
     );
   }
 
-  if (error && !backgrounds.length) {
-    return <p className="text-sm text-red-600">{error}</p>;
+  if (statusError && !backgrounds.length) {
+    return <p className="text-sm text-red-600">{statusError}</p>;
   }
 
   return (
     <div className="space-y-6">
+      {(statusError || feedback) && (
+        <div className="space-y-2">
+          {statusError && (
+            <div className="inline-flex items-center gap-2 rounded-full bg-red-50 px-4 py-2 text-xs font-semibold text-red-600 shadow-sm">
+              <Ban className="h-4 w-4" />
+              {statusError}
+            </div>
+          )}
+          {feedback && (
+            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 text-xs font-semibold text-emerald-700 shadow-sm">
+              <UploadCloud className="h-4 w-4" />
+              {feedback}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="rounded-2xl border border-white/20 bg-white/70 p-5 shadow-sm backdrop-blur">
         <form onSubmit={handleModeSubmit} className="space-y-4">
           <div>
@@ -367,7 +584,9 @@ export function BackgroundGalleryManager() {
               <select
                 id="background-single"
                 value={imageId ?? ""}
-                onChange={(event) => setImageId(event.currentTarget.value ? Number(event.currentTarget.value) : null)}
+                onChange={(event) =>
+                  setImageId(event.currentTarget.value ? Number(event.currentTarget.value) : null)
+                }
                 className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
               >
                 <option value="">Selecione uma imagem</option>
@@ -380,8 +599,7 @@ export function BackgroundGalleryManager() {
             </div>
           )}
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          {feedback && <p className="text-sm text-green-600">{feedback}</p>}
+          {modeError && <p className="text-sm text-red-600">{modeError}</p>}
 
           <button
             type="submit"
@@ -394,123 +612,274 @@ export function BackgroundGalleryManager() {
         </form>
       </div>
 
-      <div className="space-y-4">
-        <div>
-          <h3 className="text-base font-semibold text-slate-900">Fotos cadastradas</h3>
-          <p className="text-xs text-slate-600">
-            Edite as informações, atribua grupos e controle a visibilidade das imagens disponíveis no background.
-          </p>
+      <div className="rounded-2xl border border-white/20 bg-white/70 p-5 shadow-sm backdrop-blur">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="text-base font-semibold text-slate-900">Fotos em exibição</h3>
+            <p className="text-xs text-slate-600">
+              Visualize as imagens que estão aparecendo agora nas páginas do site.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleClearAll}
+            disabled={!canClearBackgrounds || isClearing}
+            className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isClearing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ban className="h-4 w-4" />}
+            Remover todas as fotos
+          </button>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          {backgrounds.map((item) => {
-            const isSelected = selectedIds.has(item.id);
-
-            return (
+        {hasDisplayedBackgrounds ? (
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {displayedBackgrounds.map((item) => (
               <div
-                key={item.id}
-                className={cn(
-                  "relative overflow-hidden rounded-2xl border bg-white shadow-sm transition",
-                  isSelected ? "border-blue-400 ring-2 ring-blue-200" : "border-slate-200",
-                )}
+                key={item.isFallback ? `fallback-${item.url}` : item.id}
+                className="overflow-hidden rounded-xl border border-white/20 bg-white/70 shadow-sm"
               >
-                <div className="relative h-40 w-full">
+                <div className="relative aspect-video w-full">
                   <Image
-                    src={item.draftUrl || item.url}
-                    alt={item.title ?? `Imagem ${item.id}`}
+                    src={item.url}
+                    alt={item.title ?? "Imagem exibida"}
                     fill
                     className="object-cover"
                   />
-                  {!item.isVisible && (
-                    <span className="absolute inset-x-0 top-2 mx-auto w-max rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white">
-                      Oculta
+                  {item.isFallback ? (
+                    <span className="absolute left-3 top-3 rounded-full bg-slate-900/70 px-3 py-1 text-xs font-semibold text-white">
+                      Fallback
                     </span>
-                  )}
-                  {isSelected && (
-                    <span className="absolute inset-x-0 bottom-2 mx-auto w-max rounded-full bg-blue-600/90 px-3 py-1 text-xs font-semibold text-white shadow">
-                      Em uso
-                    </span>
+                  ) : (
+                    selectedIds.has(item.id) && (
+                      <span className="absolute left-3 top-3 rounded-full bg-blue-600/90 px-3 py-1 text-xs font-semibold text-white shadow">
+                        Em uso
+                      </span>
+                    )
                   )}
                 </div>
-
-                <div className="space-y-3 p-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-slate-600" htmlFor={`title-${item.id}`}>
-                      Título
-                    </label>
-                    <input
-                      id={`title-${item.id}`}
-                      value={item.draftTitle}
-                      onChange={(event) => updateDraft(item.id, "draftTitle", event.currentTarget.value)}
-                      placeholder="Descrição da imagem"
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-slate-600" htmlFor={`group-${item.id}`}>
-                      Grupo
-                    </label>
-                    <input
-                      id={`group-${item.id}`}
-                      value={item.draftGroup}
-                      onChange={(event) => updateDraft(item.id, "draftGroup", event.currentTarget.value)}
-                      placeholder="Ex.: principal, promoções"
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-slate-600" htmlFor={`url-${item.id}`}>
-                      URL
-                    </label>
-                    <input
-                      id={`url-${item.id}`}
-                      value={item.draftUrl}
-                      onChange={(event) => updateDraft(item.id, "draftUrl", event.currentTarget.value)}
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                    />
-                  </div>
-
-                  {item.error && <p className="text-xs text-red-600">{item.error}</p>}
-                  {item.success && <p className="text-xs text-green-600">{item.success}</p>}
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleSave(item.id)}
-                      disabled={item.isSaving}
-                      className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white shadow hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {item.isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                      Salvar alterações
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleToggleVisibility(item.id, !item.isVisible)}
-                      disabled={item.isSaving}
-                      className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {item.isSaving ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : item.isVisible ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                      {item.isVisible ? "Ocultar" : "Exibir"}
-                    </button>
-                  </div>
+                <div className="space-y-1.5 p-3">
+                  <p className="text-sm font-semibold text-slate-900">
+                    {item.isFallback
+                      ? "Imagem padrão do site"
+                      : item.title?.length
+                      ? item.title
+                      : `Imagem #${item.id}`}
+                  </p>
+                  {!item.isFallback && item.groupKey && (
+                    <p className="text-xs font-medium text-blue-600">Grupo: {item.groupKey}</p>
+                  )}
+                  <p className="truncate text-xs text-slate-500">{item.url}</p>
                 </div>
               </div>
-            );
-          })}
+            ))}
+          </div>
+        ) : (
+          <div className="mt-4 rounded-xl border border-dashed border-slate-300 bg-white/60 p-6 text-center text-sm text-slate-600">
+            Nenhuma imagem está sendo exibida no momento.
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-white/20 bg-white/70 p-5 shadow-sm backdrop-blur">
+        <form onSubmit={handleAddBackground} className="space-y-4">
+          <div>
+            <h3 className="text-base font-semibold text-slate-900">Adicionar nova foto</h3>
+            <p className="text-xs text-slate-600">
+              Inclua uma nova imagem para o carrossel global do background.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-slate-600" htmlFor="new-background-url">
+              URL da imagem (HTTPS)
+            </label>
+            <input
+              id="new-background-url"
+              type="url"
+              value={newBackgroundUrl}
+              onChange={(event) => setNewBackgroundUrl(event.currentTarget.value)}
+              placeholder="https://exemplo.com/imagem.webp"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              required
+            />
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-slate-600" htmlFor="new-background-title">
+                Título (opcional)
+              </label>
+              <input
+                id="new-background-title"
+                value={newBackgroundTitle}
+                onChange={(event) => setNewBackgroundTitle(event.currentTarget.value)}
+                placeholder="Descrição curta da imagem"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-slate-600" htmlFor="new-background-group">
+                Grupo (opcional)
+              </label>
+              <input
+                id="new-background-group"
+                value={newBackgroundGroup}
+                onChange={(event) => setNewBackgroundGroup(event.currentTarget.value)}
+                placeholder="ex.: hero, promoções, verão"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              />
+            </div>
+          </div>
+
+          {addError && <p className="text-sm text-red-600">{addError}</p>}
+
+          <button
+            type="submit"
+            disabled={isAdding}
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isAdding ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4" />}
+            Adicionar imagem
+          </button>
+        </form>
+      </div>
+
+      <div className="rounded-2xl border border-white/20 bg-white/70 p-5 shadow-sm backdrop-blur">
+        <div className="flex flex-col gap-2 pb-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-base font-semibold text-slate-900">Fotos cadastradas</h3>
+            <p className="text-xs text-slate-600">
+              Edite as informações, atribua grupos e controle a visibilidade das imagens disponíveis no background.
+            </p>
+          </div>
+          <span className="text-xs font-medium text-slate-500">Total: {backgrounds.length}</span>
         </div>
 
-        {feedback && backgrounds.length > 0 && (
-          <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 text-xs font-semibold text-emerald-700">
-            <UploadCloud className="h-4 w-4" />
-            {feedback}
+        {backgrounds.length ? (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {backgrounds.map((item) => {
+              const isSelected = selectedIds.has(item.id);
+
+              return (
+                <div
+                  key={item.id}
+                  className={cn(
+                    "relative overflow-hidden rounded-2xl border bg-white shadow-sm transition",
+                    isSelected ? "border-blue-400 ring-2 ring-blue-200" : "border-slate-200",
+                  )}
+                >
+                  <div className="relative h-40 w-full">
+                    <Image
+                      src={item.draftUrl || item.url}
+                      alt={item.title ?? `Imagem ${item.id}`}
+                      fill
+                      className="object-cover"
+                    />
+                    {!item.isVisible && (
+                      <span className="absolute inset-x-0 top-2 mx-auto w-max rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white">
+                        Oculta
+                      </span>
+                    )}
+                    {isSelected && (
+                      <span className="absolute inset-x-0 bottom-2 mx-auto w-max rounded-full bg-blue-600/90 px-3 py-1 text-xs font-semibold text-white shadow">
+                        Em uso
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-3 p-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-slate-600" htmlFor={`title-${item.id}`}>
+                        Título
+                      </label>
+                      <input
+                        id={`title-${item.id}`}
+                        value={item.draftTitle}
+                        onChange={(event) => updateDraft(item.id, "draftTitle", event.currentTarget.value)}
+                        placeholder="Descrição da imagem"
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-slate-600" htmlFor={`group-${item.id}`}>
+                        Grupo
+                      </label>
+                      <input
+                        id={`group-${item.id}`}
+                        value={item.draftGroup}
+                        onChange={(event) => updateDraft(item.id, "draftGroup", event.currentTarget.value)}
+                        placeholder="Ex.: principal, promoções"
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-slate-600" htmlFor={`url-${item.id}`}>
+                        URL
+                      </label>
+                      <input
+                        id={`url-${item.id}`}
+                        value={item.draftUrl}
+                        onChange={(event) => updateDraft(item.id, "draftUrl", event.currentTarget.value)}
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      />
+                    </div>
+
+                    {item.error && <p className="text-xs text-red-600">{item.error}</p>}
+                    {item.success && <p className="text-xs text-green-600">{item.success}</p>}
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleSave(item.id)}
+                        disabled={item.isSaving}
+                        className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white shadow hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {item.isSaving && item.pendingAction === "save" ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Save className="h-4 w-4" />
+                        )}
+                        Salvar alterações
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleVisibility(item.id, !item.isVisible)}
+                        disabled={item.isSaving}
+                        className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {item.isSaving && item.pendingAction === "visibility" ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : item.isVisible ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                        {item.isVisible ? "Ocultar" : "Exibir"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(item.id)}
+                        disabled={item.isSaving}
+                        className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {item.isSaving && item.pendingAction === "delete" ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                        Excluir
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-slate-300 bg-white/60 p-6 text-center text-sm text-slate-600">
+            Nenhuma imagem cadastrada até o momento.
           </div>
         )}
       </div>

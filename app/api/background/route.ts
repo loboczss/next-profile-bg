@@ -158,6 +158,29 @@ export async function GET() {
   }
 }
 
+export async function DELETE() {
+  try {
+    await prisma.$transaction([
+      prisma.backgroundImage.updateMany({
+        data: { isVisible: false },
+      }),
+      prisma.globalSetting.updateMany({
+        data: {
+          backgroundUrl: null,
+          backgroundMode: "ALL",
+          backgroundGroup: null,
+          backgroundImageId: null,
+        },
+      }),
+    ]);
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Erro ao limpar backgrounds", error);
+    return NextResponse.json({ error: "Erro ao limpar backgrounds" }, { status: 500 });
+  }
+}
+
 export async function PUT(request: NextRequest) {
   const ip = getClientIp(request);
   if (!checkRateLimit(ip)) {

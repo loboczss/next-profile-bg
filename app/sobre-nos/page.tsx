@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Plane,
   Sparkles,
@@ -27,6 +27,11 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+
+const FALLBACK_HERO_IMAGES = [
+  "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1920&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?q=80&w=1920&auto=format&fit=crop",
+];
 
 // --- Helpers de animação simples ---
 function useInView<T extends HTMLElement>(
@@ -88,14 +93,59 @@ function Badge({ children }: { children: React.ReactNode }) {
 }
 
 export default function AboutPage() {
-  // Mock hero images (opcional): use sua marca/imagem se quiser
-  const heroImages = useMemo(
-    () => [
-      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1920&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?q=80&w=1920&auto=format&fit=crop",
-    ],
-    []
-  );
+  const [heroImages, setHeroImages] = useState<string[]>(FALLBACK_HERO_IMAGES);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadBackground = async () => {
+      try {
+        const response = await fetch("/api/background", { cache: "no-store" });
+        if (!response.ok) {
+          return;
+        }
+
+        const data = (await response.json()) as { backgroundUrl?: unknown };
+        if (!isMounted) {
+          return;
+        }
+
+        const backgroundUrl =
+          typeof data.backgroundUrl === "string" && data.backgroundUrl.trim().length > 0
+            ? data.backgroundUrl
+            : null;
+
+        if (!backgroundUrl) {
+          return;
+        }
+
+        setHeroImages((current) => {
+          if (current[0] === backgroundUrl) {
+            return current;
+          }
+
+          const dedupedFallback = FALLBACK_HERO_IMAGES.filter(
+            (image) => image !== backgroundUrl,
+          );
+          const next = [backgroundUrl, ...dedupedFallback];
+
+          if (next.length === current.length && next.every((value, index) => value === current[index])) {
+            return current;
+          }
+
+          return next;
+        });
+      } catch (error) {
+        console.error("Erro ao carregar background", error);
+      }
+    };
+
+    void loadBackground();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <main className="min-h-dvh bg-gradient-to-br from-blue-50 via-white to-cyan-50 text-slate-900">

@@ -127,11 +127,11 @@ export default function AboutPage() {
             ? [fallbackBackground]
             : [];
 
-        if (!orderedBackgrounds.length) {
-          return;
-        }
-
         setHeroImages((current) => {
+          if (!orderedBackgrounds.length) {
+            return current.length === 0 ? current : [];
+          }
+
           const dedupedFallback = FALLBACK_HERO_IMAGES.filter(
             (image) => !orderedBackgrounds.includes(image),
           );

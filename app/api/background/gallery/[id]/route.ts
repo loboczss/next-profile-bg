@@ -80,3 +80,33 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Erro ao atualizar imagem" }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+  const idParam = pathname.split("/").filter(Boolean).at(-1);
+  const id = Number(idParam);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return NextResponse.json({ error: "Identificador inválido" }, { status: 400 });
+  }
+
+  try {
+    const deleted = await prisma.backgroundImage.delete({
+      where: { id },
+    });
+
+    await prisma.globalSetting.updateMany({
+      where: { backgroundImageId: id },
+      data: { backgroundImageId: null, backgroundMode: "ALL" },
+    });
+
+    return NextResponse.json({ image: deleted });
+  } catch (error) {
+    if ((error as { code?: string } | null)?.code === "P2025") {
+      return NextResponse.json({ error: "Imagem não encontrada" }, { status: 404 });
+    }
+
+    console.error("Erro ao excluir imagem de background", error);
+    return NextResponse.json({ error: "Erro ao excluir imagem" }, { status: 500 });
+  }
+}

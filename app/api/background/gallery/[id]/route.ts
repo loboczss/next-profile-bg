@@ -3,6 +3,8 @@ import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
 
+export const runtime = "nodejs";
+
 const updateSchema = z.object({
   url: z
     .string()
@@ -26,11 +28,10 @@ const updateSchema = z.object({
   isVisible: z.boolean().optional(),
 });
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } },
-) {
-  const id = Number(params.id);
+export async function PATCH(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+  const idParam = pathname.split("/").filter(Boolean).at(-1);
+  const id = Number(idParam);
 
   if (!Number.isInteger(id) || id <= 0) {
     return NextResponse.json({ error: "Identificador inválido" }, { status: 400 });

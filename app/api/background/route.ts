@@ -8,6 +8,8 @@ import { prisma } from "@/lib/prisma";
 import { DropboxUploadError, storeBackgroundImage } from "@/lib/storage";
 import { assertImage, sanitizeExt } from "@/lib/file";
 
+export const runtime = "nodejs";
+
 const RATE_LIMIT_WINDOW = 10 * 60 * 1000;
 const RATE_LIMIT_MAX = 10;
 const rateLimitMap = new Map<string, { count: number; windowStart: number }>();

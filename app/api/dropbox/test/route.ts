@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { getDropbox, getDropboxCredentialsStatus } from "@/lib/dropbox";
 
+export const runtime = "nodejs";
+
 interface LogEntry {
   level: "info" | "success" | "warning" | "error";
   message: string;

@@ -26,8 +26,16 @@ const fieldTransition = { duration: 0.3, ease: "easeOut" as const };
 const ERROR_MESSAGES: Record<string, string> = {
   user_not_found: "Usuário não encontrado.",
   invalid_password: "Senha incorreta.",
+  database_error:
+    "Não foi possível validar suas credenciais agora. Tente novamente em instantes.",
+  verification_error:
+    "Não foi possível validar suas credenciais agora. Tente novamente em instantes.",
   CredentialsSignin: "Credenciais inválidas. Verifique usuário e senha.",
+  CallbackRouteError: "Não foi possível concluir o login. Tente novamente.",
 };
+
+const DEFAULT_ERROR_MESSAGE =
+  "Não foi possível entrar. Confira suas credenciais e tente novamente.";
 
 export default function LoginPage() {
   // Navegação / callback (mesmo backend)
@@ -72,7 +80,7 @@ export default function LoginPage() {
       });
 
       if (!result) {
-        setError("Erro inesperado ao fazer login.");
+        setError(DEFAULT_ERROR_MESSAGE);
         return;
       }
 
@@ -80,7 +88,14 @@ export default function LoginPage() {
         const message =
           (result.code && ERROR_MESSAGES[result.code]) ??
           (result.error && ERROR_MESSAGES[result.error]) ??
-          "Não foi possível entrar. Confira suas credenciais.";
+          (result.status >= 500
+            ? "Erro inesperado no servidor. Tente novamente em instantes."
+            : DEFAULT_ERROR_MESSAGE);
+
+        if (result.code === "invalid_password") {
+          setPassword("");
+        }
+
         setError(message);
         return;
       }
@@ -165,6 +180,8 @@ export default function LoginPage() {
                 animate={fieldMotion.animate}
                 exit={fieldMotion.exit}
                 transition={fieldTransition}
+                role="alert"
+                aria-live="assertive"
                 className="mb-4 flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
               >
                 <AlertCircle className="h-4 w-4" />
@@ -180,6 +197,8 @@ export default function LoginPage() {
                 animate={fieldMotion.animate}
                 exit={fieldMotion.exit}
                 transition={fieldTransition}
+                role="status"
+                aria-live="polite"
                 className="mb-4 flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700"
               >
                 <CheckCircle2 className="h-4 w-4" />

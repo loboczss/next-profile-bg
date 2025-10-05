@@ -37,8 +37,11 @@ export const {
         let user = null;
         try {
           user = await prisma.user.findUnique({ where: { username } });
-        } catch {
-          return null;
+        } catch (dbError) {
+          console.error("Erro ao consultar usuário no banco de dados", dbError);
+          const error = new CredentialsSignin("Não foi possível validar suas credenciais no momento.");
+          error.code = "database_error";
+          throw error;
         }
 
         if (!user) {
@@ -47,7 +50,16 @@ export const {
           throw error;
         }
 
-        const ok = await verifyPassword(password, user.passwordHash);
+        let ok = false;
+        try {
+          ok = await verifyPassword(password, user.passwordHash);
+        } catch (verificationError) {
+          console.error("Erro ao verificar senha do usuário", verificationError);
+          const error = new CredentialsSignin("Não foi possível validar suas credenciais no momento.");
+          error.code = "verification_error";
+          throw error;
+        }
+
         if (!ok) {
           const error = new CredentialsSignin("Senha incorreta");
           error.code = "invalid_password";

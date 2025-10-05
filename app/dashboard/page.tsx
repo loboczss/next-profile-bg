@@ -2,18 +2,12 @@
 import { redirect } from "next/navigation";
 import Image from "next/image";
 import {
-  Plane,
-  Sparkles,
   Image as ImageIcon,
-  ShieldCheck,
   Wand2,
   Link as LinkIcon,
   MapPin,
   Layout,
-  Zap,
   Camera,
-  Settings,
-  ChevronRight,
 } from "lucide-react";
 
 import { ChangeBackground } from "@/components/ChangeBackground";

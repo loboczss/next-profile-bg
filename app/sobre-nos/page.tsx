@@ -29,8 +29,7 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 const FALLBACK_HERO_IMAGES = [
-  "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1920&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?q=80&w=1920&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1759434188589-6aed8f20f187?q=80&w=1920&auto=format&fit=crop"
 ];
 
 // --- Helpers de animação simples ---

@@ -14,12 +14,32 @@ export default async function HomePage() {
 
   // 1) Background "global" (igual, sem mexer no backend)
   let backgroundUrl: string | null = null;
+  let backgroundMode: "ALL" | "GROUP" | "SINGLE" = "ALL";
+  let backgroundGroup: string | null = null;
+  let backgroundImageId: number | null = null;
   try {
     const settings = await prisma.globalSetting.findUnique({
       where: { id: 1 },
-      select: { backgroundUrl: true },
+      select: {
+        backgroundUrl: true,
+        backgroundMode: true,
+        backgroundGroup: true,
+        backgroundImageId: true,
+        backgroundImage: { select: { url: true, isVisible: true } },
+      },
     });
     backgroundUrl = settings?.backgroundUrl ?? null;
+    backgroundMode = settings?.backgroundMode ?? "ALL";
+    backgroundGroup = settings?.backgroundGroup ?? null;
+    backgroundImageId = settings?.backgroundImageId ?? null;
+
+    if (
+      backgroundMode === "SINGLE" &&
+      settings?.backgroundImage &&
+      settings.backgroundImage.isVisible
+    ) {
+      backgroundUrl = settings.backgroundImage.url;
+    }
   } catch {
     backgroundUrl = null;
   }
@@ -38,7 +58,51 @@ export default async function HomePage() {
 
   // 3) Slides do hero (igual, só organizei a leitura)
   const heroImages: string[] = [];
-  if (backgroundUrl) heroImages.push(backgroundUrl);
+
+  try {
+    if (backgroundMode === "SINGLE" && backgroundImageId) {
+      const image = await prisma.backgroundImage.findUnique({
+        where: { id: backgroundImageId },
+        select: { url: true, isVisible: true },
+      });
+
+      if (image?.isVisible && image.url) {
+        heroImages.push(image.url);
+      } else if (backgroundUrl) {
+        heroImages.push(backgroundUrl);
+      }
+    } else if (backgroundMode === "GROUP" && backgroundGroup) {
+      const images = await prisma.backgroundImage.findMany({
+        where: { isVisible: true, groupKey: backgroundGroup },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      });
+
+      if (images.length) {
+        heroImages.push(...images.map((image) => image.url));
+      } else if (backgroundUrl) {
+        heroImages.push(backgroundUrl);
+      }
+    } else {
+      const images = await prisma.backgroundImage.findMany({
+        where: { isVisible: true },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      });
+
+      if (images.length) {
+        heroImages.push(...images.map((image) => image.url));
+      }
+    }
+  } catch {
+    if (backgroundUrl) {
+      heroImages.push(backgroundUrl);
+    }
+  }
+
+  if (!heroImages.length && backgroundUrl) {
+    heroImages.push(backgroundUrl);
+  }
 
   for (const destination of destinations) {
     const rec = destination as Record<string, unknown>;

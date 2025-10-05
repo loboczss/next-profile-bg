@@ -17,9 +17,32 @@ model User {
   destinations Destination[]
 }
 
+enum BackgroundDisplayMode {
+  ALL
+  GROUP
+  SINGLE
+}
+
 model GlobalSetting {
-  id            Int    @id
-  backgroundUrl String?
+  id                Int                     @id
+  backgroundUrl     String?
+  backgroundMode    BackgroundDisplayMode   @default(ALL)
+  backgroundGroup   String?
+  backgroundImageId Int?
+
+  backgroundImage BackgroundImage? @relation(fields: [backgroundImageId], references: [id])
+}
+
+model BackgroundImage {
+  id        Int      @id @default(autoincrement())
+  url       String
+  title     String?
+  groupKey  String?
+  isVisible Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  selectedIn GlobalSetting[]
 }
 
 model Destination {

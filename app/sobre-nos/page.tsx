@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import type { BackgroundApiResponse } from "@/types/background";
 
 const FALLBACK_HERO_IMAGES = [
   "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1920&auto=format&fit=crop",
@@ -105,29 +106,37 @@ export default function AboutPage() {
           return;
         }
 
-        const data = (await response.json()) as { backgroundUrl?: unknown };
+        const data = (await response.json()) as Partial<BackgroundApiResponse>;
         if (!isMounted) {
           return;
         }
 
-        const backgroundUrl =
+        const selectedFromApi = Array.isArray(data.selectedBackgrounds)
+          ? data.selectedBackgrounds
+              .map((item) => (typeof item?.url === "string" ? item.url : null))
+              .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+          : [];
+
+        const fallbackBackground =
           typeof data.backgroundUrl === "string" && data.backgroundUrl.trim().length > 0
             ? data.backgroundUrl
             : null;
 
-        if (!backgroundUrl) {
+        const orderedBackgrounds = selectedFromApi.length
+          ? selectedFromApi
+          : fallbackBackground
+            ? [fallbackBackground]
+            : [];
+
+        if (!orderedBackgrounds.length) {
           return;
         }
 
         setHeroImages((current) => {
-          if (current[0] === backgroundUrl) {
-            return current;
-          }
-
           const dedupedFallback = FALLBACK_HERO_IMAGES.filter(
-            (image) => image !== backgroundUrl,
+            (image) => !orderedBackgrounds.includes(image),
           );
-          const next = [backgroundUrl, ...dedupedFallback];
+          const next = [...orderedBackgrounds, ...dedupedFallback];
 
           if (next.length === current.length && next.every((value, index) => value === current[index])) {
             return current;

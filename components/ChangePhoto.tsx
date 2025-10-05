@@ -213,8 +213,8 @@ export function ChangePhoto() {
   return (
     <div className="space-y-4">
       <form onSubmit={handleSubmit} className="space-y-3 border rounded-lg p-4 bg-white/80 shadow">
-        <div>
-          <label className="block text-sm font-medium mb-1" htmlFor="profile-photo">
+        <div className="space-y-2">
+          <label className="block text-sm font-medium" htmlFor="profile-photo">
             Nova foto de perfil
           </label>
           <input
@@ -223,9 +223,35 @@ export function ChangePhoto() {
             type="file"
             accept="image/jpeg,image/png,image/webp"
             onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-            className="block w-full text-sm"
+            className="peer sr-only"
           />
-          <p className="text-xs text-slate-600 mt-1">JPEG, PNG ou WebP até 10MB.</p>
+          <label
+            htmlFor="profile-photo"
+            className="group relative inline-flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 p-[1px] text-sm font-semibold text-white shadow-lg transition hover:scale-[1.01] hover:shadow-xl active:scale-[0.98] peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-blue-400 peer-focus-visible:ring-offset-2"
+          >
+            <span className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-950/10 px-4 py-2 backdrop-blur transition group-hover:bg-white/20">
+              <svg
+                aria-hidden
+                className="h-4 w-4 text-white/80 transition group-hover:text-white"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                viewBox="0 0 24 24"
+              >
+                <path d="M4 7a2 2 0 0 1 2-2h2l1.2-1.6A1 1 0 0 1 10.95 3h2.1a1 1 0 0 1 .75.36L15 5h3a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" />
+                <circle cx="12" cy="13" r="3" />
+              </svg>
+              Escolher imagem
+            </span>
+          </label>
+          {file && (
+            <p className="text-xs font-medium text-slate-700">
+              Arquivo selecionado: <span className="font-semibold">{file.name}</span>
+            </p>
+          )}
+          <p className="text-xs text-slate-600">JPEG, PNG ou WebP até 10MB.</p>
         </div>
         <button
           type="submit"

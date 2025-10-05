@@ -31,6 +31,7 @@ interface NavbarProps {
 export function Navbar({ user }: NavbarProps) {
   const pathname = usePathname();
   const isAuthenticated = Boolean(user);
+  const isAdmin = user?.role === "admin";
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
@@ -162,21 +163,25 @@ export function Navbar({ user }: NavbarProps) {
             {/* DESKTOP USER ACTIONS - Melhorado */}
             {isAuthenticated ? (
               <div className="flex items-center gap-2">
-                <Link
-                  href={adminLink.href}
-                  className={cn(
-                    "group/admin inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.02] px-4 py-2 text-sm font-medium shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:-translate-y-0.5 hover:border-amber-400/30 hover:bg-amber-500/5",
-                    pathname.startsWith("/dashboard") &&
-                      "border-amber-400/30 bg-amber-500/5 text-primary",
-                  )}
-                >
-                  <AdminIcon className={cn(
-                    "size-4 transition-transform duration-300 group-hover/admin:scale-110",
-                    pathname.startsWith("/dashboard") ? "text-primary" : adminLink.color
-                  )} />
-                  {adminLink.label}
-                  <Crown className="ml-1 size-3 text-amber-400 opacity-60 transition-opacity duration-300 group-hover/admin:opacity-100" />
-                </Link>
+                {isAdmin && (
+                  <Link
+                    href={adminLink.href}
+                    className={cn(
+                      "group/admin inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.02] px-4 py-2 text-sm font-medium shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:-translate-y-0.5 hover:border-amber-400/30 hover:bg-amber-500/5",
+                      pathname.startsWith("/dashboard") &&
+                        "border-amber-400/30 bg-amber-500/5 text-primary",
+                    )}
+                  >
+                    <AdminIcon
+                      className={cn(
+                        "size-4 transition-transform duration-300 group-hover/admin:scale-110",
+                        pathname.startsWith("/dashboard") ? "text-primary" : adminLink.color
+                      )}
+                    />
+                    {adminLink.label}
+                    <Crown className="ml-1 size-3 text-amber-400 opacity-60 transition-opacity duration-300 group-hover/admin:opacity-100" />
+                  </Link>
+                )}
 
                 {/* Dropdown do Usuário */}
                 <div className="relative">
@@ -358,22 +363,26 @@ export function Navbar({ user }: NavbarProps) {
                     </div>
                   </div>
 
-                  <Link
-                    href={adminLink.href}
-                    onClick={closeMobileMenu}
-                    className={cn(
-                      "group/admin flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-base font-medium shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:border-primary/30 hover:bg-primary/5",
-                      pathname.startsWith("/dashboard") &&
-                        "border-primary/30 bg-primary/5 text-primary",
-                    )}
-                  >
-                    <AdminIcon className={cn(
-                      "size-5",
-                      pathname.startsWith("/dashboard") ? "text-primary" : adminLink.color
-                    )} />
-                    <span className="flex-1">{adminLink.label}</span>
-                    <Crown className="size-4 text-amber-400 opacity-60" />
-                  </Link>
+                  {isAdmin && (
+                    <Link
+                      href={adminLink.href}
+                      onClick={closeMobileMenu}
+                      className={cn(
+                        "group/admin flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-base font-medium shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:border-primary/30 hover:bg-primary/5",
+                        pathname.startsWith("/dashboard") &&
+                          "border-primary/30 bg-primary/5 text-primary",
+                      )}
+                    >
+                      <AdminIcon
+                        className={cn(
+                          "size-5",
+                          pathname.startsWith("/dashboard") ? "text-primary" : adminLink.color
+                        )}
+                      />
+                      <span className="flex-1">{adminLink.label}</span>
+                      <Crown className="size-4 text-amber-400 opacity-60" />
+                    </Link>
+                  )}
 
                   <button
                     type="button"

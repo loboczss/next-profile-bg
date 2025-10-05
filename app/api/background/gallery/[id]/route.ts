@@ -1,0 +1,81 @@
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+
+import { prisma } from "@/lib/prisma";
+
+const updateSchema = z.object({
+  url: z
+    .string()
+    .url("Informe uma URL válida")
+    .refine((value) => value.startsWith("https://"), "Use uma URL com HTTPS")
+    .optional(),
+  title: z
+    .string()
+    .trim()
+    .min(1, "Informe um título")
+    .max(120, "O título deve ter até 120 caracteres")
+    .nullable()
+    .optional(),
+  groupKey: z
+    .string()
+    .trim()
+    .min(1, "Informe um grupo")
+    .max(80, "O grupo deve ter até 80 caracteres")
+    .nullable()
+    .optional(),
+  isVisible: z.boolean().optional(),
+});
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } },
+) {
+  const id = Number(params.id);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return NextResponse.json({ error: "Identificador inválido" }, { status: 400 });
+  }
+
+  const body = await request.json().catch(() => null);
+  const parsed = updateSchema.safeParse(body);
+
+  if (!parsed.success) {
+    const message = parsed.error.issues.at(0)?.message ?? "Dados inválidos";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+
+  try {
+    const exists = await prisma.backgroundImage.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!exists) {
+      return NextResponse.json({ error: "Imagem não encontrada" }, { status: 404 });
+    }
+
+    const data = parsed.data;
+
+    const updated = await prisma.backgroundImage.update({
+      where: { id },
+      data: {
+        url: data.url,
+        title: data.title === undefined ? undefined : data.title,
+        groupKey: data.groupKey === undefined ? undefined : data.groupKey,
+        isVisible: data.isVisible,
+      },
+    });
+
+    if (data.isVisible === false) {
+      await prisma.globalSetting.updateMany({
+        where: { backgroundImageId: id },
+        data: { backgroundImageId: null, backgroundMode: "ALL" },
+      });
+    }
+
+    return NextResponse.json({ image: updated });
+  } catch (error) {
+    console.error("Erro ao atualizar imagem de background", error);
+    return NextResponse.json({ error: "Erro ao atualizar imagem" }, { status: 500 });
+  }
+}

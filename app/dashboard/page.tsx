@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { ChangeBackground } from "@/components/ChangeBackground";
+import { BackgroundGalleryManager } from "@/components/BackgroundGalleryManager";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -151,6 +152,22 @@ export default async function DashboardPage() {
             {/* Form reutilizável que permite alterar a imagem de fundo global. */}
             <ChangeBackground isAuthenticated />
           </div>
+        </div>
+
+        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/70 p-6 shadow-2xl backdrop-blur-xl transition-all duration-500 sm:p-8">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="grid h-12 w-12 place-items-center rounded-2xl border border-white/30 bg-gradient-to-br from-blue-50 to-purple-50 shadow">
+              <Wand2 className="h-6 w-6 text-purple-700" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Gerenciar fotos do background</h2>
+              <p className="text-sm text-slate-600">
+                Edite imagens existentes, organize por grupos e escolha quais ficam visíveis no site.
+              </p>
+            </div>
+          </div>
+
+          <BackgroundGalleryManager />
         </div>
       </section>
     </main>

@@ -20,10 +20,59 @@ async function main() {
     select: { id: true, username: true },
   });
 
+  let primaryBackground = await prisma.backgroundImage.findFirst({
+    orderBy: { id: "asc" },
+  });
+
+  if (!primaryBackground) {
+    await prisma.backgroundImage.createMany({
+      data: [
+        {
+          url: avatarUrl,
+          title: "Pôr do sol tropical",
+          groupKey: "principal",
+        },
+        {
+          url: "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?w=1600",
+          title: "Montanhas nevadas",
+          groupKey: "aventura",
+        },
+        {
+          url: "https://images.unsplash.com/photo-1521292270410-a8c07b1ec3ba?w=1600",
+          title: "Cidade iluminada",
+          groupKey: "urbano",
+        },
+      ],
+      skipDuplicates: true,
+    });
+    primaryBackground = await prisma.backgroundImage.findFirst({
+      orderBy: { id: "asc" },
+    });
+  }
+
+  if (!primaryBackground) {
+    primaryBackground = await prisma.backgroundImage.create({
+      data: {
+        url: avatarUrl,
+        title: "Paisagem padrão",
+        groupKey: "principal",
+      },
+    });
+  }
+
   await prisma.globalSetting.upsert({
     where: { id: 1 },
-    update: { backgroundUrl: avatarUrl },
-    create: { id: 1, backgroundUrl: avatarUrl },
+    update: {
+      backgroundUrl: primaryBackground.url,
+      backgroundMode: "SINGLE",
+      backgroundImage: { connect: { id: primaryBackground.id } },
+    },
+    create: {
+      id: 1,
+      backgroundUrl: primaryBackground.url,
+      backgroundMode: "SINGLE",
+      backgroundImage: { connect: { id: primaryBackground.id } },
+    },
   });
 
   const destinationName = "Ilha dos Sonhos";

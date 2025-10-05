@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -30,28 +30,66 @@ export default function Hero({ images, userName }: HeroProps) {
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
   const containerRef = useRef<HTMLElement>(null);
+  const slideCount = slides.length;
+
+  const normalizeIndex = useCallback(
+    (index: number) => {
+      if (!slideCount) return 0;
+      const remainder = index % slideCount;
+      return remainder >= 0 ? remainder : remainder + slideCount;
+    },
+    [slideCount],
+  );
+
+  const goToSlide = useCallback(
+    (next: number | ((prev: number) => number)) => {
+      if (!slideCount) return;
+      setActive((prev) => {
+        const target = typeof next === "function" ? next(prev) : next;
+        const normalized = normalizeIndex(target);
+        return normalized === prev ? prev : normalized;
+      });
+    },
+    [normalizeIndex, slideCount],
+  );
+
+  useEffect(() => {
+    if (!slideCount) {
+      setActive(0);
+      return;
+    }
+    setActive((prev) => {
+      if (!Number.isFinite(prev) || prev < 0 || prev >= slideCount) {
+        return 0;
+      }
+      return prev;
+    });
+  }, [slideCount]);
 
   // Auto-rotate (mantido), com pausa por foco/hover e respeito a prefers-reduced-motion
   useEffect(() => {
-    if (!slides.length) return;
+    if (!slideCount) return;
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (media.matches || paused) return;
 
-    const t = setInterval(() => setActive((p) => (p + 1) % slides.length), 5500);
+    const t = setInterval(() => {
+      setActive((prev) => normalizeIndex(prev + 1));
+    }, 5500);
     return () => clearInterval(t);
-  }, [slides, paused]);
+  }, [slideCount, paused, normalizeIndex]);
 
   // Acessibilidade: setas do teclado (←/→) para navegar
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!containerRef.current) return;
       if (!containerRef.current.contains(document.activeElement)) return;
-      if (e.key === "ArrowRight") setActive((p) => (p + 1) % slides.length);
-      if (e.key === "ArrowLeft") setActive((p) => (p - 1 + slides.length) % slides.length);
+      if (slideCount <= 1) return;
+      if (e.key === "ArrowRight") goToSlide((p) => p + 1);
+      if (e.key === "ArrowLeft") goToSlide((p) => p - 1);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [slides.length]);
+  }, [goToSlide, slideCount]);
 
   return (
     <section
@@ -105,12 +143,12 @@ export default function Hero({ images, userName }: HeroProps) {
       </div>
 
       {/* Controles do carrossel (acessíveis) */}
-      {slides.length > 1 && (
+      {slideCount > 1 && (
         <div className="absolute inset-x-0 bottom-6 z-10 flex items-center justify-center gap-3 md:bottom-8">
           <button
             type="button"
             aria-label="Slide anterior"
-            onClick={() => setActive((p) => (p - 1 + slides.length) % slides.length)}
+            onClick={() => goToSlide((p) => p - 1)}
             className="inline-flex items-center justify-center rounded-full border border-white/30 bg-black/40 p-2 text-white backdrop-blur transition hover:scale-105 hover:border-white/50"
           >
             <ChevronLeft className="size-5" />
@@ -126,7 +164,7 @@ export default function Hero({ images, userName }: HeroProps) {
           <button
             type="button"
             aria-label="Próximo slide"
-            onClick={() => setActive((p) => (p + 1) % slides.length)}
+            onClick={() => goToSlide((p) => p + 1)}
             className="inline-flex items-center justify-center rounded-full border border-white/30 bg-black/40 p-2 text-white backdrop-blur transition hover:scale-105 hover:border-white/50"
           >
             <ChevronRight className="size-5" />
@@ -224,7 +262,7 @@ export default function Hero({ images, userName }: HeroProps) {
         </ul>
 
         {/* Indicadores do carrossel */}
-        {slides.length > 1 && (
+        {slideCount > 1 && (
           <div className="mt-2 flex animate-[fadeIn_1.8s_ease-out] items-center gap-2.5 sm:mt-4" role="tablist" aria-label="Seleção de slides">
             {slides.map((_, i) => (
               <button
@@ -233,7 +271,7 @@ export default function Hero({ images, userName }: HeroProps) {
                 aria-selected={active === i}
                 aria-controls={`hero-slide-${i}`}
                 aria-label={`Ir para o slide ${i + 1}`}
-                onClick={() => setActive(i)}
+                onClick={() => goToSlide(i)}
                 className={cn(
                   "group relative h-1.5 rounded-full transition-all duration-500",
                   active === i

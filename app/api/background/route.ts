@@ -51,6 +51,23 @@ const urlSchema = z.object({
     .refine((value) => value.startsWith("https://"), "Use uma URL com HTTPS"),
 });
 
+export async function GET() {
+  try {
+    const settings = await prisma.globalSetting.findUnique({
+      where: { id: 1 },
+      select: { backgroundUrl: true },
+    });
+
+    return NextResponse.json({ backgroundUrl: settings?.backgroundUrl ?? null });
+  } catch (error) {
+    console.error("Erro ao obter background", error);
+    return NextResponse.json(
+      { error: "Erro ao obter background" },
+      { status: 500 },
+    );
+  }
+}
+
 export async function PUT(request: NextRequest) {
   const ip = getClientIp(request);
   if (!checkRateLimit(ip)) {
@@ -98,6 +115,7 @@ export async function PUT(request: NextRequest) {
     });
 
     revalidatePath("/");
+    revalidatePath("/sobre-nos");
     return NextResponse.json({ backgroundUrl });
   } catch (error) {
     console.error("Erro ao atualizar background", error);

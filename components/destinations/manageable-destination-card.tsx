@@ -28,7 +28,7 @@ export function ManageableDestinationCard({
 
   return (
     <div className="space-y-4">
-      <DestinationCard destination={destination} />
+      <DestinationCard destination={destination} fullHeight={false} />
       <form
         action={formAction}
         className="flex flex-col gap-3 rounded-2xl border border-red-100/60 bg-white/80 p-4 shadow-md transition-colors hover:border-red-200 sm:flex-row sm:items-center sm:justify-between"

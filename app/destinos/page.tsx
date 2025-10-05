@@ -1,14 +1,11 @@
 import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { 
-  Plane, 
-  MapPin, 
-  Calendar, 
-  Users, 
-  Star, 
-  Ship, 
-  Luggage, 
-  Globe, 
+  Plane,
+  MapPin,
+  Ship,
+  Luggage,
+  Globe,
   Sparkles,
   TrendingUp,
   Heart,
@@ -18,7 +15,6 @@ import {
   Mail,
   MessageCircle,
   ChevronRight,
-  Check,
   Compass,
   Waves,
   Mountain,

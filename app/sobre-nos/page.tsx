@@ -12,7 +12,6 @@ import {
   MapPinned,
   Clock8,
   PhoneCall,
-  Mail,
   Stars,
   CheckCircle2,
   Hotel,
@@ -30,16 +29,23 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 // --- Helpers de animação simples ---
-function useInView(ref: React.RefObject<HTMLElement>, margin = "0px 0px -20% 0px") {
+function useInView<T extends HTMLElement>(
+  ref: React.RefObject<T>,
+  margin = "0px 0px -20% 0px"
+) {
   const [inView, setInView] = useState(false);
   useEffect(() => {
     if (!ref.current) return;
+    const element = ref.current;
     const obs = new IntersectionObserver(
       ([entry]) => setInView(entry.isIntersecting),
       { rootMargin: margin }
     );
-    obs.observe(ref.current);
-    return () => obs.disconnect();
+    obs.observe(element);
+    return () => {
+      obs.unobserve(element);
+      obs.disconnect();
+    };
   }, [ref, margin]);
   return inView;
 }
@@ -47,7 +53,7 @@ function useInView(ref: React.RefObject<HTMLElement>, margin = "0px 0px -20% 0px
 function Counter({ from = 0, to, duration = 1800, suffix = "" }: { from?: number; to: number; duration?: number; suffix?: string }) {
   const [val, setVal] = useState(from);
   const ref = useRef<HTMLSpanElement>(null);
-  const visible = useInView(ref as any);
+  const visible = useInView(ref);
 
   useEffect(() => {
     if (!visible) return;

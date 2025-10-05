@@ -2,6 +2,7 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 
 import { ChangePhoto } from "@/components/ChangePhoto";
+import { EditProfileForm } from "@/components/EditProfileForm";
 import { auth } from "@/lib/auth";
 
 // Página de perfil que permite ao usuário visualizar dados básicos e alterar a foto.
@@ -27,8 +28,7 @@ export default async function UsuarioPage() {
       <div className="rounded-lg bg-white/80 p-6 shadow">
         <h1 className="text-2xl font-semibold">Perfil do usuário</h1>
         <p className="mt-2 text-sm text-slate-600">
-          Atualize sua foto de perfil para personalizar sua experiência em toda a
-          plataforma.
+          Revise seus dados pessoais, atualize a foto e mantenha suas informações sempre em dia.
         </p>
         <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
           {user.image ? (
@@ -66,6 +66,14 @@ export default async function UsuarioPage() {
 
       {/* Formulário que permite atualizar a foto de perfil salva no banco. */}
       <ChangePhoto />
+
+      <EditProfileForm
+        initialData={{
+          fullName: user.fullName ?? displayName,
+          username: user.username,
+          email: user.email ?? "",
+        }}
+      />
     </div>
   );
 }

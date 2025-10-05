@@ -6,7 +6,8 @@ const protectedMatchers = ["/dashboard", "/api/profile", "/usuario"];
 
 async function isAuthenticated(request: NextRequest) {
   try {
-    const token = await getToken({ req: request, secret: process.env.AUTH_SECRET });
+    const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+    const token = await getToken({ req: request, secret });
     return Boolean(token?.userId ?? token?.sub);
   } catch (error) {
     console.error("Erro ao validar token na middleware", error);

@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import { CredentialsSignin } from "next-auth";
 // import Google from "next-auth/providers/google";
 import { z } from "zod";
 
@@ -41,18 +42,26 @@ export const {
         }
 
         if (!user) {
-          return null;
+          const error = new CredentialsSignin("Usuário não encontrado");
+          error.code = "user_not_found";
+          throw error;
         }
 
         const ok = await verifyPassword(password, user.passwordHash);
         if (!ok) {
-          return null;
+          const error = new CredentialsSignin("Senha incorreta");
+          error.code = "invalid_password";
+          throw error;
         }
 
         return {
           id: user.id.toString(),
-          name: user.username,
+          name: user.fullName ?? user.username,
           image: user.imageUrl ?? undefined,
+          email: user.email,
+          role: user.role,
+          username: user.username,
+          fullName: user.fullName,
         };
       },
     }),
@@ -67,18 +76,32 @@ export const {
         token.userId = user.id;
         token.name = user.name ?? null;
         token.picture = user.image ?? null;
+        token.role = (user as { role?: "user" | "admin" }).role ?? "user";
+        token.username = (user as { username?: string }).username ?? token.username;
+        token.fullName = (user as { fullName?: string | null }).fullName ?? token.fullName ?? null;
+        token.email = (user as { email?: string | null }).email ?? token.email ?? null;
       }
 
       if (token.userId) {
         try {
           const dbUser = await prisma.user.findUnique({
             where: { id: Number(token.userId) },
-            select: { username: true, imageUrl: true },
+            select: {
+              username: true,
+              imageUrl: true,
+              role: true,
+              fullName: true,
+              email: true,
+            },
           });
 
           if (dbUser) {
-            token.name = dbUser.username;
+            token.name = dbUser.fullName ?? dbUser.username;
             token.picture = dbUser.imageUrl ?? null;
+            token.role = (dbUser.role as "user" | "admin") ?? "user";
+            token.username = dbUser.username;
+            token.fullName = dbUser.fullName ?? null;
+            token.email = dbUser.email ?? null;
           }
         } catch {
           // ignore database lookup errors in JWT callback
@@ -90,8 +113,12 @@ export const {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.userId ?? "";
-        session.user.name = token.name ?? session.user.name ?? null;
+        session.user.name = token.fullName ?? token.name ?? session.user.name ?? null;
         session.user.image = token.picture ?? null;
+        session.user.role = (token.role as "user" | "admin") ?? "user";
+        session.user.username = token.username ?? session.user.username ?? "";
+        session.user.fullName = token.fullName ?? session.user.fullName ?? null;
+        session.user.email = token.email ?? session.user.email ?? null;
       }
 
       return session;

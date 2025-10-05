@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const { username, password, imageUrl } = await request.json();
+  const { username, password, imageUrl, fullName, email, role } = await request.json();
 
   if (!username || !password) {
     return NextResponse.json(
@@ -24,17 +24,32 @@ export async function POST(request: Request) {
   }
 
   const hash = await bcrypt.hash(password, 10);
+  const normalizedFullName =
+    typeof fullName === "string" && fullName.trim().length > 0
+      ? fullName.trim()
+      : normalizedUsername;
+  const normalizedEmail =
+    typeof email === "string" && email.trim().length > 0
+      ? String(email).trim().toLowerCase()
+      : `${normalizedUsername}@example.com`;
+  const normalizedRole = role === "admin" ? "admin" : "user";
 
   const user = await prisma.user.upsert({
     where: { username: normalizedUsername },
     update: {
       passwordHash: hash,
       imageUrl: imageUrl ? String(imageUrl) : undefined,
+      fullName: normalizedFullName,
+      email: normalizedEmail,
+      role: normalizedRole,
     },
     create: {
       username: normalizedUsername,
       passwordHash: hash,
       imageUrl: imageUrl ? String(imageUrl) : null,
+      fullName: normalizedFullName,
+      email: normalizedEmail,
+      role: normalizedRole,
     },
   });
 

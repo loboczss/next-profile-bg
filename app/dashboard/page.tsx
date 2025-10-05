@@ -27,6 +27,10 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
+  if (session.user.role !== "admin") {
+    redirect("/usuario");
+  }
+
   let backgroundUrl: string | null = null;
 
   try {

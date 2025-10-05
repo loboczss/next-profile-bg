@@ -230,14 +230,6 @@ export function Navbar({ user }: NavbarProps) {
                             <User className="size-4 text-cyan-400" />
                             Meu Perfil
                           </Link>
-                          <Link
-                            href="/usuario/favoritos"
-                            onClick={closeUserMenu}
-                            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors hover:bg-white/5"
-                          >
-                            <BookmarkIcon className="size-4 text-pink-400" />
-                            Favoritos
-                          </Link>
                         </div>
                       </div>
                     </>

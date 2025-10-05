@@ -13,10 +13,6 @@ import {
   ArrowRight,
   Zap,
   Shield,
-  ChevronLeft,
-  ChevronRight,
-  PauseCircle,
-  PlayCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -142,35 +138,7 @@ export default function Hero({ images, userName }: HeroProps) {
         />
       </div>
 
-      {/* Controles do carrossel (acessíveis) */}
-      {slideCount > 1 && (
-        <div className="absolute inset-x-0 bottom-6 z-10 flex items-center justify-center gap-3 md:bottom-8">
-          <button
-            type="button"
-            aria-label="Slide anterior"
-            onClick={() => goToSlide((p) => p - 1)}
-            className="inline-flex items-center justify-center rounded-full border border-white/30 bg-black/40 p-2 text-white backdrop-blur transition hover:scale-105 hover:border-white/50"
-          >
-            <ChevronLeft className="size-5" />
-          </button>
-          <button
-            type="button"
-            aria-label={paused ? "Retomar rotação automática" : "Pausar rotação automática"}
-            onClick={() => setPaused((v) => !v)}
-            className="inline-flex items-center justify-center rounded-full border border-white/30 bg-black/40 p-2 text-white backdrop-blur transition hover:scale-105 hover:border-white/50"
-          >
-            {paused ? <PlayCircle className="size-5" /> : <PauseCircle className="size-5" />}
-          </button>
-          <button
-            type="button"
-            aria-label="Próximo slide"
-            onClick={() => goToSlide((p) => p + 1)}
-            className="inline-flex items-center justify-center rounded-full border border-white/30 bg-black/40 p-2 text-white backdrop-blur transition hover:scale-105 hover:border-white/50"
-          >
-            <ChevronRight className="size-5" />
-          </button>
-        </div>
-      )}
+    
 
       {/* Conteúdo principal */}
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-16 sm:gap-8 sm:px-6 sm:py-20 md:py-24 lg:gap-10 lg:px-8">

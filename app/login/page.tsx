@@ -84,7 +84,7 @@ export default function LoginPage() {
         return;
       }
 
-      if (!result.ok) {
+      if (!result.ok || result.error) {
         const message =
           (result.code && ERROR_MESSAGES[result.code]) ??
           (result.error && ERROR_MESSAGES[result.error]) ??

@@ -13,13 +13,25 @@ import {
   ArrowRight,
   Zap,
   Shield,
+  Hotel,
+  Headphones,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { QuoteForm } from "./home/quote-form";
 
 type HeroProps = {
   images: string[];
   userName?: string | null;
 };
+
+const featureHighlights = [
+  { icon: Ticket, label: "Tarifas negociadas" },
+  { icon: Hotel, label: "Hotéis selecionados" },
+  { icon: MapPin, label: "Curadoria local autêntica" },
+  { icon: Headphones, label: "Suporte dedicado 24/7" },
+  { icon: Zap, label: "Experiências imersivas" },
+  { icon: Shield, label: "Atendimento seguro" },
+];
 
 export default function Hero({ images, userName }: HeroProps) {
   const slides = useMemo(() => (images?.length ? images.slice(0, 6) : []), [images]);
@@ -141,93 +153,97 @@ export default function Hero({ images, userName }: HeroProps) {
     
 
       {/* Conteúdo principal */}
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-16 sm:gap-8 sm:px-6 sm:py-20 md:py-24 lg:gap-10 lg:px-8">
-        {/* Badge */}
-        <div className="group inline-flex w-fit animate-[fadeIn_1s_ease-out] items-center gap-2.5 rounded-full border border-white/25 bg-white/15 px-4 py-2 text-xs font-medium text-white shadow-lg backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-white/40 hover:bg-white/20 sm:text-sm">
-          <Sparkles className="size-3.5 animate-pulse text-yellow-300 sm:size-4" />
-          <span>Agência boutique • experiências sob medida</span>
-          <span className="size-1.5 animate-pulse rounded-full bg-green-400 shadow-[0_0_8px_theme(colors.green.400)]" />
+      <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 sm:py-20 md:py-24 lg:px-8">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start xl:grid-cols-[minmax(0,1fr)_460px]">
+          <div className="flex flex-col gap-6 sm:gap-8 lg:pr-8 xl:pr-12">
+            {/* Badge */}
+            <div className="group inline-flex w-fit animate-[fadeIn_1s_ease-out] items-center gap-2.5 rounded-full border border-white/25 bg-white/15 px-4 py-2 text-xs font-medium text-white shadow-lg backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-white/40 hover:bg-white/20 sm:text-sm">
+              <Sparkles className="size-3.5 animate-pulse text-yellow-300 sm:size-4" />
+              <span>Agência boutique • experiências sob medida</span>
+              <span className="size-1.5 animate-pulse rounded-full bg-green-400 shadow-[0_0_8px_theme(colors.green.400)]" />
+            </div>
+
+            {/* Headline */}
+            <div className="max-w-3xl animate-[fadeIn_1.2s_ease-out] space-y-5">
+              <h1 className="text-balance text-3xl font-bold leading-tight tracking-tight text-white drop-shadow-2xl sm:text-4xl md:text-5xl lg:text-6xl">
+                Descubra o mundo com a{" "}
+                <span className="relative inline-block">
+                  <span className="relative z-10 bg-gradient-to-r from-blue-400 via-blue-300 to-purple-400 bg-clip-text text-transparent">
+                    Evastur
+                  </span>
+                  <span
+                    aria-hidden
+                    className="absolute inset-0 bg-gradient-to-r from-blue-400 via-blue-300 to-purple-400 opacity-50 blur-xl"
+                  />
+                </span>
+                : viagens premium, memórias eternas.
+              </h1>
+
+              <p className="max-w-xl text-pretty text-sm leading-relaxed text-white/90 drop-shadow-lg sm:text-base md:text-lg md:leading-relaxed">
+                {userName ? (
+                  <>
+                    <span className="font-semibold text-white">{userName.split(" ")[0]}</span>, planejamos sua próxima jornada com
+                    curadoria, conforto e autenticidade — do primeiro clique ao último pôr do sol.
+                  </>
+                ) : (
+                  <>Do primeiro clique ao último pôr do sol: roteiros exclusivos, hotéis selecionados a dedo e suporte 24/7.</>
+                )}
+              </p>
+            </div>
+
+            {/* CTAs */}
+            <div className="flex animate-[fadeIn_1.4s_ease-out] flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              <Link
+                href="/destinos"
+                className={cn(
+                  "group relative inline-flex items-center justify-center gap-2.5 overflow-hidden rounded-full border border-white/30 bg-gradient-to-r from-blue-500/90 to-purple-500/90 px-6 py-3.5 text-sm font-semibold text-white shadow-xl backdrop-blur transition-all duration-300",
+                  "hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-500/50 sm:px-7 sm:py-3.5 sm:text-base",
+                )}
+              >
+                <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <Plane className="relative z-10 size-4 transition-transform duration-300 group-hover:translate-x-0.5 sm:size-5" />
+                <span className="relative z-10">Explorar destinos</span>
+                <ArrowRight className="relative z-10 size-4 transition-transform duration-300 group-hover:translate-x-1 sm:size-5" />
+              </Link>
+
+              <Link
+                href="/sobre-nos"
+                className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-3 text-sm font-medium text-white/95 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-white/40 hover:bg-white/20 hover:shadow-lg sm:px-6 sm:text-base"
+              >
+                <Compass className="size-4 transition-transform duration-300 group-hover:rotate-12 sm:size-5" />
+                <span>Conheça a Evastur</span>
+              </Link>
+
+              <Link
+                href="/contato"
+                className="group inline-flex items-center justify-center gap-2 rounded-full border border-emerald-400/40 bg-gradient-to-r from-emerald-500/20 to-emerald-400/20 px-5 py-3 text-sm font-medium text-emerald-50 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-emerald-400/60 hover:from-emerald-500/30 hover:to-emerald-400/30 hover:shadow-lg hover:shadow-emerald-500/30 sm:px-6 sm:text-base"
+              >
+                <CalendarCheck2 className="size-4 transition-transform duration-300 group-hover:scale-110 sm:size-5" />
+                <span>Montar roteiro</span>
+              </Link>
+            </div>
+
+            {/* Benefícios */}
+            <div className="mt-6 grid animate-[fadeIn_1.6s_ease-out] gap-3 text-white/85 sm:grid-cols-2 lg:grid-cols-3">
+              {featureHighlights.map(({ icon: Icon, label }) => (
+                <div
+                  key={label}
+                  className="group flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:border-white/30 hover:bg-white/15"
+                >
+                  <span className="flex size-9 items-center justify-center rounded-2xl bg-white/15 shadow-lg shadow-black/10 backdrop-blur">
+                    <Icon className="size-4 text-sky-200" />
+                  </span>
+                  <span className="text-sm font-medium text-white/90">{label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-stretch lg:pl-4 xl:pl-8">
+            <QuoteForm />
+          </div>
         </div>
-
-        {/* Headline */}
-        <div className="max-w-3xl animate-[fadeIn_1.2s_ease-out]">
-          <h1 className="text-balance text-3xl font-bold leading-tight tracking-tight text-white drop-shadow-2xl sm:text-4xl md:text-5xl lg:text-6xl">
-            Descubra o mundo com a{" "}
-            <span className="relative inline-block">
-              <span className="relative z-10 bg-gradient-to-r from-blue-400 via-blue-300 to-purple-400 bg-clip-text text-transparent">
-                Evastur
-              </span>
-              <span
-                aria-hidden
-                className="absolute inset-0 bg-gradient-to-r from-blue-400 via-blue-300 to-purple-400 opacity-50 blur-xl"
-              />
-            </span>
-            : viagens premium, memórias eternas.
-          </h1>
-
-          <p className="mt-4 max-w-xl text-pretty text-sm leading-relaxed text-white/90 drop-shadow-lg sm:mt-5 sm:text-base md:text-lg md:leading-relaxed">
-            {userName ? (
-              <>
-                <span className="font-semibold text-white">{userName.split(" ")[0]}</span>, planejamos sua próxima jornada com
-                curadoria, conforto e autenticidade — do primeiro clique ao último pôr do sol.
-              </>
-            ) : (
-              <>Do primeiro clique ao último pôr do sol: roteiros exclusivos, hotéis selecionados a dedo e suporte 24/7.</>
-            )}
-          </p>
-        </div>
-
-        {/* CTAs */}
-        <div className="flex animate-[fadeIn_1.4s_ease-out] flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-          <Link
-            href="/destinos"
-            className={cn(
-              "group relative inline-flex items-center justify-center gap-2.5 overflow-hidden rounded-full border border-white/30 bg-gradient-to-r from-blue-500/90 to-purple-500/90 px-6 py-3.5 text-sm font-semibold text-white shadow-xl backdrop-blur transition-all duration-300",
-              "hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-500/50 sm:px-7 sm:py-3.5 sm:text-base",
-            )}
-          >
-            <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-            <Plane className="relative z-10 size-4 transition-transform duration-300 group-hover:translate-x-0.5 sm:size-5" />
-            <span className="relative z-10">Explorar destinos</span>
-            <ArrowRight className="relative z-10 size-4 transition-transform duration-300 group-hover:translate-x-1 sm:size-5" />
-          </Link>
-
-          <Link
-            href="/sobre-nos"
-            className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-3 text-sm font-medium text-white/95 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-white/40 hover:bg-white/20 hover:shadow-lg sm:px-6 sm:text-base"
-          >
-            <Compass className="size-4 transition-transform duration-300 group-hover:rotate-12 sm:size-5" />
-            <span>Conheça a Evastur</span>
-          </Link>
-
-          <Link
-            href="/contato"
-            className="group inline-flex items-center justify-center gap-2 rounded-full border border-emerald-400/40 bg-gradient-to-r from-emerald-500/20 to-emerald-400/20 px-5 py-3 text-sm font-medium text-emerald-50 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-emerald-400/60 hover:from-emerald-500/30 hover:to-emerald-400/30 hover:shadow-lg hover:shadow-emerald-500/30 sm:px-6 sm:text-base"
-          >
-            <CalendarCheck2 className="size-4 transition-transform duration-300 group-hover:scale-110 sm:size-5" />
-            <span>Montar roteiro</span>
-          </Link>
-        </div>
-
-        {/* Chips/benefícios */}
-        <ul className="mt-2 flex animate-[fadeIn_1.6s_ease-out] flex-wrap items-center gap-2 text-xs font-medium text-white/90 sm:mt-4 sm:gap-3 sm:text-sm">
-          <li className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/15 px-3.5 py-1.5 backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-white/30 hover:bg-white/20">
-            <Ticket className="size-3.5 text-yellow-300 sm:size-4" />
-            <span>Tarifas negociadas</span>
-          </li>
-          <li className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/15 px-3.5 py-1.5 backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-white/30 hover:bg-white/20">
-            <MapPin className="size-3.5 text-red-400 sm:size-4" />
-            <span>Curadoria local autêntica</span>
-          </li>
-          <li className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/15 px-3.5 py-1.5 backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-white/30 hover:bg-white/20">
-            <Zap className="size-3.5 text-blue-400 sm:size-4" />
-            <span>Suporte ponta a ponta</span>
-          </li>
-          <li className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/15 px-3.5 py-1.5 backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-white/30 hover:bg-white/20">
-            <Shield className="size-3.5 text-green-400 sm:size-4" />
-            <span>100% seguro</span>
-          </li>
-        </ul>
+      </div>
 
         {/* Indicadores do carrossel */}
         {slideCount > 1 && (
@@ -252,7 +268,6 @@ export default function Hero({ images, userName }: HeroProps) {
             ))}
           </div>
         )}
-      </div>
 
       {/* Indicador de scroll */}
       <div className="absolute bottom-8 left-1/2 hidden -translate-x-1/2 animate-bounce md:block">

@@ -7,10 +7,13 @@ import {
   ShieldCheck,
   Wand2,
   Link as LinkIcon,
+  MapPin,
 } from "lucide-react";
 
 import { ChangeBackground } from "@/components/ChangeBackground";
 import { BackgroundGalleryManager } from "@/components/BackgroundGalleryManager";
+import { CreateDestinationForm } from "@/components/destinations/create-destination-form";
+import { createDestination } from "./actions";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -152,6 +155,26 @@ export default async function DashboardPage() {
             {/* Form reutilizável que permite alterar a imagem de fundo global. */}
             <ChangeBackground isAuthenticated />
           </div>
+        </div>
+
+        <div className="group relative mt-6 overflow-hidden rounded-3xl border border-white/10 bg-white/70 p-6 shadow-2xl backdrop-blur-xl transition-all duration-500 sm:p-8">
+          <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-cyan-500/10" />
+          </div>
+
+          <div className="mb-6 flex items-center gap-3">
+            <div className="grid h-12 w-12 place-items-center rounded-2xl border border-white/30 bg-gradient-to-br from-blue-50 to-purple-50 shadow">
+              <MapPin className="h-6 w-6 text-blue-700" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Cadastrar novo destino</h2>
+              <p className="text-sm text-slate-600">
+                Adicione rapidamente experiências à página de destinos sem sair do painel administrativo.
+              </p>
+            </div>
+          </div>
+
+          <CreateDestinationForm action={createDestination} />
         </div>
 
         <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/70 p-6 shadow-2xl backdrop-blur-xl transition-all duration-500 sm:p-8">

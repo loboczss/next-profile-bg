@@ -27,11 +27,11 @@ export function ManageableDestinationCard({
   );
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <DestinationCard destination={destination} />
       <form
         action={formAction}
-        className="flex flex-col gap-2 rounded-lg border border-dashed border-slate-200 bg-white/70 p-3 sm:flex-row sm:items-center sm:justify-between"
+        className="flex flex-col gap-3 rounded-2xl border border-red-100/60 bg-white/80 p-4 shadow-md transition-colors hover:border-red-200 sm:flex-row sm:items-center sm:justify-between"
       >
         <input type="hidden" name="destinationId" value={destination.id} />
         <Button
@@ -39,14 +39,14 @@ export function ManageableDestinationCard({
           variant="destructive"
           size="sm"
           disabled={isPending}
-          className="min-w-[140px]"
+          className="min-w-[160px] rounded-full"
         >
           {isPending ? "Excluindo..." : "Excluir destino"}
         </Button>
         {state.status !== "idle" && state.message ? (
           <p
             className={cn(
-              "text-sm",
+              "text-sm font-medium",
               state.status === "error" ? "text-red-600" : "text-emerald-600"
             )}
             role="status"

@@ -1,3 +1,5 @@
+import { Compass } from "lucide-react";
+
 import type {
   DestinationDeleteAction,
   SerializedDestination,
@@ -14,14 +16,24 @@ interface DestinationGridProps {
 export function DestinationGrid({ destinations, onDelete }: DestinationGridProps) {
   if (destinations.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-600">
-        Ainda não há destinos cadastrados. Assim que você adicionar um destino, ele aparecerá aqui.
-      </p>
+      <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-slate-200 bg-white/80 p-12 text-center shadow-lg">
+        <div className="grid h-16 w-16 place-items-center rounded-full bg-blue-50 text-blue-600 shadow-inner">
+          <Compass className="h-8 w-8" />
+        </div>
+        <div className="space-y-2">
+          <p className="text-lg font-semibold text-slate-900">
+            Nenhum destino cadastrado ainda
+          </p>
+          <p className="text-sm text-slate-600">
+            Cadastre novas experiências pelo dashboard para montar uma vitrine encantadora por aqui.
+          </p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="grid gap-8 sm:grid-cols-2 xl:grid-cols-3">
       {destinations.map((destination) =>
         onDelete ? (
           <ManageableDestinationCard

@@ -78,9 +78,13 @@ export function DestinationCard({ destination }: DestinationCardProps) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Card className="h-full cursor-pointer transition-transform duration-200 hover:-translate-y-1 hover:shadow-md">
+        <Card className="group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-3xl border border-white/30 bg-white/80 shadow-[0_25px_50px_-25px_rgba(14,116,144,0.35)] transition-all duration-500 hover:-translate-y-3 hover:shadow-[0_40px_80px_-30px_rgba(2,132,199,0.45)]">
+          <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-cyan-500/20" />
+          </div>
+
           <CardHeader className="gap-4">
-            <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted">
+            <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-white/60 bg-slate-100 shadow-inner">
               <Image
                 src={photos[activeIndex]}
                 alt={destination.name}
@@ -118,12 +122,12 @@ export function DestinationCard({ destination }: DestinationCardProps) {
                 </>
               )}
               {photos.length > 1 && (
-                <div className="absolute inset-x-0 bottom-2 flex justify-center gap-1">
+                <div className="absolute inset-x-0 bottom-3 flex justify-center gap-1">
                   {photos.map((photo, index) => (
                     <span
                       key={photo + index}
                       className={cn(
-                        "h-2 w-2 rounded-full bg-white/50",
+                        "h-2 w-2 rounded-full bg-white/40 backdrop-blur",
                         index === activeIndex && "bg-white"
                       )}
                     />
@@ -132,52 +136,51 @@ export function DestinationCard({ destination }: DestinationCardProps) {
               )}
             </div>
             <div className="space-y-1">
-              <CardTitle className="text-lg font-semibold text-slate-900">
+              <CardTitle className="text-lg font-bold text-slate-900">
                 {destination.name}
               </CardTitle>
-              <CardDescription className="flex items-center gap-2 text-sm text-slate-600">
+              <CardDescription className="flex items-center gap-2 text-sm font-medium text-slate-600">
                 <MapPin className="size-4 text-primary" />
-                {destination.city}
+                <span>{destination.city}</span>
               </CardDescription>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="mt-auto space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-base font-semibold text-slate-900">
-                {formattedPrice}
-              </span>
-              <div className="flex items-center gap-1 text-sm text-amber-500">
+              <span className="text-lg font-bold text-slate-900">{formattedPrice}</span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100/80 px-3 py-1 text-sm font-semibold text-amber-600 shadow-sm">
                 <Star className="size-4" />
-                <span>{destination.rating.toFixed(1)}</span>
-              </div>
+                {destination.rating.toFixed(1)}
+              </span>
             </div>
-            <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
-              <span className="inline-flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-3 text-sm font-medium text-slate-600">
+              <span className="inline-flex items-center gap-2 rounded-full bg-slate-100/80 px-3 py-1">
                 <CalendarRange className="size-4 text-primary" />
                 {stayLabel}
               </span>
-              <span className="inline-flex items-center gap-2">
+              <span className="inline-flex items-center gap-2 rounded-full bg-slate-100/80 px-3 py-1">
                 <Users className="size-4 text-primary" />
                 {destination.peopleCount} pessoas
               </span>
             </div>
+            <div className="h-px w-full bg-gradient-to-r from-transparent via-blue-200/80 to-transparent" />
           </CardContent>
         </Card>
       </DialogTrigger>
-      <DialogContent className="max-w-3xl space-y-6">
+      <DialogContent className="max-w-3xl space-y-6 rounded-3xl border border-white/40 bg-white/95 p-8 shadow-[0_40px_80px_-35px_rgba(15,118,190,0.45)]">
         <DialogHeader className="space-y-2">
-          <DialogTitle className="text-2xl font-semibold text-slate-900">
+          <DialogTitle className="text-3xl font-bold text-slate-900">
             {destination.name}
           </DialogTitle>
-          <DialogDescription className="flex items-center gap-2 text-base text-slate-600">
-            <MapPin className="size-4 text-primary" />
-            {destination.city}
+          <DialogDescription className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700">
+            <MapPin className="size-4" />
+            <span>{destination.city}</span>
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-3 rounded-lg bg-slate-100 p-4 text-sm text-slate-700">
-            <p className="flex items-center gap-2 text-base font-medium text-slate-900">
+          <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-5 text-sm text-slate-700">
+            <p className="flex items-center gap-2 text-base font-semibold text-slate-900">
               <CalendarRange className="size-4 text-primary" />
               {stayLabel}
             </p>
@@ -193,9 +196,9 @@ export function DestinationCard({ destination }: DestinationCardProps) {
               <span className="font-medium text-slate-900">Investimento:</span> {formattedPrice}
             </p>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-3">
             <h4 className="text-base font-semibold text-slate-900">Descrição</h4>
-            <p className="text-sm leading-relaxed text-slate-700">
+            <p className="rounded-2xl border border-slate-200 bg-white/80 p-4 text-sm leading-relaxed text-slate-700">
               {destination.description}
             </p>
           </div>
@@ -207,7 +210,7 @@ export function DestinationCard({ destination }: DestinationCardProps) {
             {photos.map((photo, index) => (
               <div
                 key={`${photo}-${index}`}
-                className="relative aspect-video overflow-hidden rounded-lg border"
+                className="group relative aspect-video overflow-hidden rounded-2xl border border-white/60 bg-slate-100 shadow-inner"
               >
                 <Image
                   src={photo}
@@ -224,7 +227,10 @@ export function DestinationCard({ destination }: DestinationCardProps) {
         <div className="flex justify-end">
           <button
             type="button"
-            className={cn(buttonVariants({ variant: "outline" }), "min-w-[140px]")}
+            className={cn(
+              buttonVariants({ variant: "outline" }),
+              "min-w-[160px] rounded-full border-primary/40 bg-primary/5 text-primary hover:bg-primary/10"
+            )}
             onClick={() => {
               const url = `https://www.google.com/maps/search/${encodeURIComponent(
                 destination.city

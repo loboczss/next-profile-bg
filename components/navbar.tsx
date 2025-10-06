@@ -12,7 +12,6 @@ import {
   LogOut,
   MapPin,
   User,
-  Sparkles,
   Crown,
   Menu,
   X,

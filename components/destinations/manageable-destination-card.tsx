@@ -15,11 +15,13 @@ import { DestinationCard } from "./destination-card";
 interface ManageableDestinationCardProps {
   destination: SerializedDestination;
   action: DestinationDeleteAction;
+  canFavorite?: boolean;
 }
 
 export function ManageableDestinationCard({
   destination,
   action,
+  canFavorite = true,
 }: ManageableDestinationCardProps) {
   const [state, formAction, isPending] = useActionState(
     action,
@@ -28,7 +30,11 @@ export function ManageableDestinationCard({
 
   return (
     <div className="space-y-4">
-      <DestinationCard destination={destination} fullHeight={false} />
+      <DestinationCard
+        destination={destination}
+        fullHeight={false}
+        canFavorite={canFavorite}
+      />
       <form
         action={formAction}
         className="flex flex-col gap-3 rounded-2xl border border-red-100/60 bg-white/80 p-4 shadow-md transition-colors hover:border-red-200 sm:flex-row sm:items-center sm:justify-between"

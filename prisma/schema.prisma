@@ -18,6 +18,7 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   destinations Destination[]
+  favorites    Favorite[]
 }
 
 enum BackgroundDisplayMode {
@@ -64,4 +65,18 @@ model Destination {
 
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId Int
+
+  favorites Favorite[]
+}
+
+model Favorite {
+  id            Int          @id @default(autoincrement())
+  userId        Int
+  destinationId Int
+  createdAt     DateTime     @default(now())
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  destination Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, destinationId])
 }

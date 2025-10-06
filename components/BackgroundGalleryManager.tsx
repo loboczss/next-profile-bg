@@ -381,11 +381,13 @@ export function BackgroundGalleryManager() {
         error?: string;
       };
 
-      if (!response.ok || !data.image) {
+      const newImage = data.image;
+
+      if (!response.ok || !newImage) {
         throw new Error(data.error ?? "Não foi possível adicionar a imagem");
       }
 
-      setBackgrounds((current) => [toBackgroundWithDraft(data.image), ...current]);
+      setBackgrounds((current) => [toBackgroundWithDraft(newImage), ...current]);
       setNewBackgroundUrl("");
       setNewBackgroundTitle("");
       setNewBackgroundGroup("");

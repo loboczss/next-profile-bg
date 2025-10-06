@@ -1,9 +1,9 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Plane,
@@ -48,6 +48,7 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/";
+  const { data: session, status } = useSession();
 
   // Estado do form (inalterado)
   const [username, setUsername] = useState("");
@@ -107,29 +108,6 @@ export default function LoginPage() {
       }
 
       setSuccess("Login realizado com sucesso! Redirecionando...");
-
-      try {
-        const response = await fetch("/api/auth/session");
-        if (response.ok) {
-          const session = await response.json();
-          const role = session?.user?.role === "admin" ? "admin" : "user";
-          const destination =
-            callbackUrl && callbackUrl !== "/"
-              ? callbackUrl
-              : role === "admin"
-                ? "/dashboard"
-                : "/usuario";
-
-          router.push(destination);
-          router.refresh();
-          return;
-        }
-      } catch (sessionError) {
-        console.error("Falha ao recuperar sessão após login", sessionError);
-      }
-
-      router.push(callbackUrl);
-      router.refresh();
     } catch (authError) {
       console.error("Falha ao fazer login", authError);
       setError("Erro inesperado ao fazer login.");
@@ -137,6 +115,38 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (status !== "authenticated") {
+      return;
+    }
+
+    const role = session?.user?.role === "admin" ? "admin" : "user";
+
+    const resolveDestination = () => {
+      if (callbackUrl && callbackUrl !== "/") {
+        if (callbackUrl.startsWith("/")) {
+          return callbackUrl;
+        }
+
+        try {
+          const parsed = new URL(callbackUrl, window.location.origin);
+          if (parsed.origin === window.location.origin) {
+            return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+          }
+        } catch (parseError) {
+          console.error("Falha ao processar callbackUrl", parseError);
+        }
+      }
+
+      return role === "admin" ? "/dashboard" : "/usuario";
+    };
+
+    const destination = resolveDestination();
+
+    router.replace(destination);
+    router.refresh();
+  }, [status, session, callbackUrl, router]);
 
   return (
     <main className="relative min-h-dvh overflow-hidden bg-gradient-to-br from-blue-50 via-white to-cyan-50">

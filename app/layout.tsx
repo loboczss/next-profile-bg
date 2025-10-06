@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { AuthProvider } from "@/components/auth-provider";
 import { Navbar } from "@/components/navbar";
 import { Toaster } from "@/components/ui/sonner";
 import { auth } from "@/lib/auth";
@@ -36,9 +37,11 @@ export default async function RootLayout({
   return (
     <html lang="pt-BR">
       <body className="font-sans antialiased">
-        <Navbar user={session?.user ?? null} favoriteCount={favoriteCount} />
-        <div className="pt-20 lg:pt-24">{children}</div>
-        <Toaster richColors closeButton position="top-right" />
+        <AuthProvider session={session}>
+          <Navbar user={session?.user ?? null} favoriteCount={favoriteCount} />
+          <div className="pt-20 lg:pt-24">{children}</div>
+          <Toaster richColors closeButton position="top-right" />
+        </AuthProvider>
       </body>
     </html>
   );

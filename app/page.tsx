@@ -155,67 +155,68 @@ export default async function HomePage() {
       {/* Seção de destinos com estética alinhada à página /destinos */}
       <section
         id="destinos"
-        className="relative mx-auto -mt-12 w-full max-w-7xl px-4 pb-16 pt-5 sm:px-6 sm:pt-9 md:-mt-14 lg:px-8"
+        className="relative mx-auto -mt-10 w-full max-w-6xl px-4 pb-16 pt-6 sm:px-6 md:-mt-12 md:pt-10 lg:max-w-7xl lg:px-8"
       >
-        <div className="group relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/70 to-white/50 p-5 shadow-2xl shadow-black/5 backdrop-blur-xl transition-all duration-500 hover:shadow-3xl dark:from-white/[0.06] dark:to-white/[0.03] sm:p-6 md:p-8 lg:p-10">
-          {/* Glow suave no hover */}
+        <div className="pointer-events-none absolute inset-x-6 -top-10 -z-10 hidden h-[420px] rounded-[2.5rem] bg-gradient-to-br from-blue-400/15 via-transparent to-purple-400/15 blur-3xl sm:block" />
+
+        <div className="group relative overflow-hidden rounded-[2.25rem] border border-white/15 bg-gradient-to-br from-white/80 via-white/65 to-white/55 p-5 shadow-2xl shadow-black/5 backdrop-blur-xl transition-all duration-500 hover:shadow-3xl dark:from-white/[0.07] dark:via-white/[0.05] dark:to-white/[0.03] sm:p-6 md:p-8 lg:p-10">
           <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5" />
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-purple-500/10" />
           </div>
 
+          <div className="pointer-events-none absolute -left-20 top-12 size-44 rounded-full bg-blue-500/10 blur-3xl sm:-left-12 sm:top-10 sm:size-60" />
+          <div className="pointer-events-none absolute -right-16 bottom-12 size-48 rounded-full bg-purple-500/15 blur-3xl sm:-right-12 sm:bottom-16 sm:size-60" />
+
           <div className="relative">
-            {/* Header da seção */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between md:gap-6">
-              <div className="flex-1">
-                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-gradient-to-r from-primary/15 to-primary/10 px-3.5 py-1.5 text-xs font-semibold text-primary shadow-sm backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-md sm:text-sm">
-                  <Sparkles className="size-3.5 animate-pulse sm:size-4" />
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between md:gap-6">
+              <div className="flex-1 space-y-3">
+                <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-gradient-to-r from-primary/15 via-primary/10 to-primary/5 px-3 py-1 text-[0.7rem] font-semibold text-primary shadow-sm shadow-primary/10 backdrop-blur-sm transition-all duration-300 hover:scale-[1.03] hover:shadow-md sm:px-3.5 sm:py-1.5 sm:text-xs">
+                  <Sparkles className="size-3 animate-pulse sm:size-3.5" />
                   <span>Seleção Evastur</span>
-                  <Star className="size-3 fill-primary text-primary sm:size-3.5" />
+                  <Star className="size-3 fill-primary text-primary" />
                 </div>
 
-                <h2 className="text-balance text-2xl font-bold tracking-tight text-foreground sm:text-3xl md:text-4xl lg:text-5xl">
+                <h2 className="text-balance text-[clamp(1.7rem,4vw,2.6rem)] font-semibold tracking-tight text-foreground sm:font-bold">
                   Destinos que contam
                   <span className="ml-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-purple-400">
                     histórias
                   </span>
                 </h2>
 
-                <p className="mt-2.5 max-w-prose text-sm leading-relaxed text-muted-foreground sm:text-base md:mt-3 md:leading-relaxed lg:text-lg">
-                  Curadoria fina, charme local e experiências que você só descobre
-                  com quem entende do assunto.
+                <p className="max-w-prose text-pretty text-[0.9rem] leading-relaxed text-muted-foreground sm:text-[0.95rem] md:text-base">
+                  Curadoria fina, charme local e experiências que você só descobre com quem entende do assunto.
                 </p>
               </div>
 
               <Link
                 href="/destinos"
-                className="group/btn relative inline-flex items-center gap-2.5 self-start overflow-hidden rounded-full border border-white/20 bg-gradient-to-r from-white/20 to-white/10 px-5 py-2.5 text-sm font-semibold backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:from-primary/20 hover:to-primary/10 hover:shadow-lg hover:shadow-primary/25 sm:px-6 sm:py-3 sm:text-base"
+                className="group/btn relative inline-flex items-center gap-2 self-start overflow-hidden rounded-full border border-primary/10 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-4 py-2 text-[0.85rem] font-semibold text-primary backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:from-primary/20 hover:via-primary/10 hover:to-primary/5 hover:text-primary sm:px-5 sm:py-2.5 sm:text-sm"
                 aria-label="Ver todos os destinos"
               >
-                <span className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 transition-opacity duration-300 group-hover/btn:opacity-100" />
-                <MapPin className="size-4 transition-all duration-300 group-hover/btn:-translate-y-0.5 group-hover/btn:text-primary sm:size-5" />
+                <span className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent opacity-0 transition-opacity duration-300 group-hover/btn:opacity-100" />
+                <MapPin className="size-4 transition-all duration-300 group-hover/btn:-translate-y-0.5 group-hover/btn:text-primary" />
                 <span>Ver todos</span>
-                <ArrowRight className="size-4 transition-all duration-300 group-hover/btn:translate-x-1 sm:size-5" />
+                <ArrowRight className="size-4 transition-all duration-300 group-hover/btn:translate-x-1" />
               </Link>
             </div>
 
-            {/* Grid de destinos (sem mudar a API/props) */}
-            <div className="mt-6 sm:mt-8 md:mt-10">
-              <DestinationGrid
-                destinations={destinations}
-                canFavorite={Boolean(session?.user?.id)}
-              />
+            <div className="mt-6 sm:mt-8 md:mt-9">
+              <div className="motion-safe:animate-[fade-up_0.9s_ease-out_forwards] motion-safe:opacity-0">
+                <DestinationGrid
+                  destinations={destinations}
+                  canFavorite={Boolean(session?.user?.id)}
+                />
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Features/benefícios com visual coeso (só UI) */}
-      <section className="mx-auto w-full max-w-7xl px-4 pb-16 sm:px-6 sm:pb-20 lg:px-8 lg:pb-24">
-        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/70 to-white/50 p-5 backdrop-blur-xl dark:from-white/[0.06] dark:to-white/[0.03] sm:p-6 md:p-8 lg:p-10">
-          {/* Decoração de fundo */}
+      <section className="mx-auto w-full max-w-6xl px-4 pb-16 sm:px-6 sm:pb-20 lg:max-w-7xl lg:px-8 lg:pb-24">
+        <div className="relative overflow-hidden rounded-[2.25rem] border border-white/15 bg-gradient-to-br from-white/80 via-white/65 to-white/55 p-5 backdrop-blur-xl dark:from-white/[0.07] dark:via-white/[0.05] dark:to-white/[0.03] sm:p-6 md:p-8 lg:p-10">
           <div className="pointer-events-none absolute inset-0 opacity-30">
-            <div className="absolute right-0 top-0 size-64 rounded-full bg-blue-500/10 blur-3xl" />
-            <div className="absolute bottom-0 left-0 size-64 rounded-full bg-purple-500/10 blur-3xl" />
+            <div className="absolute -top-20 left-14 size-60 rounded-full bg-blue-500/10 blur-3xl" />
+            <div className="absolute bottom-0 right-0 size-64 rounded-full bg-purple-500/10 blur-3xl" />
           </div>
 
           <div className="relative grid gap-4 sm:gap-5 md:grid-cols-3 md:gap-6">
@@ -241,26 +242,26 @@ export default async function HomePage() {
             ].map(({ title, desc, Icon, color }, i) => (
               <div
                 key={i}
-                className="group/card relative overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-br from-white/60 to-white/40 p-5 backdrop-blur-sm transition-all duration-500 hover:-translate-y-2 hover:border-white/30 hover:shadow-2xl dark:from-white/[0.05] dark:to-white/[0.02] sm:p-6"
+                className="group/card relative overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-br from-white/70 to-white/45 p-5 backdrop-blur-sm transition-all duration-500 hover:-translate-y-2 hover:border-white/40 hover:shadow-2xl dark:from-white/[0.05] dark:to-white/[0.02] sm:p-6"
+                style={{ animationDelay: `${i * 0.15}s` }}
               >
-                {/* Glow no hover (herda cores do item) */}
                 <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover/card:opacity-100">
                   <div className={`absolute inset-0 bg-gradient-to-br ${color}`} />
                 </div>
 
                 <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start">
-                  <div className={`relative grid size-14 shrink-0 place-items-center overflow-hidden rounded-2xl border border-white/20 bg-gradient-to-br shadow-lg transition-all duration-500 group-hover/card:scale-110 group-hover/card:shadow-xl sm:size-16 ${color}`}>
+                  <div className={`relative grid size-14 shrink-0 place-items-center overflow-hidden rounded-2xl border border-white/20 bg-gradient-to-br shadow-lg transition-all duration-500 motion-safe:animate-[fade-up_0.9s_ease-out_forwards] motion-safe:opacity-0 group-hover/card:scale-110 group-hover/card:shadow-xl sm:size-16 ${color}`}>
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
-                    <Icon className="relative z-10 size-7 transition-transform duration-500 group-hover/card:rotate-12 sm:size-8" />
+                    <Icon className="relative z-10 size-6 transition-transform duration-500 group-hover/card:rotate-12 sm:size-7" />
                   </div>
 
                   <div className="flex-1">
-                    <h3 className="text-base font-bold leading-tight sm:text-lg">{title}</h3>
-                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">{desc}</p>
+                    <h3 className="text-[0.95rem] font-semibold leading-tight text-foreground sm:text-base">{title}</h3>
+                    <p className="mt-2 text-[0.85rem] leading-relaxed text-muted-foreground sm:text-[0.95rem]">{desc}</p>
                   </div>
                 </div>
 
-                <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 transition-opacity duration-500 group-hover/card:opacity-100" />
+                <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white/35 to-transparent opacity-0 transition-opacity duration-500 group-hover/card:opacity-100" />
               </div>
             ))}
           </div>

@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { CredentialsSignin } from "next-auth";
+import { Prisma } from "@prisma/client";
 // import Google from "next-auth/providers/google";
 import { z } from "zod";
 
@@ -34,11 +35,37 @@ export const {
           return null;
         }
 
-        const { username, password } = parsed.data;
+        const { username: identifier, password } = parsed.data;
+
+        const normalizedIdentifier = identifier.trim();
+        const possibleEmail = normalizedIdentifier.includes("@");
+        const identifierFilter: Prisma.UserWhereInput = possibleEmail
+          ? {
+              OR: [
+                {
+                  username: {
+                    equals: normalizedIdentifier,
+                    mode: "insensitive",
+                  },
+                },
+                {
+                  email: {
+                    equals: normalizedIdentifier.toLowerCase(),
+                    mode: "insensitive",
+                  },
+                },
+              ],
+            }
+          : {
+              username: {
+                equals: normalizedIdentifier,
+                mode: "insensitive",
+              },
+            };
 
         let user = null;
         try {
-          user = await prisma.user.findUnique({ where: { username } });
+          user = await prisma.user.findFirst({ where: identifierFilter });
         } catch (dbError) {
           console.error("Erro ao consultar usuário no banco de dados", dbError);
           const error = new CredentialsSignin("Não foi possível validar suas credenciais no momento.");

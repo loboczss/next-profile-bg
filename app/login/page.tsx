@@ -287,7 +287,7 @@ export default function LoginPage() {
                   className="space-y-1.5"
                 >
                   <label htmlFor="username" className="text-sm font-medium text-slate-800">
-                    Usuário
+                    Usuário ou e-mail
                   </label>
                   <div className="relative">
                     <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">

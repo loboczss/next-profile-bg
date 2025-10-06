@@ -109,6 +109,37 @@ export default function LoginPage() {
       }
 
       setSuccess("Login realizado com sucesso! Redirecionando...");
+
+      const normalizeAppUrl = (url: string | null | undefined) => {
+        if (!url) {
+          return null;
+        }
+
+        if (url.startsWith("/")) {
+          return url;
+        }
+
+        try {
+          const parsed = new URL(url);
+          if (typeof window !== "undefined" && parsed.origin === window.location.origin) {
+            return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+          }
+        } catch (error) {
+          console.warn("Não foi possível normalizar a URL de redirecionamento.", error);
+        }
+
+        return null;
+      };
+
+      const normalizedResultUrl = normalizeAppUrl(result.url);
+      const normalizedCallbackUrl = normalizeAppUrl(callbackUrl);
+      const destination =
+        normalizedResultUrl ??
+        normalizedCallbackUrl ??
+        (callbackUrl && callbackUrl !== "/" ? callbackUrl : null) ??
+        "/";
+
+      router.replace(destination);
       router.refresh();
     } catch (authError) {
       console.error("Falha ao fazer login", authError);

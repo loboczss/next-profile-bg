@@ -32,18 +32,25 @@ import { buttonVariants } from "@/components/ui/button";
 import type { SerializedDestination } from "@/lib/destinations";
 import { cn } from "@/lib/utils";
 
+import { FavoriteButton } from "./favorite-button";
+
 interface DestinationCardProps {
   destination: SerializedDestination;
   fullHeight?: boolean;
+  canFavorite?: boolean;
+  onFavoriteChange?: (destinationId: number, isFavorite: boolean) => void;
 }
 
 export function DestinationCard({
   destination,
   fullHeight = true,
+  canFavorite = true,
+  onFavoriteChange,
 }: DestinationCardProps) {
   const [activeIndex, setActiveIndex] = useState(0);
 
   const photos = destination.photos.length > 0 ? destination.photos : ["/placeholder.jpg"];
+  const initialFavorite = Boolean(destination.isFavorite);
 
   const priceFormatter = useMemo(
     () =>
@@ -97,6 +104,16 @@ export function DestinationCard({
 
           <CardHeader className="gap-4 min-w-0">
             <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-white/60 bg-slate-100 shadow-inner">
+              <div className="absolute right-3 top-3 z-10">
+                <FavoriteButton
+                  destinationId={destination.id}
+                  initialIsFavorite={initialFavorite}
+                  canFavorite={canFavorite}
+                  onStatusChange={(isFavorite) =>
+                    onFavoriteChange?.(destination.id, isFavorite)
+                  }
+                />
+              </div>
               <Image
                 src={photos[activeIndex]}
                 alt={destination.name}

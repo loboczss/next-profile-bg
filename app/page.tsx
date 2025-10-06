@@ -46,12 +46,29 @@ export default async function HomePage() {
 
   // 2) Destinos (igual, sem mexer no backend)
   let destinations: SerializedDestination[] = [];
+  const favoriteDestinationIds = new Set<number>();
+
+  if (session?.user?.id) {
+    try {
+      const favorites = await prisma.favorite.findMany({
+        where: { userId: Number(session.user.id) },
+        select: { destinationId: true },
+      });
+      favorites.forEach((favorite) => favoriteDestinationIds.add(favorite.destinationId));
+    } catch (error) {
+      console.error("Erro ao buscar favoritos do usuário", error);
+    }
+  }
+
   try {
     const destinationsFromDb = await prisma.destination.findMany({
       orderBy: { createdAt: "desc" },
       take: 12,
     });
-    destinations = destinationsFromDb.map(serializeDestination);
+    destinations = destinationsFromDb.map((destination) => ({
+      ...serializeDestination(destination),
+      isFavorite: favoriteDestinationIds.has(destination.id),
+    }));
   } catch {
     destinations = [];
   }
@@ -183,7 +200,10 @@ export default async function HomePage() {
 
             {/* Grid de destinos (sem mudar a API/props) */}
             <div className="mt-6 sm:mt-8 md:mt-10">
-              <DestinationGrid destinations={destinations} />
+              <DestinationGrid
+                destinations={destinations}
+                canFavorite={Boolean(session?.user?.id)}
+              />
             </div>
           </div>
         </div>

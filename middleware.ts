@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-const protectedMatchers = ["/dashboard", "/api/profile", "/usuario"];
+const protectedMatchers = [
+  "/dashboard",
+  "/api/profile",
+  "/usuario",
+  "/favoritos",
+  "/api/favorites",
+];
 
 async function isAuthenticated(request: NextRequest) {
   try {
@@ -38,5 +44,11 @@ export default async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/api/profile/:path*", "/usuario/:path*"],
+  matcher: [
+    "/dashboard/:path*",
+    "/api/profile/:path*",
+    "/usuario/:path*",
+    "/favoritos",
+    "/api/favorites/:path*",
+  ],
 };

@@ -11,9 +11,14 @@ import { ManageableDestinationCard } from "./manageable-destination-card";
 interface DestinationGridProps {
   destinations: SerializedDestination[];
   onDelete?: DestinationDeleteAction;
+  canFavorite?: boolean;
 }
 
-export function DestinationGrid({ destinations, onDelete }: DestinationGridProps) {
+export function DestinationGrid({
+  destinations,
+  onDelete,
+  canFavorite = true,
+}: DestinationGridProps) {
   if (destinations.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-slate-200 bg-white/80 p-12 text-center shadow-lg">
@@ -40,9 +45,14 @@ export function DestinationGrid({ destinations, onDelete }: DestinationGridProps
             key={destination.id}
             destination={destination}
             action={onDelete}
+            canFavorite={canFavorite}
           />
         ) : (
-          <DestinationCard key={destination.id} destination={destination} />
+          <DestinationCard
+            key={destination.id}
+            destination={destination}
+            canFavorite={canFavorite}
+          />
         )
       )}
     </div>

@@ -99,6 +99,8 @@ export type SerializedDestination = {
   photos: string[];
   createdAt: string;
   updatedAt: string;
+  isFavorite?: boolean;
+  favoriteCreatedAt?: string | null;
 };
 
 export function serializeDestination(

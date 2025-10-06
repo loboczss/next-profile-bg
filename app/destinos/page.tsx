@@ -109,12 +109,28 @@ export default async function DestinationsPage() {
 
   let destinations: SerializedDestination[] = [];
   let destinationsError = false;
+  const favoriteDestinationIds = new Set<number>();
+
+  if (session?.user?.id) {
+    try {
+      const favorites = await prisma.favorite.findMany({
+        where: { userId: Number(session.user.id) },
+        select: { destinationId: true },
+      });
+      favorites.forEach((favorite) => favoriteDestinationIds.add(favorite.destinationId));
+    } catch (error) {
+      console.error("Erro ao buscar favoritos do usuário", error);
+    }
+  }
   try {
     // Busca todos os destinos ordenados por data de criação.
     const destinationsFromDb = await prisma.destination.findMany({
       orderBy: { createdAt: "desc" },
     });
-    destinations = destinationsFromDb.map(serializeDestination);
+    destinations = destinationsFromDb.map((destination) => ({
+      ...serializeDestination(destination),
+      isFavorite: favoriteDestinationIds.has(destination.id),
+    }));
   } catch (error) {
     console.error("Erro ao buscar destinos", error);
     destinationsError = true;
@@ -293,6 +309,7 @@ export default async function DestinationsPage() {
               ) : (
                 <DestinationGrid
                   destinations={destinations}
+                  canFavorite={Boolean(session?.user?.id)}
                   onDelete={session?.user ? deleteDestination : undefined}
                 />
               )}

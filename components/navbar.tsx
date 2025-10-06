@@ -17,33 +17,61 @@ import {
   Menu,
   X,
   ChevronDown,
-  BookmarkIcon,
+  Heart,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 import type { Session } from "next-auth";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
+type NavLink = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  color: string;
+  badge?: string;
+};
+
 interface NavbarProps {
   user: Session["user"] | null;
+  favoriteCount?: number;
 }
 
-export function Navbar({ user }: NavbarProps) {
+export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarProps) {
   const pathname = usePathname();
   const isAuthenticated = Boolean(user);
   const isAdmin = user?.role === "admin";
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
+  const favoriteCountValue = Number.isFinite(favoriteCountProp)
+    ? Math.max(0, Math.floor(favoriteCountProp))
+    : 0;
+  const favoriteBadgeLabel = favoriteCountValue > 99 ? "99+" : `${favoriteCountValue}`;
+  const hasFavorites = favoriteCountValue > 0;
+
   const handleSignOut = () => {
     void signOut({ redirectTo: "/" });
   };
 
-  const primaryLinks = [
+  const baseLinks: NavLink[] = [
     { href: "/", label: "Início", icon: Home, color: "text-blue-400" },
     { href: "/destinos", label: "Destinos", icon: MapPin, color: "text-emerald-400" },
     { href: "/sobre-nos", label: "Sobre nós", icon: Info, color: "text-purple-400" },
   ];
+
+  const favoritesLink: NavLink | null = isAuthenticated
+    ? {
+        href: "/favoritos",
+        label: "Favoritos",
+        icon: Heart,
+        color: "text-pink-400",
+        badge: hasFavorites ? favoriteBadgeLabel : undefined,
+      }
+    : null;
+
+  const navigationLinks = favoritesLink ? [...baseLinks, favoritesLink] : baseLinks;
 
   const userDisplayName = user?.name?.trim() ? user.name : "Usuário";
   const userFirstName = userDisplayName.split(" ")[0];
@@ -124,7 +152,7 @@ export function Navbar({ user }: NavbarProps) {
           {/* DESKTOP NAV */}
           <nav className="hidden flex-1 items-center justify-end gap-2 lg:flex lg:gap-3">
             <div className="flex items-center gap-1">
-              {primaryLinks.map(({ href, label, icon: Icon, color }) => {
+              {navigationLinks.map(({ href, label, icon: Icon, color, badge }) => {
                 const isActive =
                   pathname === href || pathname.startsWith(href + "/");
                 return (
@@ -148,7 +176,14 @@ export function Navbar({ user }: NavbarProps) {
                         isActive ? "text-primary" : color,
                       )}
                     />
-                    <span>{label}</span>
+                    <span className="flex items-center gap-1">
+                      {label}
+                      {badge ? (
+                        <span className="inline-flex min-w-[1.5rem] items-center justify-center rounded-full bg-pink-500/20 px-2 py-0.5 text-[0.65rem] font-semibold text-pink-600 shadow-sm">
+                          {badge}
+                        </span>
+                      ) : null}
+                    </span>
                     <span
                       className={cn(
                         "pointer-events-none absolute -bottom-px left-1/2 h-[2px] w-0 -translate-x-1/2 rounded bg-primary/70 transition-all duration-500 group-hover/nav:w-4/5",
@@ -235,6 +270,19 @@ export function Navbar({ user }: NavbarProps) {
                             <User className="size-4 text-cyan-400" />
                             Meu Perfil
                           </Link>
+                          <Link
+                            href="/favoritos"
+                            onClick={closeUserMenu}
+                            className="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors hover:bg-white/5"
+                          >
+                            <Heart className="size-4 text-pink-400" />
+                            Favoritos
+                            {hasFavorites ? (
+                              <span className="ml-auto inline-flex min-w-[1.5rem] items-center justify-center rounded-full bg-pink-500/20 px-2 py-0.5 text-[0.65rem] font-semibold text-pink-600 shadow-sm">
+                                {favoriteBadgeLabel}
+                              </span>
+                            ) : null}
+                          </Link>
                         </div>
                       </div>
                     </>
@@ -292,7 +340,7 @@ export function Navbar({ user }: NavbarProps) {
         >
           <nav className="border-t border-white/10 bg-background/95 px-4 py-4 backdrop-blur-xl">
             <div className="flex flex-col gap-2">
-              {primaryLinks.map(({ href, label, icon: Icon, color }) => {
+              {navigationLinks.map(({ href, label, icon: Icon, color, badge }) => {
                 const isActive =
                   pathname === href || pathname.startsWith(href + "/");
                 return (
@@ -311,7 +359,14 @@ export function Navbar({ user }: NavbarProps) {
                         isActive ? "text-primary" : color,
                       )}
                     />
-                    <span>{label}</span>
+                    <span className="flex items-center gap-1">
+                      {label}
+                      {badge ? (
+                        <span className="inline-flex min-w-[1.6rem] items-center justify-center rounded-full bg-pink-500/20 px-2 py-0.5 text-[0.7rem] font-semibold text-pink-600 shadow-sm">
+                          {badge}
+                        </span>
+                      ) : null}
+                    </span>
                   </Link>
                 );
               })}
@@ -353,12 +408,19 @@ export function Navbar({ user }: NavbarProps) {
                         Meu Perfil
                       </Link>
                       <Link
-                        href="/usuario/favoritos"
+                        href="/favoritos"
                         onClick={closeMobileMenu}
                         className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors hover:bg-white/5"
                       >
-                        <BookmarkIcon className="size-4 text-pink-400" />
-                        Favoritos
+                        <Heart className="size-4 text-pink-400" />
+                        <span className="flex items-center gap-2">
+                          Favoritos
+                          {hasFavorites ? (
+                            <span className="inline-flex min-w-[1.6rem] items-center justify-center rounded-full bg-pink-500/20 px-2 py-0.5 text-[0.7rem] font-semibold text-pink-600 shadow-sm">
+                              {favoriteBadgeLabel}
+                            </span>
+                          ) : null}
+                        </span>
                       </Link>
                     </div>
                   </div>

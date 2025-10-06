@@ -1,279 +1,151 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
-  Plane,
-  MapPin,
-  Sparkles,
-  Compass,
-  CalendarCheck2,
-  Ticket,
   ArrowRight,
-  Zap,
-  Shield,
-  Hotel,
-  Headphones,
+  CalendarCheck2,
+  Compass,
+  Plane,
+  Sparkles,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+
 import { QuoteForm } from "./home/quote-form";
 
-type HeroProps = {
+export type HeroProps = {
   images: string[];
   userName?: string | null;
 };
 
-const featureHighlights = [
-  { icon: Ticket, label: "Tarifas negociadas" },
-  { icon: Hotel, label: "Hotéis selecionados" },
-  { icon: MapPin, label: "Curadoria local autêntica" },
-  { icon: Headphones, label: "Suporte dedicado 24/7" },
-  { icon: Zap, label: "Experiências imersivas" },
-  { icon: Shield, label: "Atendimento seguro" },
+const FALLBACK_IMAGES = [
+  "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1920&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1473893604213-3df9c15611d4?q=80&w=1920&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?q=80&w=1920&auto=format&fit=crop",
 ];
 
 export default function Hero({ images, userName }: HeroProps) {
-  const slides = useMemo(() => (images?.length ? images.slice(0, 6) : []), [images]);
+  const slides = useMemo(() => {
+    const normalized = Array.isArray(images)
+      ? images.filter((item) => typeof item === "string" && item.trim().length)
+      : [];
+
+    if (!normalized.length) {
+      return FALLBACK_IMAGES;
+    }
+
+    return normalized.slice(0, 5);
+  }, [images]);
+
   const [active, setActive] = useState(0);
-  const [paused, setPaused] = useState(false);
-  const containerRef = useRef<HTMLElement>(null);
-  const slideCount = slides.length;
-
-  const normalizeIndex = useCallback(
-    (index: number) => {
-      if (!slideCount) return 0;
-      const remainder = index % slideCount;
-      return remainder >= 0 ? remainder : remainder + slideCount;
-    },
-    [slideCount],
-  );
-
-  const goToSlide = useCallback(
-    (next: number | ((prev: number) => number)) => {
-      if (!slideCount) return;
-      setActive((prev) => {
-        const target = typeof next === "function" ? next(prev) : next;
-        const normalized = normalizeIndex(target);
-        return normalized === prev ? prev : normalized;
-      });
-    },
-    [normalizeIndex, slideCount],
-  );
 
   useEffect(() => {
-    if (!slideCount) {
+    if (slides.length <= 1) return;
+
+    const id = window.setInterval(() => {
+      setActive((prev) => (prev + 1) % slides.length);
+    }, 7000);
+
+    return () => window.clearInterval(id);
+  }, [slides.length]);
+
+  useEffect(() => {
+    if (!slides.length) {
       setActive(0);
       return;
     }
-    setActive((prev) => {
-      if (!Number.isFinite(prev) || prev < 0 || prev >= slideCount) {
-        return 0;
-      }
-      return prev;
-    });
-  }, [slideCount]);
 
-  // Auto-rotate (mantido), com pausa por foco/hover e respeito a prefers-reduced-motion
-  useEffect(() => {
-    if (!slideCount) return;
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (media.matches || paused) return;
-
-    const t = setInterval(() => {
-      setActive((prev) => normalizeIndex(prev + 1));
-    }, 5500);
-    return () => clearInterval(t);
-  }, [slideCount, paused, normalizeIndex]);
-
-  // Acessibilidade: setas do teclado (←/→) para navegar
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (!containerRef.current) return;
-      if (!containerRef.current.contains(document.activeElement)) return;
-      if (slideCount <= 1) return;
-      if (e.key === "ArrowRight") goToSlide((p) => p + 1);
-      if (e.key === "ArrowLeft") goToSlide((p) => p - 1);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [goToSlide, slideCount]);
+    if (active >= slides.length) {
+      setActive(0);
+    }
+  }, [slides, active]);
 
   return (
-    <section
-      ref={containerRef}
-      className="relative isolate min-h-[78dvh] overflow-clip rounded-b-[2.25rem] border-b border-white/10 bg-black/70 sm:min-h-[82dvh] md:min-h-[86dvh] md:rounded-b-[3rem]"
-      aria-label="Destaques Evastur"
-      tabIndex={0}
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onFocus={() => setPaused(true)}
-      onBlur={() => setPaused(false)}
-    >
-      {/* Slides em camadas com transição suave */}
-      <div className="absolute inset-0 -z-10">
+    <section className="relative isolate flex min-h-[70vh] w-full flex-col justify-center overflow-hidden bg-slate-950 text-white">
+      <div className="absolute inset-0">
         {slides.map((src, idx) => (
-          <div
+          <Image
             key={`${src}-${idx}`}
-            className={cn(
-              "absolute inset-0 transition-all duration-[2000ms] ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform",
-              active === idx ? "scale-100 opacity-100" : "scale-105 opacity-0",
-            )}
-            aria-hidden={active !== idx}
-          >
-            <Image
-              src={src}
-              alt="Paisagem de destino"
-              fill
-              priority={idx === 0}
-              className="object-cover"
-              quality={90}
-              sizes="100vw"
-            />
-            {/* Máscaras para legibilidade */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/45 to-black/80" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/25" />
-
-            {/* Brilhos decorativos */}
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.16),transparent_50%)] mix-blend-overlay" />
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(168,85,247,0.12),transparent_50%)] mix-blend-overlay" />
-          </div>
+            src={src}
+            alt="Paisagem de destino"
+            fill
+            priority={idx === 0}
+            className={`absolute inset-0 object-cover transition-opacity duration-1000 ${active === idx ? "opacity-100" : "opacity-0"}`}
+            sizes="100vw"
+          />
         ))}
+        <div className="absolute inset-0 bg-slate-950/70" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/90 via-slate-950/60 to-slate-950/90" />
       </div>
 
-      {/* Partículas/blur blobs sutis (respeitam reduced-motion implicitamente) */}
-      <div className="pointer-events-none absolute inset-0 -z-10 opacity-45">
-        <div className="absolute left-[12%] top-[18%] size-72 animate-float-slow rounded-full bg-blue-500/25 blur-3xl" />
-        <div className="absolute bottom-[12%] right-[10%] size-64 animate-float-delayed rounded-full bg-purple-500/20 blur-3xl" />
-        <div className="absolute left-[48%] top-[58%] size-40 animate-float-slower rounded-full bg-emerald-400/15 blur-3xl" />
-      </div>
+      <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-10 px-6 py-16 sm:px-10 sm:py-20 lg:flex-row lg:items-center lg:gap-12 lg:py-24">
+        <div className="flex-1 space-y-6">
+          <span className="inline-flex w-fit items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80 backdrop-blur">
+            <Sparkles className="size-4" /> Experiências Evastur
+          </span>
 
+          <div className="space-y-4">
+            <h1 className="text-balance text-3xl font-semibold leading-tight sm:text-4xl lg:text-5xl">
+              {userName ? (
+                <>
+                  {userName.split(" ")[0]}, planeje sua próxima viagem com conforto e autenticidade.
+                </>
+              ) : (
+                <>Viagens sob medida para criar memórias que duram para sempre.</>
+              )}
+            </h1>
+            <p className="max-w-xl text-pretty text-sm leading-relaxed text-white/80 sm:text-base">
+              Curadoria humana, atendimento próximo e destinos que combinam com o seu momento. Nós cuidamos de tudo enquanto você aproveita cada detalhe.
+            </p>
+          </div>
 
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <Link
+              href="/destinos"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+            >
+              <Plane className="size-4" />
+              Explorar destinos
+              <ArrowRight className="size-4" />
+            </Link>
+            <Link
+              href="/sobre-nos"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-white/30 px-5 py-3 text-sm font-semibold text-white transition hover:border-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+            >
+              <Compass className="size-4" />
+              Conheça a Evastur
+            </Link>
+            <Link
+              href="/contato"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-white/30 px-5 py-3 text-sm font-semibold text-white transition hover:border-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+            >
+              <CalendarCheck2 className="size-4" />
+              Falar com especialista
+            </Link>
+          </div>
 
-      {/* Conteúdo principal */}
-      <div className="mx-auto w-full max-w-6xl px-4 py-14 sm:px-6 sm:py-[4.5rem] md:max-w-7xl md:py-20 lg:px-8">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_500px] lg:items-start xl:grid-cols-[minmax(0,1fr)_560px] 2xl:grid-cols-[minmax(0,1fr)_600px]">
-          <div className="flex flex-col gap-6 sm:gap-8 lg:pr-8 xl:pr-12">
-            {/* Badge */}
-            <div className="group inline-flex w-fit animate-[fadeIn_1s_ease-out] items-center gap-2.5 rounded-full border border-white/25 bg-white/15 px-3.5 py-1.5 text-[0.75rem] font-medium text-white shadow-lg backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-white/40 hover:bg-white/20 sm:px-4 sm:py-2 sm:text-sm">
-              <Sparkles className="size-3.5 animate-pulse text-yellow-300 sm:size-4" />
-              <span>Agência boutique • experiências sob medida</span>
-              <span className="size-1.5 animate-pulse rounded-full bg-green-400 shadow-[0_0_8px_theme(colors.green.400)]" />
-            </div>
-
-            {/* Headline */}
-            <div className="max-w-3xl animate-[fadeIn_1.2s_ease-out] space-y-4">
-              <h1 className="text-balance text-[clamp(2rem,5vw,3.25rem)] font-semibold leading-[1.1] tracking-tight text-white drop-shadow-2xl sm:font-bold md:text-[clamp(2.4rem,4vw,3.6rem)]">
-                Descubra o mundo com a{" "}
-                <span className="relative inline-block">
-                  <span className="relative z-10 bg-gradient-to-r from-blue-400 via-blue-300 to-purple-400 bg-clip-text text-transparent">
-                    Evastur
-                  </span>
-                  <span
-                    aria-hidden
-                    className="absolute inset-0 bg-gradient-to-r from-blue-400 via-blue-300 to-purple-400 opacity-50 blur-xl"
-                  />
-                </span>
-                : viagens premium, memórias eternas.
-              </h1>
-
-              <p className="max-w-xl text-pretty text-[0.95rem] leading-relaxed text-white/85 drop-shadow-lg sm:text-[1.05rem] md:text-[1.15rem] md:leading-relaxed">
-                {userName ? (
-                  <>
-                    <span className="font-semibold text-white">{userName.split(" ")[0]}</span>, planejamos sua próxima jornada com
-                    curadoria, conforto e autenticidade — do primeiro clique ao último pôr do sol.
-                  </>
-                ) : (
-                  <>Do primeiro clique ao último pôr do sol: roteiros exclusivos, hotéis selecionados a dedo e suporte 24/7.</>
-                )}
-              </p>
-            </div>
-
-            {/* CTAs */}
-            <div className="flex animate-[fadeIn_1.4s_ease-out] flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-              <Link
-                href="/destinos"
-                className={cn(
-                  "group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full border border-white/30 bg-gradient-to-r from-blue-500/90 to-purple-500/90 px-5 py-3 text-sm font-semibold text-white shadow-xl backdrop-blur transition-all duration-300",
-                  "hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-500/50 sm:px-6 sm:py-3 sm:text-[0.95rem]",
-                )}
-              >
-                <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                <Plane className="relative z-10 size-4 transition-transform duration-300 group-hover:translate-x-0.5 sm:size-5" />
-                <span className="relative z-10">Explorar destinos</span>
-                <ArrowRight className="relative z-10 size-4 transition-transform duration-300 group-hover:translate-x-1 sm:size-5" />
-              </Link>
-
-              <Link
-                href="/sobre-nos"
-                className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2.5 text-[0.85rem] font-medium text-white/95 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-white/40 hover:bg-white/20 hover:shadow-lg sm:px-5 sm:py-3 sm:text-[0.95rem]"
-              >
-                <Compass className="size-4 transition-transform duration-300 group-hover:rotate-12 sm:size-5" />
-                <span>Conheça a Evastur</span>
-              </Link>
-
-              <Link
-                href="/contato"
-                className="group inline-flex items-center justify-center gap-2 rounded-full border border-emerald-400/40 bg-gradient-to-r from-emerald-500/20 to-emerald-400/20 px-4 py-2.5 text-[0.85rem] font-medium text-emerald-50 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-emerald-400/60 hover:from-emerald-500/30 hover:to-emerald-400/30 hover:shadow-lg hover:shadow-emerald-500/30 sm:px-5 sm:py-3 sm:text-[0.95rem]"
-              >
-                <CalendarCheck2 className="size-4 transition-transform duration-300 group-hover:scale-110 sm:size-5" />
-                <span>Montar roteiro</span>
-              </Link>
-            </div>
-
-            {/* Benefícios */}
-            <div className="mt-6 grid animate-[fadeIn_1.6s_ease-out] gap-3 text-white/85 sm:grid-cols-2 lg:grid-cols-3">
-              {featureHighlights.map(({ icon: Icon, label }) => (
-                <div
-                  key={label}
-                  className="group flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-3.5 py-2.5 backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:border-white/30 hover:bg-white/15"
-                >
-                  <span className="flex size-9 items-center justify-center rounded-2xl bg-white/15 shadow-lg shadow-black/10 backdrop-blur">
-                    <Icon className="size-4 text-sky-200" />
-                  </span>
-                  <span className="text-[0.85rem] font-medium text-white/90 sm:text-sm">{label}</span>
-                </div>
+          {slides.length > 1 && (
+            <div className="flex items-center gap-2 pt-2">
+              {slides.map((_, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => setActive(index)}
+                  className={`h-1.5 rounded-full transition-all ${
+                    active === index
+                      ? "w-10 bg-white"
+                      : "w-5 bg-white/40 hover:w-7 hover:bg-white/70"
+                  }`}
+                  aria-label={`Ver imagem ${index + 1}`}
+                  aria-pressed={active === index}
+                />
               ))}
             </div>
-          </div>
-
-          <div className="flex items-stretch lg:pl-4 xl:pl-8">
-            <QuoteForm />
-          </div>
+          )}
         </div>
-      </div>
 
-        {/* Indicadores do carrossel */}
-        {slideCount > 1 && (
-          <div className="mt-2 flex animate-[fadeIn_1.8s_ease-out] items-center gap-2.5 sm:mt-4" role="tablist" aria-label="Seleção de slides">
-            {slides.map((_, i) => (
-              <button
-                key={i}
-                role="tab"
-                aria-selected={active === i}
-                aria-controls={`hero-slide-${i}`}
-                aria-label={`Ir para o slide ${i + 1}`}
-                onClick={() => goToSlide(i)}
-                className={cn(
-                  "group relative h-1.5 rounded-full transition-all duration-500",
-                  active === i
-                    ? "w-10 bg-gradient-to-r from-blue-400 to-purple-400 shadow-lg shadow-blue-500/50"
-                    : "w-6 bg-white/40 hover:w-8 hover:bg-white/60",
-                )}
-              >
-                {active === i && <span className="absolute inset-0 animate-pulse rounded-full bg-white/30" />}
-              </button>
-            ))}
-          </div>
-        )}
-
-      {/* Indicador de scroll */}
-      <div className="absolute bottom-8 left-1/2 hidden -translate-x-1/2 animate-bounce md:block">
-        <div className="flex flex-col items-center gap-2">
-          <div className="size-6 rounded-full border-2 border-white/40 p-1">
-            <div className="size-full animate-pulse rounded-full bg-white/60" />
-          </div>
-          <span className="text-[0.7rem] font-medium text-white/60 sm:text-xs">Role para explorar</span>
+        <div className="w-full max-w-xl lg:max-w-md">
+          <QuoteForm />
         </div>
       </div>
     </section>

@@ -7,7 +7,6 @@ import {
   useMemo,
   useState,
 } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import {
   CalendarDays,
   MapPin,
@@ -18,14 +17,6 @@ import {
 } from "lucide-react";
 
 const WHATSAPP_NUMBER = "5568992552607";
-
-const baseFieldClasses =
-  "flex w-full items-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm text-white shadow-[0_18px_45px_-24px_rgba(15,23,42,0.65)] backdrop-blur transition focus-within:border-white/40 focus-within:bg-white/15 focus-within:shadow-[0_24px_55px_-30px_rgba(14,165,233,0.65)] sm:text-base";
-
-const inputClasses =
-  "h-11 w-full bg-transparent text-white placeholder:text-white/60 focus:outline-none";
-
-const labelClasses = "text-xs font-medium uppercase tracking-wide text-white/70";
 
 const initialFormState = {
   name: "",
@@ -43,41 +34,28 @@ type FormKey = keyof FormState;
 
 type FormErrors = Partial<Record<FormKey, string>>;
 
-const formMotion = {
-  initial: { opacity: 0, y: 28 },
-  animate: { opacity: 1, y: 0 },
-};
-
-const fieldMotion = {
-  initial: { opacity: 0, y: 16 },
-  animate: { opacity: 1, y: 0 },
-};
-
-const errorMotion = {
-  initial: { opacity: 0, y: -4 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -4 },
-};
+type FormStatus =
+  | {
+      type: "error" | "success";
+      message: string;
+    }
+  | null;
 
 export function QuoteForm() {
   const [form, setForm] = useState<FormState>(initialFormState);
   const [errors, setErrors] = useState<FormErrors>({});
-  const [status, setStatus] = useState<
-    | {
-        type: "error" | "success";
-        message: string;
-      }
-    | null
-  >(null);
+  const [status, setStatus] = useState<FormStatus>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const peopleOptions = useMemo(() => {
-    return Array.from({ length: 10 }, (_, index) => `${index + 1}`);
-  }, []);
+  const peopleOptions = useMemo(
+    () => Array.from({ length: 10 }, (_, index) => `${index + 1}`),
+    [],
+  );
 
   const handleChange = (field: FormKey) =>
     (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const { value } = event.target;
+
       setForm((prev) => ({ ...prev, [field]: value }));
       setErrors((prev) => ({ ...prev, [field]: undefined }));
       setStatus(null);
@@ -127,8 +105,6 @@ export function QuoteForm() {
       return;
     }
 
-    setErrors({});
-
     const message = buildMessage();
     const encoded = encodeURIComponent(message);
     const redirectUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}`;
@@ -142,36 +118,30 @@ export function QuoteForm() {
       type: "success",
       message: "Perfeito! Abrimos seu WhatsApp com os detalhes do pedido.",
     });
+
     setIsSubmitting(false);
     setForm(initialFormState);
   };
 
   return (
-    <motion.form
-      {...formMotion}
-      transition={{ duration: 0.6, ease: "easeOut" }}
+    <form
       onSubmit={handleSubmit}
-      className="relative w-full overflow-hidden rounded-3xl border border-white/20 bg-white/15 p-6 shadow-[0_35px_120px_-45px_rgba(15,23,42,0.9)] backdrop-blur-xl sm:p-7 md:p-8"
+      className="flex w-full flex-col gap-6 rounded-3xl bg-white/90 p-6 text-slate-900 shadow-xl ring-1 ring-white/60 backdrop-blur-sm dark:bg-slate-900/90 dark:text-slate-100 dark:ring-white/10 sm:p-8"
     >
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 via-blue-500/10 to-purple-500/10" />
-      <div className="pointer-events-none absolute -left-10 top-24 size-36 rounded-full bg-blue-400/20 blur-3xl" />
-      <div className="pointer-events-none absolute -right-16 bottom-14 size-44 rounded-full bg-purple-400/15 blur-[120px]" />
-
-      <div className="relative flex flex-col gap-2 pb-6 text-white">
-        <span className="inline-flex w-fit items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white/80 backdrop-blur">
-          <Send className="size-3.5" /> Solicite agora
+      <div className="space-y-1">
+        <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+          <Send className="size-4" /> Solicite agora
         </span>
-        <h2 className="text-2xl font-semibold leading-tight sm:text-3xl">Monte seu orçamento personalizado</h2>
-        <p className="text-sm text-white/80 sm:text-base">
-          Informe os detalhes da sua viagem e nossa equipe retorna com as melhores opções.
+        <h2 className="text-xl font-semibold sm:text-2xl">Monte seu orçamento</h2>
+        <p className="text-sm text-slate-600 dark:text-slate-300">
+          Informe os detalhes da viagem e nossa equipe retorna com sugestões personalizadas.
         </p>
       </div>
 
-      <div className="relative grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2">
         <Field
-          icon={<User className="size-4 text-white/70" />}
-          label="Nome da pessoa"
-          motionIndex={0}
+          icon={<User className="size-4" />}
+          label="Nome completo"
           error={errors.name}
         >
           <input
@@ -181,15 +151,14 @@ export function QuoteForm() {
             onChange={handleChange("name")}
             placeholder="Como devemos te chamar?"
             autoComplete="name"
-            className={inputClasses}
+            className="h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-sky-400 dark:focus:ring-sky-500/30"
             type="text"
           />
         </Field>
 
         <Field
-          icon={<Phone className="size-4 text-white/70" />}
+          icon={<Phone className="size-4" />}
           label="Número de celular"
-          motionIndex={1}
           error={errors.phone}
         >
           <input
@@ -199,15 +168,14 @@ export function QuoteForm() {
             onChange={handleChange("phone")}
             placeholder="(68) 99255-2607"
             autoComplete="tel"
-            className={inputClasses}
+            className="h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-sky-400 dark:focus:ring-sky-500/30"
             type="tel"
           />
         </Field>
 
         <Field
-          icon={<MapPin className="size-4 text-white/70" />}
-          label="De onde"
-          motionIndex={2}
+          icon={<MapPin className="size-4" />}
+          label="Cidade de origem"
           error={errors.origin}
         >
           <input
@@ -217,15 +185,14 @@ export function QuoteForm() {
             onChange={handleChange("origin")}
             placeholder="Cidade de saída"
             autoComplete="address-level2"
-            className={inputClasses}
+            className="h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-sky-400 dark:focus:ring-sky-500/30"
             type="text"
           />
         </Field>
 
         <Field
-          icon={<MapPin className="size-4 text-white/70" />}
-          label="Para onde"
-          motionIndex={3}
+          icon={<MapPin className="size-4" />}
+          label="Destino"
           error={errors.destination}
         >
           <input
@@ -233,16 +200,15 @@ export function QuoteForm() {
             name="destination"
             value={form.destination}
             onChange={handleChange("destination")}
-            placeholder="Destino dos sonhos"
-            className={inputClasses}
+            placeholder="Para onde deseja ir?"
+            className="h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-sky-400 dark:focus:ring-sky-500/30"
             type="text"
           />
         </Field>
 
         <Field
-          icon={<CalendarDays className="size-4 text-white/70" />}
+          icon={<CalendarDays className="size-4" />}
           label="Data de ida"
-          motionIndex={4}
           error={errors.departureDate}
         >
           <input
@@ -250,15 +216,14 @@ export function QuoteForm() {
             name="departureDate"
             value={form.departureDate}
             onChange={handleChange("departureDate")}
-            className={inputClasses}
+            className="h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-sky-400 dark:focus:ring-sky-500/30"
             type="date"
           />
         </Field>
 
         <Field
-          icon={<CalendarDays className="size-4 text-white/70" />}
+          icon={<CalendarDays className="size-4" />}
           label="Data de volta"
-          motionIndex={5}
           error={errors.returnDate}
         >
           <input
@@ -266,16 +231,15 @@ export function QuoteForm() {
             name="returnDate"
             value={form.returnDate}
             onChange={handleChange("returnDate")}
-            className={inputClasses}
+            className="h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-sky-400 dark:focus:ring-sky-500/30"
             type="date"
             min={form.departureDate || undefined}
           />
         </Field>
 
         <Field
-          icon={<Users className="size-4 text-white/70" />}
+          icon={<Users className="size-4" />}
           label="Quantidade de pessoas"
-          motionIndex={6}
           error={errors.people}
         >
           <select
@@ -283,7 +247,7 @@ export function QuoteForm() {
             name="people"
             value={form.people}
             onChange={handleChange("people")}
-            className={`${inputClasses} pr-8`}
+            className="h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-medium text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:focus:border-sky-400 dark:focus:ring-sky-500/30"
           >
             <option value="" disabled>
               Selecionar
@@ -297,33 +261,25 @@ export function QuoteForm() {
         </Field>
       </div>
 
-      <motion.button
+      <button
         type="submit"
-        className="group relative mt-6 inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-gradient-to-r from-blue-500 via-sky-500 to-purple-500 px-6 py-3 text-base font-semibold text-white shadow-lg transition focus:outline-none focus:ring-2 focus:ring-sky-200/80 focus:ring-offset-2 focus:ring-offset-slate-900"
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.99 }}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-500 px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900"
         disabled={isSubmitting}
       >
-        <span className="absolute inset-0 bg-white/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
         <Send className="size-4" />
-        {isSubmitting ? "Enviando..." : "Enviar"}
-      </motion.button>
+        {isSubmitting ? "Enviando..." : "Enviar para o WhatsApp"}
+      </button>
 
-      <AnimatePresence>
-        {status && (
-          <motion.p
-            key={status.message}
-            {...errorMotion}
-            transition={{ duration: 0.25 }}
-            className={`mt-4 text-center text-sm font-medium ${
-              status.type === "success" ? "text-emerald-100" : "text-red-200"
-            }`}
-          >
-            {status.message}
-          </motion.p>
-        )}
-      </AnimatePresence>
-    </motion.form>
+      {status && (
+        <p
+          className={`text-sm font-medium ${
+            status.type === "success" ? "text-emerald-600 dark:text-emerald-300" : "text-red-600 dark:text-rose-300"
+          }`}
+        >
+          {status.message}
+        </p>
+      )}
+    </form>
   );
 }
 
@@ -331,35 +287,20 @@ type FieldProps = {
   children: ReactNode;
   icon: ReactNode;
   label: string;
-  motionIndex: number;
   error?: string;
 };
 
-function Field({ children, icon, label, motionIndex, error }: FieldProps) {
+function Field({ children, icon, label, error }: FieldProps) {
   return (
-    <motion.div
-      {...fieldMotion}
-      transition={{ duration: 0.45, delay: 0.05 * motionIndex, ease: "easeOut" }}
-      className="flex flex-col gap-2"
-    >
-      <label className={labelClasses}>{label}</label>
-      <div className={`${baseFieldClasses} ${error ? "border-red-300/70 bg-red-500/10" : ""}`}>
-        <span className="shrink-0">
-          {icon}
-        </span>
+    <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 dark:text-slate-200">
+      <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+        {icon}
+        {label}
+      </span>
+      <div className={`flex w-full flex-col gap-1 ${error ? "text-red-600 dark:text-rose-300" : "text-slate-700 dark:text-slate-100"}`}>
         {children}
+        {error && <span className="text-xs font-medium">{error}</span>}
       </div>
-      <AnimatePresence>
-        {error && (
-          <motion.span
-            {...errorMotion}
-            transition={{ duration: 0.25 }}
-            className="text-xs font-medium text-red-200"
-          >
-            {error}
-          </motion.span>
-        )}
-      </AnimatePresence>
-    </motion.div>
+    </label>
   );
 }

@@ -10,6 +10,8 @@ const protectedMatchers = [
   "/api/favorites",
 ];
 
+
+
 async function isAuthenticated(request: NextRequest) {
   try {
     const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;

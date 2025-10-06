@@ -102,7 +102,7 @@ export default function Hero({ images, userName }: HeroProps) {
   return (
     <section
       ref={containerRef}
-      className="relative isolate min-h-[86dvh] overflow-clip rounded-b-[2.5rem] border-b border-white/10 bg-black/60 sm:min-h-[88dvh] md:rounded-b-[3rem]"
+      className="relative isolate min-h-[78dvh] overflow-clip rounded-b-[2.25rem] border-b border-white/10 bg-black/70 sm:min-h-[82dvh] md:min-h-[86dvh] md:rounded-b-[3rem]"
       aria-label="Destaques Evastur"
       tabIndex={0}
       onMouseEnter={() => setPaused(true)}
@@ -116,7 +116,7 @@ export default function Hero({ images, userName }: HeroProps) {
           <div
             key={`${src}-${idx}`}
             className={cn(
-              "absolute inset-0 transition-all duration-[1800ms] ease-in-out will-change-transform",
+              "absolute inset-0 transition-all duration-[2000ms] ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform",
               active === idx ? "scale-100 opacity-100" : "scale-105 opacity-0",
             )}
             aria-hidden={active !== idx}
@@ -142,30 +142,28 @@ export default function Hero({ images, userName }: HeroProps) {
       </div>
 
       {/* Partículas/blur blobs sutis (respeitam reduced-motion implicitamente) */}
-      <div className="pointer-events-none absolute inset-0 -z-10 opacity-40">
-        <div className="absolute left-1/3 top-1/4 size-72 animate-pulse rounded-full bg-blue-500/20 blur-3xl" />
-        <div
-          className="absolute bottom-1/4 right-1/3 size-64 animate-pulse rounded-full bg-purple-500/15 blur-3xl"
-          style={{ animationDelay: "1s" }}
-        />
+      <div className="pointer-events-none absolute inset-0 -z-10 opacity-45">
+        <div className="absolute left-[12%] top-[18%] size-72 animate-float-slow rounded-full bg-blue-500/25 blur-3xl" />
+        <div className="absolute bottom-[12%] right-[10%] size-64 animate-float-delayed rounded-full bg-purple-500/20 blur-3xl" />
+        <div className="absolute left-[48%] top-[58%] size-40 animate-float-slower rounded-full bg-emerald-400/15 blur-3xl" />
       </div>
 
-    
+
 
       {/* Conteúdo principal */}
-      <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 sm:py-20 md:py-24 lg:px-8">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_520px] lg:items-start xl:grid-cols-[minmax(0,1fr)_600px] 2xl:grid-cols-[minmax(0,1fr)_640px]">
+      <div className="mx-auto w-full max-w-6xl px-4 py-14 sm:px-6 sm:py-[4.5rem] md:max-w-7xl md:py-20 lg:px-8">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_500px] lg:items-start xl:grid-cols-[minmax(0,1fr)_560px] 2xl:grid-cols-[minmax(0,1fr)_600px]">
           <div className="flex flex-col gap-6 sm:gap-8 lg:pr-8 xl:pr-12">
             {/* Badge */}
-            <div className="group inline-flex w-fit animate-[fadeIn_1s_ease-out] items-center gap-2.5 rounded-full border border-white/25 bg-white/15 px-4 py-2 text-xs font-medium text-white shadow-lg backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-white/40 hover:bg-white/20 sm:text-sm">
+            <div className="group inline-flex w-fit animate-[fadeIn_1s_ease-out] items-center gap-2.5 rounded-full border border-white/25 bg-white/15 px-3.5 py-1.5 text-[0.75rem] font-medium text-white shadow-lg backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-white/40 hover:bg-white/20 sm:px-4 sm:py-2 sm:text-sm">
               <Sparkles className="size-3.5 animate-pulse text-yellow-300 sm:size-4" />
               <span>Agência boutique • experiências sob medida</span>
               <span className="size-1.5 animate-pulse rounded-full bg-green-400 shadow-[0_0_8px_theme(colors.green.400)]" />
             </div>
 
             {/* Headline */}
-            <div className="max-w-3xl animate-[fadeIn_1.2s_ease-out] space-y-5">
-              <h1 className="text-balance text-3xl font-bold leading-tight tracking-tight text-white drop-shadow-2xl sm:text-4xl md:text-5xl lg:text-6xl">
+            <div className="max-w-3xl animate-[fadeIn_1.2s_ease-out] space-y-4">
+              <h1 className="text-balance text-[clamp(2rem,5vw,3.25rem)] font-semibold leading-[1.1] tracking-tight text-white drop-shadow-2xl sm:font-bold md:text-[clamp(2.4rem,4vw,3.6rem)]">
                 Descubra o mundo com a{" "}
                 <span className="relative inline-block">
                   <span className="relative z-10 bg-gradient-to-r from-blue-400 via-blue-300 to-purple-400 bg-clip-text text-transparent">
@@ -179,7 +177,7 @@ export default function Hero({ images, userName }: HeroProps) {
                 : viagens premium, memórias eternas.
               </h1>
 
-              <p className="max-w-xl text-pretty text-sm leading-relaxed text-white/90 drop-shadow-lg sm:text-base md:text-lg md:leading-relaxed">
+              <p className="max-w-xl text-pretty text-[0.95rem] leading-relaxed text-white/85 drop-shadow-lg sm:text-[1.05rem] md:text-[1.15rem] md:leading-relaxed">
                 {userName ? (
                   <>
                     <span className="font-semibold text-white">{userName.split(" ")[0]}</span>, planejamos sua próxima jornada com
@@ -196,8 +194,8 @@ export default function Hero({ images, userName }: HeroProps) {
               <Link
                 href="/destinos"
                 className={cn(
-                  "group relative inline-flex items-center justify-center gap-2.5 overflow-hidden rounded-full border border-white/30 bg-gradient-to-r from-blue-500/90 to-purple-500/90 px-6 py-3.5 text-sm font-semibold text-white shadow-xl backdrop-blur transition-all duration-300",
-                  "hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-500/50 sm:px-7 sm:py-3.5 sm:text-base",
+                  "group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full border border-white/30 bg-gradient-to-r from-blue-500/90 to-purple-500/90 px-5 py-3 text-sm font-semibold text-white shadow-xl backdrop-blur transition-all duration-300",
+                  "hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-500/50 sm:px-6 sm:py-3 sm:text-[0.95rem]",
                 )}
               >
                 <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
@@ -208,7 +206,7 @@ export default function Hero({ images, userName }: HeroProps) {
 
               <Link
                 href="/sobre-nos"
-                className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-3 text-sm font-medium text-white/95 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-white/40 hover:bg-white/20 hover:shadow-lg sm:px-6 sm:text-base"
+                className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2.5 text-[0.85rem] font-medium text-white/95 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-white/40 hover:bg-white/20 hover:shadow-lg sm:px-5 sm:py-3 sm:text-[0.95rem]"
               >
                 <Compass className="size-4 transition-transform duration-300 group-hover:rotate-12 sm:size-5" />
                 <span>Conheça a Evastur</span>
@@ -216,7 +214,7 @@ export default function Hero({ images, userName }: HeroProps) {
 
               <Link
                 href="/contato"
-                className="group inline-flex items-center justify-center gap-2 rounded-full border border-emerald-400/40 bg-gradient-to-r from-emerald-500/20 to-emerald-400/20 px-5 py-3 text-sm font-medium text-emerald-50 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-emerald-400/60 hover:from-emerald-500/30 hover:to-emerald-400/30 hover:shadow-lg hover:shadow-emerald-500/30 sm:px-6 sm:text-base"
+                className="group inline-flex items-center justify-center gap-2 rounded-full border border-emerald-400/40 bg-gradient-to-r from-emerald-500/20 to-emerald-400/20 px-4 py-2.5 text-[0.85rem] font-medium text-emerald-50 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-emerald-400/60 hover:from-emerald-500/30 hover:to-emerald-400/30 hover:shadow-lg hover:shadow-emerald-500/30 sm:px-5 sm:py-3 sm:text-[0.95rem]"
               >
                 <CalendarCheck2 className="size-4 transition-transform duration-300 group-hover:scale-110 sm:size-5" />
                 <span>Montar roteiro</span>
@@ -228,12 +226,12 @@ export default function Hero({ images, userName }: HeroProps) {
               {featureHighlights.map(({ icon: Icon, label }) => (
                 <div
                   key={label}
-                  className="group flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:border-white/30 hover:bg-white/15"
+                  className="group flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-3.5 py-2.5 backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:border-white/30 hover:bg-white/15"
                 >
                   <span className="flex size-9 items-center justify-center rounded-2xl bg-white/15 shadow-lg shadow-black/10 backdrop-blur">
                     <Icon className="size-4 text-sky-200" />
                   </span>
-                  <span className="text-sm font-medium text-white/90">{label}</span>
+                  <span className="text-[0.85rem] font-medium text-white/90 sm:text-sm">{label}</span>
                 </div>
               ))}
             </div>
@@ -275,7 +273,7 @@ export default function Hero({ images, userName }: HeroProps) {
           <div className="size-6 rounded-full border-2 border-white/40 p-1">
             <div className="size-full animate-pulse rounded-full bg-white/60" />
           </div>
-          <span className="text-xs font-medium text-white/60">Role para explorar</span>
+          <span className="text-[0.7rem] font-medium text-white/60 sm:text-xs">Role para explorar</span>
         </div>
       </div>
     </section>

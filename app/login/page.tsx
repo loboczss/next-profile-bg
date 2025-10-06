@@ -4,10 +4,12 @@ import { auth } from "@/lib/auth";
 
 import LoginPageClient from "./login-page-client";
 
+type LoginPageSearchParams = {
+  callbackUrl?: string | string[];
+};
+
 type LoginPageProps = {
-  searchParams?: {
-    callbackUrl?: string;
-  };
+  searchParams?: Promise<LoginPageSearchParams>;
 };
 
 const DEFAULT_AUTHENTICATED_DESTINATION = "/usuario";
@@ -29,10 +31,14 @@ function resolveRedirectDestination(
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const callbackParam = resolvedSearchParams?.callbackUrl;
+  const callbackUrl = Array.isArray(callbackParam) ? callbackParam[0] : callbackParam;
+
   const session = await auth();
 
   if (session?.user) {
-    const destination = resolveRedirectDestination(searchParams?.callbackUrl, session.user.role);
+    const destination = resolveRedirectDestination(callbackUrl, session.user.role);
     redirect(destination);
   }
 

@@ -15,7 +15,6 @@ import {
   UserPlus,
   Mail,
   LockKeyhole,
-  UserCog,
   UserRound,
 } from "lucide-react";
 
@@ -44,7 +43,6 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [profileType, setProfileType] = useState<"user" | "admin">("user");
   const [adminCode, setAdminCode] = useState("");
 
   // UI states
@@ -53,21 +51,6 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  const profileOptions = [
-    {
-      value: "user" as const,
-      label: "Perfil comum",
-      description: "Visualiza destinos e gerencia apenas o próprio perfil.",
-      icon: UserRound,
-    },
-    {
-      value: "admin" as const,
-      label: "Administrador",
-      description: "Acessa o dashboard completo e edita todos os conteúdos.",
-      icon: UserCog,
-    },
-  ];
 
   // força simples da senha (apenas UI)
   const strength = useMemo(() => {
@@ -121,7 +104,10 @@ export default function SignupPage() {
       setError("As senhas precisam ser iguais.");
       return;
     }
-    if (profileType === "admin" && normalizedAdminCode !== ADMIN_CODE) {
+    const hasAdminCode = normalizedAdminCode.length > 0;
+    const resultingProfileType = hasAdminCode ? "admin" : "user";
+
+    if (hasAdminCode && normalizedAdminCode !== ADMIN_CODE) {
       setError("Código de administrador incorreto.");
       return;
     }
@@ -137,8 +123,8 @@ export default function SignupPage() {
           email: normalizedEmail,
           password,
           confirmPassword,
-          profileType,
-          adminCode: profileType === "admin" ? normalizedAdminCode : undefined,
+          profileType: resultingProfileType,
+          adminCode: hasAdminCode ? normalizedAdminCode : undefined,
         }),
       });
 
@@ -146,10 +132,10 @@ export default function SignupPage() {
       if (!response.ok) {
         setError(data.error ?? "Erro ao cadastrar.");
         return;
-        }
+      }
 
       setSuccess(
-        profileType === "admin"
+        hasAdminCode
           ? "Administrador cadastrado com sucesso! Redirecionando para o login…"
           : "Cadastro realizado com sucesso! Redirecionando para o login…",
       );
@@ -158,7 +144,6 @@ export default function SignupPage() {
       setEmail("");
       setPassword("");
       setConfirmPassword("");
-      setProfileType("user");
       setAdminCode("");
       setTimeout(() => router.push("/login"), 1200);
     } catch (err) {
@@ -446,77 +431,30 @@ export default function SignupPage() {
                   initial={fieldMotion.initial}
                   animate={fieldMotion.animate}
                   transition={fieldTransition}
-                  className="space-y-2"
+                  className="space-y-1.5"
                 >
-                  <p className="text-sm font-medium text-slate-800">Tipo de perfil</p>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {profileOptions.map((option) => {
-                      const OptionIcon = option.icon;
-                      const isActive = profileType === option.value;
-                      return (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => setProfileType(option.value)}
-                          aria-pressed={isActive}
-                          className={`group flex w-full flex-col items-start gap-2 rounded-2xl border px-4 py-3 text-left transition-all ${
-                            isActive
-                              ? "border-blue-400 bg-blue-50/80 text-blue-900 shadow-lg shadow-blue-500/20"
-                              : "border-slate-200 bg-white/70 text-slate-700 hover:border-blue-200 hover:bg-blue-50/40"
-                          }`}
-                        >
-                          <div
-                            className={`grid h-10 w-10 place-items-center rounded-xl transition-colors ${
-                              isActive ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"
-                            }`}
-                          >
-                            <OptionIcon className="h-5 w-5" />
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-sm font-semibold">{option.label}</p>
-                            <p className="text-xs text-slate-500">{option.description}</p>
-                          </div>
-                        </button>
-                      );
-                    })}
+                  <label htmlFor="adminCode" className="text-sm font-medium text-slate-800">
+                    Tem um código?
+                  </label>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                      <ShieldCheck className="h-4 w-4" />
+                    </span>
+                    <input
+                      id="adminCode"
+                      name="adminCode"
+                      type="password"
+                      value={adminCode}
+                      onChange={(e) => setAdminCode(e.target.value)}
+                      placeholder="Digite o código (opcional)"
+                      autoComplete="one-time-code"
+                      className="w-full rounded-2xl border border-slate-200 bg-white/90 py-3 pl-10 pr-3.5 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:shadow-[0_0_0_4px_rgba(59,130,246,0.12)]"
+                    />
                   </div>
+                  <p className="text-xs text-slate-500">
+                    Informe apenas se recebeu um código da equipe Evastur para acesso administrativo.
+                  </p>
                 </motion.div>
-
-                <AnimatePresence initial={false}>
-                  {profileType === "admin" && (
-                    <motion.div
-                      key="admin-code"
-                      initial={fieldMotion.initial}
-                      animate={fieldMotion.animate}
-                      exit={fieldMotion.exit}
-                      transition={fieldTransition}
-                      className="space-y-1.5"
-                    >
-                      <label htmlFor="adminCode" className="text-sm font-medium text-slate-800">
-                        Código de administrador
-                      </label>
-                      <div className="relative">
-                        <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                          <ShieldCheck className="h-4 w-4" />
-                        </span>
-                        <input
-                          id="adminCode"
-                          name="adminCode"
-                          type="password"
-                          value={adminCode}
-                          onChange={(e) => setAdminCode(e.target.value)}
-                          placeholder="Informe o código"
-                          autoComplete="one-time-code"
-                          required
-                          className="w-full rounded-2xl border border-slate-200 bg-white/90 py-3 pl-10 pr-3.5 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:shadow-[0_0_0_4px_rgba(59,130,246,0.12)]"
-                        />
-                      </div>
-                      <p className="text-xs text-slate-500">
-                        Apenas gestores autorizados podem criar contas administrativas.
-                      </p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
 
                 <motion.button
                   type="submit"

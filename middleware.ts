@@ -1,13 +1,36 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { jwtVerify } from "jose";
+
+import { authSecret } from "./lib/auth-secret";
 
 const LOGIN_PATH = "/login";
 
-export async function middleware(request: NextRequest) {
-  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+const SESSION_COOKIE_NAMES = ["__Secure-next-auth.session-token", "next-auth.session-token"];
 
-  if (token) {
+async function isAuthenticated(request: NextRequest): Promise<boolean> {
+  const sessionToken = SESSION_COOKIE_NAMES.map((name) => request.cookies.get(name)?.value).find(Boolean);
+
+  if (!sessionToken) {
+    return false;
+  }
+
+  if (!authSecret) {
+    return true;
+  }
+
+  try {
+    await jwtVerify(sessionToken, new TextEncoder().encode(authSecret), {
+      algorithms: ["HS256", "HS512"],
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function middleware(request: NextRequest) {
+  if (await isAuthenticated(request)) {
     return NextResponse.next();
   }
 

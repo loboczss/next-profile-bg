@@ -464,7 +464,7 @@ export default function SignupPage() {
                       type="password"
                       value={adminCode}
                       onChange={(e) => setAdminCode(e.target.value)}
-                      placeholder="Informe o código 258790"
+                      placeholder="Informe o código"
                       autoComplete="one-time-code"
                       required
                       className="w-full rounded-xl border border-slate-200 bg-white/90 py-2.5 pl-9 pr-3.5 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.15)]"

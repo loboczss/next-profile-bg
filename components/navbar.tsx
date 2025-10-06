@@ -77,11 +77,12 @@ export function Navbar({ user }: NavbarProps) {
           >
             {/* Logo com animações sutis */}
             <span className="relative">
-              {/* Glow azul suave de fundo */}
+              {/* Glow azul suave de fundo 
               <span className="pointer-events-none absolute -inset-3 blur-xl opacity-0 transition-all duration-500 group-hover:opacity-60">
                 <span className="absolute inset-0 bg-blue-500/40" />
                 <span className="absolute inset-0 bg-red-500/25" />
               </span>
+              */}
               
               {/* Anel de luz rotativo único */}
               <span className="pointer-events-none absolute -inset-6 opacity-0 transition-opacity duration-500 group-hover:opacity-70">
@@ -107,18 +108,19 @@ export function Navbar({ user }: NavbarProps) {
               <span className="pointer-events-none absolute -left-1 bottom-0 size-1 rounded-full bg-red-400 opacity-0 shadow-[0_0_4px_theme(colors.red.400)] transition-all duration-500 group-hover:opacity-80 group-hover:animate-ping" style={{ animationDelay: '0.3s' }} />
             </span>
 
-            {/* Texto ao lado da logo */}
-            <span className="hidden flex-col sm:flex">
-              <span className="inline-flex items-center gap-2 text-lg font-bold tracking-tight">
-                <span className="bg-gradient-to-r from-blue-500 via-blue-400 to-red-500 bg-clip-text text-transparent">
-                  Evastur
+            {/* Texto ao lado da logo 
+              <span className="hidden flex-col sm:flex">
+                <span className="inline-flex items-center gap-2 text-lg font-bold tracking-tight">
+                  <span className="bg-gradient-to-r from-blue-500 via-blue-400 to-red-500 bg-clip-text text-transparent">
+                    Evastur
+                  </span>
+                  <Sparkles className="size-4 text-yellow-400 opacity-0 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:opacity-100 group-hover:drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]" />
                 </span>
-                <Sparkles className="size-4 text-yellow-400 opacity-0 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:opacity-100 group-hover:drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]" />
+                <span className="text-[11px] font-medium leading-tight text-muted-foreground transition-colors duration-300 group-hover:text-blue-300/60">
+                  Experiências que brilham ✦
+                </span>
               </span>
-              <span className="text-[11px] font-medium leading-tight text-muted-foreground transition-colors duration-300 group-hover:text-blue-300/60">
-                Experiências que brilham ✦
-              </span>
-            </span>
+              */}
           </Link>
 
           {/* DESKTOP NAV */}

@@ -7,6 +7,17 @@ import { z } from "zod";
 import { prisma } from "./prisma";
 import { verifyPassword } from "./hash";
 
+export const authSecret =
+  process.env.AUTH_SECRET ??
+  process.env.NEXTAUTH_SECRET ??
+  (process.env.NODE_ENV === "development" ? "development-secret" : undefined);
+
+if (!authSecret) {
+  throw new Error(
+    "Missing NEXTAUTH_SECRET. Set AUTH_SECRET or NEXTAUTH_SECRET environment variable.",
+  );
+}
+
 const credentialsSchema = z.object({
   username: z.string().min(1, "Usuário obrigatório").trim(),
   password: z.string().min(1, "Senha obrigatória"),
@@ -18,6 +29,7 @@ export const {
   signIn,
   signOut,
 } = NextAuth({
+  secret: authSecret,
   session: { strategy: "jwt" },
   providers: [
     Credentials({

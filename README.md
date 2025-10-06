@@ -7,6 +7,9 @@ Aplicação base construída com Next.js 15 e autenticação via [NextAuth.js](h
 - A tela de login fica em [`app/login/page.tsx`](app/login/page.tsx) e envia formulários diretamente para os endpoints padrão do NextAuth.
 - Após autenticação bem-sucedida, o usuário é redirecionado para `/dashboard?login=success`, onde um toast confirma o sucesso do login.
 
+## Variáveis de ambiente obrigatórias
+- Defina `AUTH_SECRET` (ou `NEXTAUTH_SECRET`) com um valor aleatório e seguro, por exemplo `openssl rand -base64 32`. Esse segredo é compartilhado entre o NextAuth e a [middleware de proteção de rotas](middleware.ts) por meio de [`lib/auth-secret.ts`](lib/auth-secret.ts). Sem ele, rotas privadas retornarão para a tela de login com erros de validação de token.
+
 ## Debug do login com Google OAuth
 1. **Verifique variáveis de ambiente obrigatórias**
    - `AUTH_GOOGLE_ID` e `AUTH_GOOGLE_SECRET` devem existir e corresponder às credenciais geradas no [Google Cloud Console](https://console.cloud.google.com/).

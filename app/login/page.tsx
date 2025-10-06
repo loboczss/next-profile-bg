@@ -48,7 +48,11 @@ export default function LoginPage() {
   // Navegação / callback (mesmo backend)
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/";
+  const callbackParam = searchParams.get("callbackUrl");
+  const defaultCallbackUrl = "/dashboard?login=success";
+  const callbackUrl = callbackParam?.startsWith("/")
+    ? callbackParam
+    : defaultCallbackUrl;
   const { data: session, status } = useSession();
 
   // Estado do form (inalterado)

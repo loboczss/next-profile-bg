@@ -94,16 +94,17 @@ export function DestinationCard({
         {/* CARD (gatilho) — sem mudanças de contrato */}
         <Card
           className={cn(
-            "group relative flex min-w-0 cursor-pointer flex-col overflow-hidden rounded-3xl border border-white/30 bg-white/80 shadow-[0_25px_50px_-25px_rgba(14,116,144,0.35)] transition-all duration-500 hover:-translate-y-3 hover:shadow-[0_40px_80px_-30px_rgba(2,132,199,0.45)]",
+            "group relative flex min-w-0 cursor-pointer flex-col overflow-hidden rounded-2xl border border-white/20 bg-white/70 shadow-[0_20px_45px_-25px_rgba(2,132,199,0.4)] transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_32px_60px_-30px_rgba(2,132,199,0.55)] dark:border-white/10 dark:bg-white/10 dark:shadow-cyan-900/40",
+            "gap-4",
             fullHeight ? "h-full" : "h-auto"
           )}
         >
           <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-cyan-500/20" />
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-cyan-500/15" />
           </div>
 
-          <CardHeader className="gap-4 min-w-0">
-            <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-white/60 bg-slate-100 shadow-inner">
+          <CardHeader className="min-w-0 gap-3 px-5 pb-0 pt-5">
+            <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl border border-white/60 bg-slate-100 shadow-inner">
               <div className="absolute right-3 top-3 z-10">
                 <FavoriteButton
                   destinationId={destination.id}
@@ -168,38 +169,40 @@ export function DestinationCard({
               )}
             </div>
 
-            <div className="space-y-1 min-w-0">
-              <CardTitle className="truncate text-lg font-bold text-slate-900" title={destination.name}>
+            <div className="min-w-0 space-y-1">
+              <CardTitle className="truncate text-base font-semibold text-slate-900 sm:text-lg" title={destination.name}>
                 {destination.name}
               </CardTitle>
-              <CardDescription className="flex min-w-0 items-center gap-2 text-sm font-medium text-slate-600">
-                <MapPin className="shrink-0 size-4 text-primary" />
-                <span className="truncate" title={destination.city}>{destination.city}</span>
+              <CardDescription className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-slate-600 sm:text-sm">
+                <MapPin className="size-4 shrink-0 text-primary" />
+                <span className="truncate" title={destination.city}>
+                  {destination.city}
+                </span>
               </CardDescription>
             </div>
           </CardHeader>
 
-          <CardContent className="mt-auto space-y-4 min-w-0">
-            <div className="flex items-center justify-between gap-3">
-              <span className="truncate text-lg font-bold text-slate-900">{formattedPrice}</span>
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100/80 px-3 py-1 text-sm font-semibold text-amber-600 shadow-sm">
+          <CardContent className="mt-auto min-w-0 space-y-3 px-5 pb-5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="truncate text-base font-semibold text-slate-900 sm:text-lg">{formattedPrice}</span>
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100/80 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-amber-600 shadow-sm sm:text-sm sm:normal-case sm:tracking-normal">
                 <Star className="size-4" />
                 {destination.rating.toFixed(1)}
               </span>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 text-sm font-medium text-slate-600">
-              <span className="inline-flex items-center gap-2 rounded-full bg-slate-100/80 px-3 py-1">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-600 sm:text-sm">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100/80 px-2.5 py-1">
                 <CalendarRange className="size-4 text-primary" />
                 <span className="truncate">{stayLabel}</span>
               </span>
-              <span className="inline-flex items-center gap-2 rounded-full bg-slate-100/80 px-3 py-1">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100/80 px-2.5 py-1">
                 <Users className="size-4 text-primary" />
                 <span className="truncate">{destination.peopleCount} pessoas</span>
               </span>
             </div>
 
-            <div className="h-px w-full bg-gradient-to-r from-transparent via-blue-200/80 to-transparent" />
+            <div className="h-px w-full bg-gradient-to-r from-transparent via-blue-200/70 to-transparent" />
           </CardContent>
         </Card>
       </DialogTrigger>

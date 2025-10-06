@@ -38,7 +38,7 @@ export function DestinationGrid({
   }
 
   return (
-    <div className="grid gap-8 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="grid auto-rows-fr gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
       {destinations.map((destination) =>
         onDelete ? (
           <ManageableDestinationCard

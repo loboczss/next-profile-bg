@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
-
-import { authSecret } from "./lib/auth-secret";
+import { auth } from "./lib/auth";
 
 const protectedMatchers = [
   "/dashboard",
@@ -11,27 +8,7 @@ const protectedMatchers = [
   "/favoritos",
   "/api/favorites",
 ];
-
-
-
-async function isAuthenticated(request: NextRequest) {
-  try {
-    if (!authSecret) {
-      console.error(
-        "AUTH_SECRET ou NEXTAUTH_SECRET não está definido. Configure a variável para proteger as rotas privadas.",
-      );
-      return false;
-    }
-
-    const token = await getToken({ req: request, secret: authSecret });
-    return Boolean(token?.userId ?? token?.sub);
-  } catch (error) {
-    console.error("Erro ao validar token na middleware", error);
-    return false;
-  }
-}
-
-export default async function middleware(request: NextRequest) {
+export default auth(async (request) => {
   const { pathname } = request.nextUrl;
   const requiresAuth = protectedMatchers.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
@@ -41,7 +18,7 @@ export default async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (await isAuthenticated(request)) {
+  if (request.auth) {
     return NextResponse.next();
   }
 
@@ -51,7 +28,7 @@ export default async function middleware(request: NextRequest) {
     request.nextUrl.pathname + request.nextUrl.search,
   );
   return NextResponse.redirect(redirectUrl);
-}
+});
 
 export const config = {
   matcher: [

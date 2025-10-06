@@ -172,17 +172,6 @@ export default function SignupPage() {
         <div className="absolute bottom-1/4 right-1/3 h-64 w-64 animate-pulse rounded-full bg-purple-500/15 blur-3xl" />
       </div>
 
-      {/* header compacto com marca */}
-      <header className="mx-auto flex max-w-7xl items-center justify-center gap-3 px-4 py-6 text-slate-800 sm:justify-start sm:px-6 lg:px-8">
-        <div className="relative">
-          <Plane className="h-7 w-7 text-blue-600" />
-          <Sparkles className="absolute -right-2 -top-2 h-4 w-4 text-yellow-500" />
-        </div>
-        <h1 className="text-xl font-bold">
-          <span className="bg-gradient-to-r from-blue-700 to-cyan-600 bg-clip-text text-transparent">Evastur</span>
-          <span className="ml-2 text-sm font-medium text-slate-600">desde 1999</span>
-        </h1>
-      </header>
 
       {/* container central */}
       <section className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-7xl items-center justify-center px-4 sm:px-6 lg:px-8">

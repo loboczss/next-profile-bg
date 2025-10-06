@@ -4,6 +4,7 @@ CREATE TABLE "Favorite" (
     "userId" INTEGER NOT NULL,
     "destinationId" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
     CONSTRAINT "Favorite_pkey" PRIMARY KEY ("id")
 );
 

@@ -4,6 +4,7 @@ import { CredentialsSignin } from "next-auth";
 // import Google from "next-auth/providers/google";
 import { z } from "zod";
 
+import { authSecret } from "./auth-secret";
 import { prisma } from "./prisma";
 import { verifyPassword } from "./hash";
 
@@ -18,6 +19,7 @@ export const {
   signIn,
   signOut,
 } = NextAuth({
+  secret: authSecret,
   session: { strategy: "jwt" },
   providers: [
     Credentials({

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
+import { authSecret } from "./lib/auth-secret";
+
 const protectedMatchers = [
   "/dashboard",
   "/api/profile",
@@ -14,8 +16,14 @@ const protectedMatchers = [
 
 async function isAuthenticated(request: NextRequest) {
   try {
-    const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
-    const token = await getToken({ req: request, secret });
+    if (!authSecret) {
+      console.error(
+        "AUTH_SECRET ou NEXTAUTH_SECRET não está definido. Configure a variável para proteger as rotas privadas.",
+      );
+      return false;
+    }
+
+    const token = await getToken({ req: request, secret: authSecret });
     return Boolean(token?.userId ?? token?.sub);
   } catch (error) {
     console.error("Erro ao validar token na middleware", error);

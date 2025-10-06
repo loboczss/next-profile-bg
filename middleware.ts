@@ -1,17 +1,22 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { jwtVerify } from "jose";
+import { getToken } from "next-auth/jwt";
 
 import { authSecret } from "./lib/auth-secret";
 
 const LOGIN_PATH = "/login";
 
-const SESSION_COOKIE_NAMES = ["__Secure-next-auth.session-token", "next-auth.session-token"];
+const SESSION_COOKIE_NAMES = [
+  "__Secure-next-auth.session-token",
+  "next-auth.session-token",
+  "__Secure-authjs.session-token",
+  "authjs.session-token",
+];
 
 async function isAuthenticated(request: NextRequest): Promise<boolean> {
-  const sessionToken = SESSION_COOKIE_NAMES.map((name) => request.cookies.get(name)?.value).find(Boolean);
+  const hasSessionCookie = SESSION_COOKIE_NAMES.some((name) => request.cookies.has(name));
 
-  if (!sessionToken) {
+  if (!hasSessionCookie) {
     return false;
   }
 
@@ -19,14 +24,13 @@ async function isAuthenticated(request: NextRequest): Promise<boolean> {
     return true;
   }
 
-  try {
-    await jwtVerify(sessionToken, new TextEncoder().encode(authSecret), {
-      algorithms: ["HS256", "HS512"],
-    });
-    return true;
-  } catch {
-    return false;
-  }
+  const token = await getToken({
+    req: request,
+    secureCookie: request.nextUrl.protocol === "https:",
+    secret: authSecret,
+  });
+
+  return Boolean(token);
 }
 
 export async function middleware(request: NextRequest) {

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   CalendarRange,
@@ -39,6 +39,7 @@ interface DestinationCardProps {
   fullHeight?: boolean;
   canFavorite?: boolean;
   onFavoriteChange?: (destinationId: number, isFavorite: boolean) => void;
+  className?: string;
 }
 
 export function DestinationCard({
@@ -46,8 +47,11 @@ export function DestinationCard({
   fullHeight = true,
   canFavorite = true,
   onFavoriteChange,
+  className,
 }: DestinationCardProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isCardImageLoaded, setIsCardImageLoaded] = useState(false);
+  const [isHeroImageLoaded, setIsHeroImageLoaded] = useState(false);
 
   const photos = destination.photos.length > 0 ? destination.photos : ["/placeholder.jpg"];
   const initialFavorite = Boolean(destination.isFavorite);
@@ -81,6 +85,10 @@ export function DestinationCard({
     setActiveIndex((current) => (current + 1) % photos.length);
   };
 
+  useEffect(() => {
+    setIsCardImageLoaded(false);
+  }, [activeIndex]);
+
   const formattedPrice = priceFormatter.format(destination.price);
   const formattedStartDate = dateFormatter.format(new Date(destination.startDate));
   const formattedEndDate = dateFormatter.format(new Date(destination.endDate));
@@ -88,22 +96,30 @@ export function DestinationCard({
 
   const heroPhoto = photos[0];
 
+  useEffect(() => {
+    setIsHeroImageLoaded(false);
+  }, [heroPhoto]);
+
+  const hasMultiplePhotos = photos.length > 1;
+
   return (
     <Dialog>
       <DialogTrigger asChild>
         {/* CARD (gatilho) — sem mudanças de contrato */}
         <Card
           className={cn(
-            "group relative flex min-w-0 cursor-pointer flex-col overflow-hidden rounded-2xl border border-white/20 bg-white/70 shadow-[0_20px_45px_-25px_rgba(2,132,199,0.4)] transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_32px_60px_-30px_rgba(2,132,199,0.55)] dark:border-white/10 dark:bg-white/10 dark:shadow-cyan-900/40",
+            "group relative flex min-w-0 cursor-pointer flex-col overflow-hidden rounded-3xl border border-white/30 bg-gradient-to-br from-white via-white/90 to-cyan-50/70 p-0 shadow-[0_22px_40px_-28px_rgba(2,132,199,0.45)] transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_30px_70px_-35px_rgba(2,132,199,0.6)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200 dark:border-white/10 dark:bg-white/10 dark:shadow-cyan-900/40",
             "gap-4",
-            fullHeight ? "h-full" : "h-auto"
+            fullHeight ? "h-full" : "h-auto",
+            "before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[1.75rem] before:bg-gradient-to-br before:from-sky-200/30 before:via-transparent before:to-cyan-200/40 before:opacity-0 before:transition-opacity before:duration-500 before:content-[''] group-hover:before:opacity-100",
+            className
           )}
         >
           <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-cyan-500/15" />
           </div>
 
-          <CardHeader className="min-w-0 gap-3 px-5 pb-0 pt-5">
+          <CardHeader className="min-w-0 space-y-3 px-5 pb-0 pt-5">
             <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl border border-white/60 bg-slate-100 shadow-inner">
               <div className="absolute right-3 top-3 z-10">
                 <FavoriteButton
@@ -119,12 +135,16 @@ export function DestinationCard({
                 src={photos[activeIndex]}
                 alt={destination.name}
                 fill
-                className="object-cover"
+                className={cn(
+                  "object-cover transition duration-700 ease-out motion-safe:group-hover:scale-[1.05]",
+                  isCardImageLoaded ? "scale-100 opacity-100" : "scale-105 opacity-0"
+                )}
                 sizes="(min-width: 1280px) 380px, (min-width: 768px) 320px, 100vw"
                 priority={false}
+                onLoadingComplete={() => setIsCardImageLoaded(true)}
               />
 
-              {photos.length > 1 && (
+              {hasMultiplePhotos && (
                 <>
                   <button
                     type="button"
@@ -154,16 +174,27 @@ export function DestinationCard({
                 </>
               )}
 
-              {photos.length > 1 && (
-                <div className="absolute inset-x-0 bottom-3 flex justify-center gap-1">
+              {hasMultiplePhotos && (
+                <div className="absolute inset-x-0 bottom-3 flex justify-center gap-1.5 px-3">
                   {photos.map((photo, index) => (
-                    <span
+                    <button
                       key={photo + index}
+                      type="button"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setActiveIndex(index);
+                      }}
+                      aria-label={`Ver foto ${index + 1}`}
                       className={cn(
-                        "h-2 w-2 rounded-full bg-white/40 backdrop-blur",
-                        index === activeIndex && "bg-white"
+                        "h-2.5 w-2.5 rounded-full bg-white/40 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80",
+                        index === activeIndex
+                          ? "bg-white shadow"
+                          : "hover:bg-white/70"
                       )}
-                    />
+                    >
+                      <span className="sr-only">{`Foto ${index + 1}`}</span>
+                    </button>
                   ))}
                 </div>
               )}
@@ -182,21 +213,24 @@ export function DestinationCard({
             </div>
           </CardHeader>
 
-          <CardContent className="mt-auto min-w-0 space-y-3 px-5 pb-5">
-            <div className="flex items-center justify-between gap-2">
-              <span className="truncate text-base font-semibold text-slate-900 sm:text-lg">{formattedPrice}</span>
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100/80 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-amber-600 shadow-sm sm:text-sm sm:normal-case sm:tracking-normal">
+          <CardContent className="mt-auto min-w-0 space-y-4 px-5 pb-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex min-w-0 flex-col">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Investimento a partir de</span>
+                <span className="truncate text-lg font-semibold text-slate-900 sm:text-xl">{formattedPrice}</span>
+              </div>
+              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-amber-100/90 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-600 shadow-sm sm:text-sm sm:normal-case sm:tracking-normal">
                 <Star className="size-4" />
                 {destination.rating.toFixed(1)}
               </span>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-600 sm:text-sm">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100/80 px-2.5 py-1">
+            <div className="grid gap-2 text-xs font-medium text-slate-600 sm:grid-cols-2 sm:text-sm">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100/80 px-3 py-1.5">
                 <CalendarRange className="size-4 text-primary" />
                 <span className="truncate">{stayLabel}</span>
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100/80 px-2.5 py-1">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100/80 px-3 py-1.5">
                 <Users className="size-4 text-primary" />
                 <span className="truncate">{destination.peopleCount} pessoas</span>
               </span>
@@ -210,7 +244,7 @@ export function DestinationCard({
       {/* MODAL (grid: hero + conteúdo rolável) */}
       <DialogContent
         className={cn(
-          "max-w-4xl max-h-[90vh] overflow-hidden rounded-3xl border border-white/40",
+          "w-[min(100vw-2rem,960px)] max-h-[90vh] overflow-hidden rounded-[32px] border border-white/40 sm:w-[min(100vw-4rem,1100px)]",
           "bg-gradient-to-br from-white via-white/95 to-sky-50/60 p-0",
           "shadow-[0_45px_90px_-40px_rgba(2,132,199,0.55)]",
           "grid grid-rows-[auto_minmax(0,1fr)]"
@@ -227,14 +261,18 @@ export function DestinationCard({
         </DialogClose>
 
         {/* HERO — preço sobre a foto */}
-        <div className="relative h-[28vh] min-h-[180px] w-full bg-slate-100 sm:h-[30vh] md:h-[32vh] lg:h-[34vh] xl:h-[36vh]">
+        <div className="relative h-[28vh] min-h-[200px] w-full bg-slate-100 sm:h-[30vh] md:h-[32vh] lg:h-[34vh] xl:h-[36vh]">
           <Image
             src={heroPhoto}
             alt={`${destination.name} - destaque`}
             fill
-            className="object-cover"
+            className={cn(
+              "object-cover transition duration-700 ease-out",
+              isHeroImageLoaded ? "scale-100 opacity-100" : "scale-105 opacity-0"
+            )}
             sizes="(min-width: 1280px) 640px, (min-width: 768px) 540px, 100vw"
             priority={false}
+            onLoadingComplete={() => setIsHeroImageLoaded(true)}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-slate-900/30 to-transparent" />
 

@@ -16,12 +16,16 @@ interface ManageableDestinationCardProps {
   destination: SerializedDestination;
   action: DestinationDeleteAction;
   canFavorite?: boolean;
+  className?: string;
+  cardClassName?: string;
 }
 
 export function ManageableDestinationCard({
   destination,
   action,
   canFavorite = true,
+  className,
+  cardClassName,
 }: ManageableDestinationCardProps) {
   const [state, formAction, isPending] = useActionState(
     action,
@@ -29,11 +33,12 @@ export function ManageableDestinationCard({
   );
 
   return (
-    <div className="space-y-4">
+    <div className={cn("flex h-full flex-col gap-4", className)}>
       <DestinationCard
         destination={destination}
         fullHeight={false}
         canFavorite={canFavorite}
+        className={cn("flex-1", cardClassName)}
       />
       <form
         action={formAction}

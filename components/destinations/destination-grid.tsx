@@ -5,6 +5,8 @@ import type {
   SerializedDestination,
 } from "@/lib/destinations";
 
+import { cn } from "@/lib/utils";
+
 import { DestinationCard } from "./destination-card";
 import { ManageableDestinationCard } from "./manageable-destination-card";
 
@@ -38,23 +40,43 @@ export function DestinationGrid({
   }
 
   return (
-    <div className="grid auto-rows-fr gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-      {destinations.map((destination) =>
-        onDelete ? (
-          <ManageableDestinationCard
-            key={destination.id}
-            destination={destination}
-            action={onDelete}
-            canFavorite={canFavorite}
-          />
-        ) : (
-          <DestinationCard
-            key={destination.id}
-            destination={destination}
-            canFavorite={canFavorite}
-          />
-        )
-      )}
+    <div className="relative">
+      <div
+        className={cn(
+          "flex snap-x snap-mandatory gap-5 overflow-x-auto pb-6", // mobile carousel
+          "sm:grid sm:auto-rows-fr sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:pb-0 xl:grid-cols-3 2xl:grid-cols-4"
+        )}
+        role="list"
+        aria-label="Destinos disponíveis"
+      >
+        {destinations.map((destination) => {
+          const card = onDelete ? (
+            <ManageableDestinationCard
+              destination={destination}
+              action={onDelete}
+              canFavorite={canFavorite}
+              className="h-full"
+              cardClassName="h-full"
+            />
+          ) : (
+            <DestinationCard
+              destination={destination}
+              canFavorite={canFavorite}
+              className="h-full"
+            />
+          );
+
+          return (
+            <div
+              key={destination.id}
+              role="listitem"
+              className="snap-center shrink-0 basis-[calc(100%-3rem)] px-1 first:pl-2 last:pr-2 sm:snap-align-none sm:shrink sm:basis-auto sm:px-0"
+            >
+              {card}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

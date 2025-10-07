@@ -8,7 +8,6 @@ import type { Session } from "next-auth";
 import { signOut } from "next-auth/react";
 import {
   ChevronDown,
-  Crown,
   Heart,
   Home,
   Info,
@@ -21,7 +20,7 @@ import {
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { AnimatePresence, cubicBezier, easeInOut, motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 
@@ -34,7 +33,6 @@ type NavLink = {
   href: string;
   label: string;
   icon: LucideIcon;
-  colorClass: string;
   badge?: string;
 };
 
@@ -49,26 +47,23 @@ type UserMenuProps = {
   favoriteBadgeLabel: string;
 };
 
-const NAV_ANIMATION = {
-  initial: { opacity: 0, y: -12 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -12 },
-};
+const MOBILE_MENU_ID = "primary-navigation-mobile";
 
-const MOBILE_PANEL_VARIANTS = {
-  hidden: {
-    opacity: 0,
-    height: 0,
-    transition: { duration: 0.25, ease: easeInOut },
-  },
+const MOBILE_DRAWER_VARIANTS = {
+  hidden: { opacity: 0, x: "100%" },
   visible: {
     opacity: 1,
-    height: "auto",
-    transition: { duration: 0.4, ease: cubicBezier(0.21, 0.47, 0.32, 0.98) },
+    x: "0%",
+    transition: { duration: 0.18, ease: [0.4, 0, 0.2, 1] },
+  },
+  exit: {
+    opacity: 0,
+    x: "100%",
+    transition: { duration: 0.16, ease: [0.4, 0, 0.2, 1] },
   },
 };
 
-function useScrollState(threshold = 8) {
+function useScrollState(threshold = 12) {
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -84,19 +79,31 @@ function useScrollState(threshold = 8) {
   return isScrolled;
 }
 
-function MobileBackdrop({ isVisible, onClose }: { isVisible: boolean; onClose: () => void }) {
+function UserAvatar({
+  image,
+  name,
+  size = "md",
+}: {
+  image: string | null | undefined;
+  name: string;
+  size?: "sm" | "md";
+}) {
+  const dimension = size === "sm" ? "size-8" : "size-10";
+  const responsiveSize = size === "sm" ? "32px" : "40px";
   return (
-    <AnimatePresence>
-      {isVisible ? (
-        <motion.div
-          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-        />
-      ) : null}
-    </AnimatePresence>
+    <span
+      className={cn(
+        "relative grid place-items-center overflow-hidden rounded-full border border-slate-200 bg-white text-slate-500",
+        dimension,
+      )}
+      aria-hidden
+    >
+      {image ? (
+        <Image src={image} alt={name} fill sizes={responsiveSize} className="object-cover" />
+      ) : (
+        <User className="h-4 w-4" />
+      )}
+    </span>
   );
 }
 
@@ -110,131 +117,115 @@ function UserMenu({
   hasFavorites,
   favoriteBadgeLabel,
 }: UserMenuProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const userFirstName = useMemo(
-    () => (userDisplayName.trim() ? userDisplayName.split(" ")[0] : "Usuário"),
-    [userDisplayName],
-  );
+  const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!isOpen) {
-      return;
+      return undefined;
     }
 
-    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) {
+    const handlePointer = (event: MouseEvent | TouchEvent) => {
+      if (!menuRef.current?.contains(event.target as Node) && !buttonRef.current?.contains(event.target as Node)) {
         onClose();
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("touchstart", handleClickOutside);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+        buttonRef.current?.focus();
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointer);
+    document.addEventListener("touchstart", handlePointer);
+    document.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("mousedown", handlePointer);
+      document.removeEventListener("touchstart", handlePointer);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [isOpen, onClose]);
 
   return (
-    <div className="relative" ref={containerRef}>
-      <motion.button
+    <div className="relative">
+      <button
+        ref={buttonRef}
         type="button"
         onClick={onToggle}
-        onMouseDown={(event) => event.preventDefault()}
-        className="group inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-sm font-medium shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:-translate-y-[2px] hover:border-cyan-400/40 hover:bg-cyan-500/10 hover:shadow-cyan-500/20"
+        aria-expanded={isOpen}
+        aria-controls="user-menu-panel"
+        className="group inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition-all duration-150 hover:border-blue-300 hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 active:translate-y-[1px]"
       >
-        <span className="relative grid size-9 place-items-center overflow-hidden rounded-full border border-white/10 bg-gradient-to-br from-sky-500/25 via-blue-500/20 to-indigo-500/25 text-white shadow-inner shadow-white/10">
-          {user?.image ? (
-            <Image
-              src={user.image}
-              alt={userDisplayName}
-              width={36}
-              height={36}
-              unoptimized
-              className="size-full object-cover"
-            />
-          ) : (
-            <User className="size-4" />
-          )}
-          <span className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-inset ring-cyan-400/30" />
+        <UserAvatar image={user?.image} name={userDisplayName} size="sm" />
+        <span className="hidden text-left leading-tight sm:block">
+          <span className="block text-[11px] uppercase tracking-wide text-slate-500">Olá</span>
+          <span className="block font-semibold text-slate-800">{userDisplayName.split(" ")[0]}</span>
         </span>
-        <span className="flex flex-col items-start leading-tight">
-          <span className="text-[11px] uppercase tracking-wide text-muted-foreground">Olá</span>
-          <span className="font-semibold text-foreground">{userFirstName}</span>
-        </span>
-        <motion.span animate={{ rotate: isOpen ? 180 : 0 }} className="text-muted-foreground">
-          <ChevronDown className="size-4" />
-        </motion.span>
-      </motion.button>
+        <ChevronDown
+          className={cn("h-4 w-4 text-slate-500 transition-transform", isOpen && "rotate-180")}
+          aria-hidden
+        />
+      </button>
 
       <AnimatePresence>
         {isOpen ? (
           <motion.div
-            className="absolute right-0 top-[calc(100%+12px)] z-40 w-64 overflow-hidden rounded-3xl border border-white/10 bg-background/95 shadow-xl shadow-black/10 backdrop-blur-xl"
-            {...NAV_ANIMATION}
+            id="user-menu-panel"
+            ref={menuRef}
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.16, ease: [0.4, 0, 0.2, 1] }}
+            className="absolute right-0 top-[calc(100%+12px)] z-50 w-64 rounded-2xl border border-slate-200 bg-white p-3 text-sm text-slate-700 shadow-lg"
           >
-            <div className="space-y-4 p-4">
-              <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.02] p-3">
-                <span className="relative grid size-12 place-items-center overflow-hidden rounded-full border border-white/10 bg-gradient-to-br from-sky-500/25 via-blue-500/20 to-indigo-500/25 text-white shadow-inner shadow-white/10">
-                  {user?.image ? (
-                    <Image
-                      src={user.image}
-                      alt={userDisplayName}
-                      width={48}
-                      height={48}
-                      unoptimized
-                      className="size-full object-cover"
-                    />
-                  ) : (
-                    <User className="size-6" />
-                  )}
-                  <span className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-inset ring-cyan-400/30" />
-                </span>
-                <div className="flex flex-col">
-                  <span className="text-sm font-semibold text-foreground">{userDisplayName}</span>
-                  <span className="text-xs text-muted-foreground">{user?.email}</span>
-                </div>
+            <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
+              <UserAvatar image={user?.image} name={userDisplayName} />
+              <div className="space-y-0.5">
+                <p className="font-semibold text-slate-900">{userDisplayName}</p>
+                <p className="text-xs text-slate-500">{user?.email}</p>
               </div>
-
-              <nav className="grid gap-1 text-sm">
-                <Link
-                  href="/usuario"
-                  onClick={onClose}
-                  className="flex items-center gap-3 rounded-2xl px-3 py-2 transition-all duration-200 hover:bg-white/5"
-                >
-                  <User className="size-4 text-cyan-400" />
-                  Meu Perfil
-                </Link>
-                <Link
-                  href="/favoritos"
-                  onClick={onClose}
-                  className="flex items-center gap-3 rounded-2xl px-3 py-2 transition-all duration-200 hover:bg-white/5"
-                >
-                  <Heart className="size-4 text-pink-400" />
-                  <span className="flex items-center gap-2">
-                    Favoritos
-                    {hasFavorites ? (
-                      <span className="inline-flex min-w-[1.6rem] items-center justify-center rounded-full bg-pink-500/20 px-2 py-0.5 text-[0.65rem] font-semibold text-pink-500">
-                        {favoriteBadgeLabel}
-                      </span>
-                    ) : null}
-                  </span>
-                </Link>
-              </nav>
-
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  onSignOut();
-                }}
-                className="flex items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/[0.07] px-3 py-2 text-sm font-medium text-red-400 transition-all duration-200 hover:border-red-500/40 hover:bg-red-500/[0.12]"
-              >
-                <LogOut className="size-4" />
-                Sair
-              </button>
             </div>
+
+            <nav className="mt-3 grid gap-1" aria-label="Menu do usuário">
+              <Link
+                href="/usuario"
+                onClick={onClose}
+                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+              >
+                <User className="h-4 w-4 text-blue-600" aria-hidden />
+                Meu perfil
+              </Link>
+              <Link
+                href="/favoritos"
+                onClick={onClose}
+                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+              >
+                <Heart className="h-4 w-4 text-rose-500" aria-hidden />
+                <span className="flex items-center gap-2">
+                  Favoritos
+                  {hasFavorites ? (
+                    <span className="inline-flex min-w-[1.5rem] items-center justify-center rounded-full bg-rose-100 px-2 text-xs font-semibold text-rose-600">
+                      {favoriteBadgeLabel}
+                    </span>
+                  ) : null}
+                </span>
+              </Link>
+            </nav>
+
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onSignOut();
+              }}
+              className="mt-3 flex w-full items-center gap-2 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm font-semibold text-red-600 transition-colors hover:border-red-200 hover:bg-red-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 active:translate-y-[1px]"
+            >
+              <LogOut className="h-4 w-4" aria-hidden />
+              Sair
+            </button>
           </motion.div>
         ) : null}
       </AnimatePresence>
@@ -242,55 +233,51 @@ function UserMenu({
   );
 }
 
-function DesktopNavigation({
-  navigationLinks,
-  pathname,
-}: {
-  navigationLinks: NavLink[];
-  pathname: string;
-}) {
+function DesktopNavigation({ navigationLinks, pathname }: { navigationLinks: NavLink[]; pathname: string }) {
   return (
-    <div className="hidden items-center gap-3 lg:flex">
-      <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] p-1 shadow-[inset_0_1px_0_theme(colors.white/10)]">
-        {navigationLinks.map(({ href, label, icon: Icon, colorClass, badge }) => {
-          const isActive = pathname === href || pathname.startsWith(`${href}/`);
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                "relative inline-flex items-center gap-2 overflow-hidden rounded-full px-4 py-2 text-sm font-medium transition-colors",
-                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {isActive ? (
-                <motion.span
-                  layoutId="nav-pill"
-                  className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20"
-                  transition={{ duration: 0.28, ease: [0.45, 0.05, 0.35, 1] }}
-                />
-              ) : null}
-              <Icon className={cn("size-4 transition-colors", isActive ? "text-primary" : colorClass)} />
-              <span className="flex items-center gap-1">
+    <nav className="hidden items-center gap-1 rounded-full border border-transparent bg-transparent px-1 py-0.5 lg:flex" aria-label="Principal">
+      {navigationLinks.map(({ href, label, icon: Icon, badge }) => {
+        const isActive = pathname === href || pathname.startsWith(`${href}/`);
+        return (
+          <Link
+            key={href}
+            href={href}
+            aria-current={isActive ? "page" : undefined}
+            className={cn(
+              "relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors",
+              "text-slate-600 hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500",
+              isActive ? "text-slate-900" : undefined,
+            )}
+          >
+            <Icon className="h-4 w-4 text-slate-400" aria-hidden />
+            <span className="relative pb-1">
+              <span className="inline-flex items-center gap-2">
                 {label}
                 {badge ? (
-                  <span className="inline-flex min-w-[1.4rem] items-center justify-center rounded-full bg-pink-500/20 px-1.5 py-0.5 text-[0.65rem] font-semibold text-pink-500">
+                  <span className="inline-flex min-w-[1.4rem] items-center justify-center rounded-full bg-rose-100 px-1.5 text-[0.65rem] font-semibold text-rose-600">
                     {badge}
                   </span>
                 ) : null}
               </span>
-            </Link>
-          );
-        })}
-      </div>
-    </div>
+              {isActive ? (
+                <motion.span
+                  layoutId="desktop-active-indicator"
+                  className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-blue-600"
+                  transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+                />
+              ) : null}
+            </span>
+          </Link>
+        );
+      })}
+    </nav>
   );
 }
 
 function MobileNavigation({
-  navigationLinks,
   isOpen,
   onClose,
+  navigationLinks,
   pathname,
   isAuthenticated,
   onSignOut,
@@ -301,9 +288,9 @@ function MobileNavigation({
   adminLink,
   isAdmin,
 }: {
-  navigationLinks: NavLink[];
   isOpen: boolean;
   onClose: () => void;
+  navigationLinks: NavLink[];
   pathname: string;
   isAuthenticated: boolean;
   onSignOut: () => void;
@@ -314,45 +301,76 @@ function MobileNavigation({
   adminLink: NavLink;
   isAdmin: boolean;
 }) {
+  const firstItemRef = useRef<HTMLAnchorElement | null>(null);
   const AdminIcon = adminLink.icon;
+
+  useEffect(() => {
+    if (isOpen) {
+      firstItemRef.current?.focus();
+    }
+  }, [isOpen]);
+
   return (
     <AnimatePresence>
       {isOpen ? (
-        <motion.aside
-          className="fixed inset-x-4 top-20 z-40 origin-top rounded-3xl border border-white/10 bg-background/95 p-4 shadow-2xl shadow-black/20 backdrop-blur-xl lg:hidden"
-          variants={MOBILE_PANEL_VARIANTS}
-          initial="hidden"
-          animate="visible"
-          exit="hidden"
-        >
-          <div className="space-y-4">
-            <nav className="grid gap-2">
-              {navigationLinks.map(({ href, label, icon: Icon, colorClass, badge }) => {
+        <>
+          <motion.div
+            className="fixed inset-0 z-40 bg-slate-900/20 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15, ease: "linear" }}
+            onClick={onClose}
+          />
+          <motion.aside
+            key="mobile-nav"
+            variants={MOBILE_DRAWER_VARIANTS}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu mobile"
+            id={MOBILE_MENU_ID}
+            className="fixed inset-y-0 right-0 z-50 w-full max-w-xs overflow-y-auto border-l border-slate-200 bg-white px-4 pb-6 pt-4 shadow-xl focus:outline-none"
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <span className="text-sm font-semibold uppercase tracking-wide text-slate-500">Menu</span>
+              <button
+                type="button"
+                onClick={onClose}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+              >
+                <X className="h-5 w-5" aria-hidden />
+                <span className="sr-only">Fechar menu</span>
+              </button>
+            </div>
+
+            <nav className="grid gap-2" aria-label="Principal">
+              {navigationLinks.map(({ href, label, icon: Icon, badge }, index) => {
                 const isActive = pathname === href || pathname.startsWith(`${href}/`);
                 return (
                   <Link
                     key={href}
                     href={href}
+                    ref={index === 0 ? firstItemRef : undefined}
                     onClick={onClose}
+                    aria-current={isActive ? "page" : undefined}
                     className={cn(
-                      "group flex items-center gap-3 rounded-2xl border border-white/10 px-3 py-3 text-base font-medium transition-all duration-200",
-                      isActive
-                        ? "border-primary/40 bg-primary/10 text-primary"
-                        : "bg-white/[0.03] text-muted-foreground hover:border-primary/30 hover:bg-primary/5 hover:text-foreground",
+                      "flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 text-base font-medium transition-colors",
+                      "text-slate-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500",
+                      "active:translate-y-[1px]",
+                      isActive && "border-blue-300 bg-blue-50 text-blue-700",
                     )}
                   >
-                    <span className="relative">
-                      <Icon className={cn("size-5", isActive ? "text-primary" : colorClass)} />
-                    </span>
-                    <span className="flex-1">
-                      <span className="flex items-center gap-2">
-                        {label}
-                        {badge ? (
-                          <span className="inline-flex min-w-[1.6rem] items-center justify-center rounded-full bg-pink-500/20 px-2 py-0.5 text-[0.7rem] font-semibold text-pink-500">
-                            {badge}
-                          </span>
-                        ) : null}
-                      </span>
+                    <Icon className="h-5 w-5 text-slate-500" aria-hidden />
+                    <span className="flex items-center gap-2">
+                      {label}
+                      {badge ? (
+                        <span className="inline-flex min-w-[1.4rem] items-center justify-center rounded-full bg-rose-100 px-1.5 text-xs font-semibold text-rose-600">
+                          {badge}
+                        </span>
+                      ) : null}
                     </span>
                   </Link>
                 );
@@ -360,26 +378,12 @@ function MobileNavigation({
             </nav>
 
             {isAuthenticated ? (
-              <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <div className="mt-6 space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <div className="flex items-center gap-3">
-                  <span className="relative grid size-12 place-items-center overflow-hidden rounded-full border border-white/10 bg-gradient-to-br from-sky-500/25 via-blue-500/20 to-indigo-500/25 text-white shadow-inner shadow-white/10">
-                    {user?.image ? (
-                      <Image
-                        src={user.image}
-                        alt={userDisplayName}
-                        width={48}
-                        height={48}
-                        unoptimized
-                        className="size-full object-cover"
-                      />
-                    ) : (
-                      <User className="size-5" />
-                    )}
-                    <span className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-inset ring-cyan-400/30" />
-                  </span>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">{userDisplayName}</p>
-                    <p className="text-xs text-muted-foreground">{user?.email}</p>
+                  <UserAvatar image={user?.image} name={userDisplayName} />
+                  <div className="space-y-0.5">
+                    <p className="font-semibold text-slate-900">{userDisplayName}</p>
+                    <p className="text-xs text-slate-500">{user?.email}</p>
                   </div>
                 </div>
 
@@ -387,21 +391,21 @@ function MobileNavigation({
                   <Link
                     href="/usuario"
                     onClick={onClose}
-                    className="flex items-center gap-3 rounded-2xl px-3 py-2 transition-all duration-200 hover:bg-white/5"
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
                   >
-                    <User className="size-4 text-cyan-400" />
-                    Meu Perfil
+                    <User className="h-4 w-4 text-blue-600" aria-hidden />
+                    Meu perfil
                   </Link>
                   <Link
                     href="/favoritos"
                     onClick={onClose}
-                    className="flex items-center gap-3 rounded-2xl px-3 py-2 transition-all duration-200 hover:bg-white/5"
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
                   >
-                    <Heart className="size-4 text-pink-400" />
+                    <Heart className="h-4 w-4 text-rose-500" aria-hidden />
                     <span className="flex items-center gap-2">
                       Favoritos
                       {hasFavorites ? (
-                        <span className="inline-flex min-w-[1.6rem] items-center justify-center rounded-full bg-pink-500/20 px-2 py-0.5 text-[0.7rem] font-semibold text-pink-500">
+                        <span className="inline-flex min-w-[1.5rem] items-center justify-center rounded-full bg-rose-100 px-2 text-xs font-semibold text-rose-600">
                           {favoriteBadgeLabel}
                         </span>
                       ) : null}
@@ -413,18 +417,10 @@ function MobileNavigation({
                   <Link
                     href={adminLink.href}
                     onClick={onClose}
-                    className={cn(
-                      "flex items-center gap-3 rounded-2xl border px-3 py-2 text-sm font-medium transition-all duration-200",
-                      pathname.startsWith("/dashboard")
-                        ? "border-amber-400/50 bg-amber-500/10 text-amber-200"
-                        : "border-white/10 bg-white/[0.02] text-muted-foreground hover:border-amber-400/40 hover:bg-amber-500/10 hover:text-foreground",
-                    )}
+                    className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700 transition-colors hover:border-amber-300 hover:bg-amber-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500"
                   >
-                    <AdminIcon className="size-4 text-amber-400" />
-                    <span className="flex items-center gap-2">
-                      {adminLink.label}
-                      <Crown className="size-4 text-amber-300" />
-                    </span>
+                    <AdminIcon className="h-4 w-4" aria-hidden />
+                    {adminLink.label}
                   </Link>
                 ) : null}
 
@@ -434,27 +430,33 @@ function MobileNavigation({
                     onClose();
                     onSignOut();
                   }}
-                  className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-500/40 bg-red-500/[0.08] px-3 py-2 text-sm font-semibold text-red-400 transition-all duration-200 hover:bg-red-500/[0.15]"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm font-semibold text-red-600 transition-colors hover:border-red-200 hover:bg-red-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
                 >
-                  <LogOut className="size-4" />
+                  <LogOut className="h-4 w-4" aria-hidden />
                   Sair
                 </button>
               </div>
             ) : (
-              <Link
-                href="/login"
-                onClick={onClose}
-                className={cn(
-                  "flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-base font-semibold text-muted-foreground transition-all duration-200 hover:border-primary/40 hover:bg-primary/10 hover:text-foreground",
-                  pathname.startsWith("/login") && "border-primary/40 bg-primary/10 text-primary",
-                )}
-              >
-                <LogIn className="size-5" />
-                Entrar
-              </Link>
+              <div className="mt-6 grid gap-3">
+                <Link
+                  href="/login"
+                  onClick={onClose}
+                  className="flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-3 text-base font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                >
+                  <LogIn className="h-5 w-5" aria-hidden />
+                  Entrar
+                </Link>
+                <Link
+                  href="/signup"
+                  onClick={onClose}
+                  className="flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-3 text-base font-semibold text-white transition-colors hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                >
+                  Criar conta
+                </Link>
+              </div>
             )}
-          </div>
-        </motion.aside>
+          </motion.aside>
+        </>
       ) : null}
     </AnimatePresence>
   );
@@ -469,18 +471,16 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
   const isAuthenticated = Boolean(user);
   const isAdmin = user?.role === "admin";
 
-  const favoriteCountValue = Number.isFinite(favoriteCountProp)
-    ? Math.max(0, Math.floor(favoriteCountProp))
-    : 0;
+  const favoriteCountValue = Number.isFinite(favoriteCountProp) ? Math.max(0, Math.floor(favoriteCountProp)) : 0;
   const hasFavorites = favoriteCountValue > 0;
   const favoriteBadgeLabel = favoriteCountValue > 99 ? "99+" : `${favoriteCountValue}`;
 
-  const userDisplayName = user?.name?.trim() ? user.name : "Usuário";
+  const userDisplayName = useMemo(() => (user?.name?.trim() ? user.name : "Usuário"), [user?.name]);
 
   const baseLinks: NavLink[] = [
-    { href: "/", label: "Início", icon: Home, colorClass: "text-blue-400" },
-    { href: "/destinos", label: "Destinos", icon: MapPin, colorClass: "text-emerald-400" },
-    { href: "/sobre-nos", label: "Sobre nós", icon: Info, colorClass: "text-purple-400" },
+    { href: "/", label: "Início", icon: Home },
+    { href: "/destinos", label: "Destinos", icon: MapPin },
+    { href: "/sobre-nos", label: "Sobre nós", icon: Info },
   ];
 
   const favoritesLink: NavLink | null = isAuthenticated
@@ -488,7 +488,6 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
         href: "/favoritos",
         label: "Favoritos",
         icon: Heart,
-        colorClass: "text-pink-400",
         badge: hasFavorites ? favoriteBadgeLabel : undefined,
       }
     : null;
@@ -499,7 +498,6 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
     href: "/dashboard",
     label: "Painel Admin",
     icon: LayoutDashboard,
-    colorClass: "text-amber-400",
   };
   const AdminIcon = adminLink.icon;
 
@@ -513,55 +511,65 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
   };
 
   useEffect(() => {
+    if (!mobileMenuOpen) {
+      document.body.style.removeProperty("overflow");
+      return undefined;
+    }
+
+    document.body.style.setProperty("overflow", "hidden");
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeMobileMenu();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.removeProperty("overflow");
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [mobileMenuOpen, closeMobileMenu]);
+
+  useEffect(() => {
     closeMobileMenu();
     closeUserMenu();
-  }, [closeMobileMenu, closeUserMenu, pathname]);
+  }, [pathname, closeMobileMenu, closeUserMenu]);
+
+  const headerClasses = cn(
+    "fixed inset-x-0 top-0 z-50 border-b border-slate-200 transition-[padding,background,box-shadow] duration-200",
+    isScrolled ? "bg-white/95 backdrop-blur-md shadow-[0_4px_18px_rgba(15,23,42,0.08)] py-2.5" : "bg-white py-4",
+  );
 
   return (
-    <header
-      className={cn(
-        "fixed inset-x-0 top-0 z-50 transition-all duration-500",
-        isScrolled ? "bg-background/80 backdrop-blur-xl shadow-[0_10px_40px_-20px_rgba(15,23,42,0.45)]" : "bg-transparent",
-      )}
-    >
-      <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+    <header className={headerClasses}>
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <Link
           href="/"
-          className="group relative inline-flex items-center gap-3 rounded-full px-3 py-2"
+          className="flex shrink-0 items-center gap-3 rounded-full px-2 py-1.5 text-slate-800 transition-colors hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
         >
-          <span className="relative">
-            <span className="pointer-events-none absolute -inset-3 rounded-full bg-gradient-to-r from-sky-500/20 via-transparent to-rose-500/20 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100" />
-            <Image
-              src="/evastur-logo.png"
-              alt="Evastur"
-              width={132}
-              height={28}
-              priority
-              className="relative z-10 h-7 w-auto transition-transform duration-500 group-hover:scale-105"
-            />
-          </span>
-          <span className="hidden flex-col text-left sm:flex">
-            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Evastur</span>
-            <span className="text-sm font-medium text-foreground/80">Experiências premium ao redor do mundo</span>
+          <Image src="/evastur-logo.png" alt="Evastur" width={128} height={32} priority className="h-7 w-auto" />
+          <span className="hidden flex-col text-left leading-tight sm:flex">
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Evastur</span>
+            <span className="text-sm text-slate-600">Experiências premium ao redor do mundo</span>
           </span>
         </Link>
 
         <DesktopNavigation navigationLinks={navigationLinks} pathname={pathname} />
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {isAuthenticated ? (
             <>
               {isAdmin ? (
                 <Link
                   href={adminLink.href}
                   className={cn(
-                    "hidden items-center gap-2 rounded-full border border-amber-400/40 bg-amber-500/10 px-3 py-1.5 text-sm font-semibold text-amber-100 shadow-[inset_0_1px_0_theme(colors.white/20)] transition-all duration-300 hover:-translate-y-[2px] hover:border-amber-300/70 hover:bg-amber-400/20 lg:flex",
-                    pathname.startsWith("/dashboard") && "border-amber-400/60 bg-amber-500/20",
+                    "hidden items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm font-semibold text-amber-700 transition-colors hover:border-amber-300 hover:bg-amber-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500 lg:inline-flex",
+                    pathname.startsWith("/dashboard") && "border-amber-300 bg-amber-100",
                   )}
                 >
-                  <AdminIcon className="size-4" />
+                  <AdminIcon className="h-4 w-4" aria-hidden />
                   {adminLink.label}
-                  <Crown className="size-4" />
                 </Link>
               ) : null}
 
@@ -579,53 +587,56 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
               </div>
             </>
           ) : (
-            <Link
-              href="/login"
-              className={cn(
-                "hidden items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-semibold text-muted-foreground transition-all duration-300 hover:-translate-y-[2px] hover:border-primary/40 hover:bg-primary/10 hover:text-foreground lg:inline-flex",
-                pathname.startsWith("/login") && "border-primary/40 bg-primary/10 text-primary",
-              )}
-            >
-              <LogIn className="size-4" />
-              Entrar
-            </Link>
+            <div className="hidden items-center gap-2 lg:flex">
+              <Link
+                href="/login"
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500",
+                  pathname.startsWith("/login") && "border-blue-300 text-blue-700",
+                )}
+              >
+                <LogIn className="h-4 w-4" aria-hidden />
+                Entrar
+              </Link>
+              <Link
+                href="/signup"
+                className="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+              >
+                Criar conta
+              </Link>
+            </div>
           )}
 
           <button
             type="button"
-            className="inline-flex size-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-foreground shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:-translate-y-[2px] hover:border-primary/40 hover:bg-primary/10 lg:hidden"
-            aria-label="Abrir menu"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-colors hover:border-blue-300 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 lg:hidden"
+            aria-label={mobileMenuOpen ? "Fechar menu" : "Abrir menu"}
+            aria-expanded={mobileMenuOpen}
+            aria-controls={MOBILE_MENU_ID}
             onClick={toggleMobileMenu}
           >
-            <AnimatePresence initial={false} mode="wait">
-              <motion.span
-                key={mobileMenuOpen ? "close" : "menu"}
-                {...NAV_ANIMATION}
-                transition={{ duration: 0.2 }}
-                className="grid place-items-center"
-              >
-                {mobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-              </motion.span>
-            </AnimatePresence>
+            <span className="sr-only">{mobileMenuOpen ? "Fechar menu" : "Abrir menu"}</span>
+            {mobileMenuOpen ? <X className="h-5 w-5" aria-hidden /> : <Menu className="h-5 w-5" aria-hidden />}
           </button>
         </div>
       </div>
 
-      <MobileBackdrop isVisible={mobileMenuOpen} onClose={closeMobileMenu} />
-      <MobileNavigation
-        navigationLinks={navigationLinks}
-        isOpen={mobileMenuOpen}
-        onClose={closeMobileMenu}
-        pathname={pathname}
-        isAuthenticated={isAuthenticated}
-        onSignOut={handleSignOut}
-        user={user}
-        userDisplayName={userDisplayName}
-        hasFavorites={hasFavorites}
-        favoriteBadgeLabel={favoriteBadgeLabel}
-        adminLink={adminLink}
-        isAdmin={isAdmin}
-      />
+      <div className="lg:hidden">
+        <MobileNavigation
+          isOpen={mobileMenuOpen}
+          onClose={closeMobileMenu}
+          navigationLinks={navigationLinks}
+          pathname={pathname}
+          isAuthenticated={isAuthenticated}
+          onSignOut={handleSignOut}
+          user={user}
+          userDisplayName={userDisplayName}
+          hasFavorites={hasFavorites}
+          favoriteBadgeLabel={favoriteBadgeLabel}
+          adminLink={adminLink}
+          isAdmin={isAdmin}
+        />
+      </div>
     </header>
   );
 }

@@ -21,7 +21,7 @@ import {
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, cubicBezier, easeInOut, motion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 
@@ -56,11 +56,15 @@ const NAV_ANIMATION = {
 };
 
 const MOBILE_PANEL_VARIANTS = {
-  hidden: { opacity: 0, height: 0, transition: { duration: 0.25, ease: "easeInOut" } },
+  hidden: {
+    opacity: 0,
+    height: 0,
+    transition: { duration: 0.25, ease: easeInOut },
+  },
   visible: {
     opacity: 1,
     height: "auto",
-    transition: { duration: 0.4, ease: [0.21, 0.47, 0.32, 0.98] },
+    transition: { duration: 0.4, ease: cubicBezier(0.21, 0.47, 0.32, 0.98) },
   },
 };
 

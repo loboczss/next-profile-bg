@@ -49,17 +49,19 @@ type UserMenuProps = {
 
 const MOBILE_MENU_ID = "primary-navigation-mobile";
 
+const MOBILE_DRAWER_EASE = [0.4, 0, 0.2, 1] as const;
+
 const MOBILE_DRAWER_VARIANTS = {
   hidden: { opacity: 0, x: "100%" },
   visible: {
     opacity: 1,
     x: "0%",
-    transition: { duration: 0.18, ease: [0.4, 0, 0.2, 1] },
+    transition: { duration: 0.18, ease: MOBILE_DRAWER_EASE },
   },
   exit: {
     opacity: 0,
     x: "100%",
-    transition: { duration: 0.16, ease: [0.4, 0, 0.2, 1] },
+    transition: { duration: 0.16, ease: MOBILE_DRAWER_EASE },
   },
 };
 

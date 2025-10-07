@@ -1,63 +1,482 @@
 "use client";
 
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import type { Session } from "next-auth";
+import { signOut } from "next-auth/react";
 import {
+  ChevronDown,
+  Crown,
+  Heart,
   Home,
   Info,
   LayoutDashboard,
   LogIn,
   LogOut,
   MapPin,
-  User,
-  Crown,
   Menu,
+  User,
   X,
-  ChevronDown,
-  Heart,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 
-import type { Session } from "next-auth";
-import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
-
-type NavLink = {
-  href: string;
-  label: string;
-  icon: LucideIcon;
-  color: string;
-  badge?: string;
-};
 
 interface NavbarProps {
   user: Session["user"] | null;
   favoriteCount?: number;
 }
 
+type NavLink = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  colorClass: string;
+  badge?: string;
+};
+
+type UserMenuProps = {
+  isOpen: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+  onSignOut: () => void;
+  user: Session["user"] | null;
+  userDisplayName: string;
+  hasFavorites: boolean;
+  favoriteBadgeLabel: string;
+};
+
+const NAV_ANIMATION = {
+  initial: { opacity: 0, y: -12 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -12 },
+};
+
+const MOBILE_PANEL_VARIANTS = {
+  hidden: { opacity: 0, height: 0, transition: { duration: 0.25, ease: "easeInOut" } },
+  visible: {
+    opacity: 1,
+    height: "auto",
+    transition: { duration: 0.4, ease: [0.21, 0.47, 0.32, 0.98] },
+  },
+};
+
+function useScrollState(threshold = 8) {
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > threshold);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [threshold]);
+
+  return isScrolled;
+}
+
+function MobileBackdrop({ isVisible, onClose }: { isVisible: boolean; onClose: () => void }) {
+  return (
+    <AnimatePresence>
+      {isVisible ? (
+        <motion.div
+          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+        />
+      ) : null}
+    </AnimatePresence>
+  );
+}
+
+function UserMenu({
+  isOpen,
+  onToggle,
+  onClose,
+  onSignOut,
+  user,
+  userDisplayName,
+  hasFavorites,
+  favoriteBadgeLabel,
+}: UserMenuProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const userFirstName = useMemo(
+    () => (userDisplayName.trim() ? userDisplayName.split(" ")[0] : "Usuário"),
+    [userDisplayName],
+  );
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, [isOpen, onClose]);
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <motion.button
+        type="button"
+        onClick={onToggle}
+        onMouseDown={(event) => event.preventDefault()}
+        className="group inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-sm font-medium shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:-translate-y-[2px] hover:border-cyan-400/40 hover:bg-cyan-500/10 hover:shadow-cyan-500/20"
+      >
+        <span className="relative grid size-9 place-items-center overflow-hidden rounded-full border border-white/10 bg-gradient-to-br from-sky-500/25 via-blue-500/20 to-indigo-500/25 text-white shadow-inner shadow-white/10">
+          {user?.image ? (
+            <Image
+              src={user.image}
+              alt={userDisplayName}
+              width={36}
+              height={36}
+              unoptimized
+              className="size-full object-cover"
+            />
+          ) : (
+            <User className="size-4" />
+          )}
+          <span className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-inset ring-cyan-400/30" />
+        </span>
+        <span className="flex flex-col items-start leading-tight">
+          <span className="text-[11px] uppercase tracking-wide text-muted-foreground">Olá</span>
+          <span className="font-semibold text-foreground">{userFirstName}</span>
+        </span>
+        <motion.span animate={{ rotate: isOpen ? 180 : 0 }} className="text-muted-foreground">
+          <ChevronDown className="size-4" />
+        </motion.span>
+      </motion.button>
+
+      <AnimatePresence>
+        {isOpen ? (
+          <motion.div
+            className="absolute right-0 top-[calc(100%+12px)] z-40 w-64 overflow-hidden rounded-3xl border border-white/10 bg-background/95 shadow-xl shadow-black/10 backdrop-blur-xl"
+            {...NAV_ANIMATION}
+          >
+            <div className="space-y-4 p-4">
+              <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.02] p-3">
+                <span className="relative grid size-12 place-items-center overflow-hidden rounded-full border border-white/10 bg-gradient-to-br from-sky-500/25 via-blue-500/20 to-indigo-500/25 text-white shadow-inner shadow-white/10">
+                  {user?.image ? (
+                    <Image
+                      src={user.image}
+                      alt={userDisplayName}
+                      width={48}
+                      height={48}
+                      unoptimized
+                      className="size-full object-cover"
+                    />
+                  ) : (
+                    <User className="size-6" />
+                  )}
+                  <span className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-inset ring-cyan-400/30" />
+                </span>
+                <div className="flex flex-col">
+                  <span className="text-sm font-semibold text-foreground">{userDisplayName}</span>
+                  <span className="text-xs text-muted-foreground">{user?.email}</span>
+                </div>
+              </div>
+
+              <nav className="grid gap-1 text-sm">
+                <Link
+                  href="/usuario"
+                  onClick={onClose}
+                  className="flex items-center gap-3 rounded-2xl px-3 py-2 transition-all duration-200 hover:bg-white/5"
+                >
+                  <User className="size-4 text-cyan-400" />
+                  Meu Perfil
+                </Link>
+                <Link
+                  href="/favoritos"
+                  onClick={onClose}
+                  className="flex items-center gap-3 rounded-2xl px-3 py-2 transition-all duration-200 hover:bg-white/5"
+                >
+                  <Heart className="size-4 text-pink-400" />
+                  <span className="flex items-center gap-2">
+                    Favoritos
+                    {hasFavorites ? (
+                      <span className="inline-flex min-w-[1.6rem] items-center justify-center rounded-full bg-pink-500/20 px-2 py-0.5 text-[0.65rem] font-semibold text-pink-500">
+                        {favoriteBadgeLabel}
+                      </span>
+                    ) : null}
+                  </span>
+                </Link>
+              </nav>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onSignOut();
+                }}
+                className="flex items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/[0.07] px-3 py-2 text-sm font-medium text-red-400 transition-all duration-200 hover:border-red-500/40 hover:bg-red-500/[0.12]"
+              >
+                <LogOut className="size-4" />
+                Sair
+              </button>
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function DesktopNavigation({
+  navigationLinks,
+  pathname,
+}: {
+  navigationLinks: NavLink[];
+  pathname: string;
+}) {
+  return (
+    <div className="hidden items-center gap-3 lg:flex">
+      <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] p-1 shadow-[inset_0_1px_0_theme(colors.white/10)]">
+        {navigationLinks.map(({ href, label, icon: Icon, colorClass, badge }) => {
+          const isActive = pathname === href || pathname.startsWith(`${href}/`);
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={cn(
+                "relative inline-flex items-center gap-2 overflow-hidden rounded-full px-4 py-2 text-sm font-medium transition-colors",
+                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {isActive ? (
+                <motion.span
+                  layoutId="nav-pill"
+                  className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20"
+                  transition={{ duration: 0.28, ease: [0.45, 0.05, 0.35, 1] }}
+                />
+              ) : null}
+              <Icon className={cn("size-4 transition-colors", isActive ? "text-primary" : colorClass)} />
+              <span className="flex items-center gap-1">
+                {label}
+                {badge ? (
+                  <span className="inline-flex min-w-[1.4rem] items-center justify-center rounded-full bg-pink-500/20 px-1.5 py-0.5 text-[0.65rem] font-semibold text-pink-500">
+                    {badge}
+                  </span>
+                ) : null}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function MobileNavigation({
+  navigationLinks,
+  isOpen,
+  onClose,
+  pathname,
+  isAuthenticated,
+  onSignOut,
+  user,
+  userDisplayName,
+  hasFavorites,
+  favoriteBadgeLabel,
+  adminLink,
+  isAdmin,
+}: {
+  navigationLinks: NavLink[];
+  isOpen: boolean;
+  onClose: () => void;
+  pathname: string;
+  isAuthenticated: boolean;
+  onSignOut: () => void;
+  user: Session["user"] | null;
+  userDisplayName: string;
+  hasFavorites: boolean;
+  favoriteBadgeLabel: string;
+  adminLink: NavLink;
+  isAdmin: boolean;
+}) {
+  const AdminIcon = adminLink.icon;
+  return (
+    <AnimatePresence>
+      {isOpen ? (
+        <motion.aside
+          className="fixed inset-x-4 top-20 z-40 origin-top rounded-3xl border border-white/10 bg-background/95 p-4 shadow-2xl shadow-black/20 backdrop-blur-xl lg:hidden"
+          variants={MOBILE_PANEL_VARIANTS}
+          initial="hidden"
+          animate="visible"
+          exit="hidden"
+        >
+          <div className="space-y-4">
+            <nav className="grid gap-2">
+              {navigationLinks.map(({ href, label, icon: Icon, colorClass, badge }) => {
+                const isActive = pathname === href || pathname.startsWith(`${href}/`);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={onClose}
+                    className={cn(
+                      "group flex items-center gap-3 rounded-2xl border border-white/10 px-3 py-3 text-base font-medium transition-all duration-200",
+                      isActive
+                        ? "border-primary/40 bg-primary/10 text-primary"
+                        : "bg-white/[0.03] text-muted-foreground hover:border-primary/30 hover:bg-primary/5 hover:text-foreground",
+                    )}
+                  >
+                    <span className="relative">
+                      <Icon className={cn("size-5", isActive ? "text-primary" : colorClass)} />
+                    </span>
+                    <span className="flex-1">
+                      <span className="flex items-center gap-2">
+                        {label}
+                        {badge ? (
+                          <span className="inline-flex min-w-[1.6rem] items-center justify-center rounded-full bg-pink-500/20 px-2 py-0.5 text-[0.7rem] font-semibold text-pink-500">
+                            {badge}
+                          </span>
+                        ) : null}
+                      </span>
+                    </span>
+                  </Link>
+                );
+              })}
+            </nav>
+
+            {isAuthenticated ? (
+              <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <div className="flex items-center gap-3">
+                  <span className="relative grid size-12 place-items-center overflow-hidden rounded-full border border-white/10 bg-gradient-to-br from-sky-500/25 via-blue-500/20 to-indigo-500/25 text-white shadow-inner shadow-white/10">
+                    {user?.image ? (
+                      <Image
+                        src={user.image}
+                        alt={userDisplayName}
+                        width={48}
+                        height={48}
+                        unoptimized
+                        className="size-full object-cover"
+                      />
+                    ) : (
+                      <User className="size-5" />
+                    )}
+                    <span className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-inset ring-cyan-400/30" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{userDisplayName}</p>
+                    <p className="text-xs text-muted-foreground">{user?.email}</p>
+                  </div>
+                </div>
+
+                <div className="grid gap-2 text-sm">
+                  <Link
+                    href="/usuario"
+                    onClick={onClose}
+                    className="flex items-center gap-3 rounded-2xl px-3 py-2 transition-all duration-200 hover:bg-white/5"
+                  >
+                    <User className="size-4 text-cyan-400" />
+                    Meu Perfil
+                  </Link>
+                  <Link
+                    href="/favoritos"
+                    onClick={onClose}
+                    className="flex items-center gap-3 rounded-2xl px-3 py-2 transition-all duration-200 hover:bg-white/5"
+                  >
+                    <Heart className="size-4 text-pink-400" />
+                    <span className="flex items-center gap-2">
+                      Favoritos
+                      {hasFavorites ? (
+                        <span className="inline-flex min-w-[1.6rem] items-center justify-center rounded-full bg-pink-500/20 px-2 py-0.5 text-[0.7rem] font-semibold text-pink-500">
+                          {favoriteBadgeLabel}
+                        </span>
+                      ) : null}
+                    </span>
+                  </Link>
+                </div>
+
+                {isAdmin ? (
+                  <Link
+                    href={adminLink.href}
+                    onClick={onClose}
+                    className={cn(
+                      "flex items-center gap-3 rounded-2xl border px-3 py-2 text-sm font-medium transition-all duration-200",
+                      pathname.startsWith("/dashboard")
+                        ? "border-amber-400/50 bg-amber-500/10 text-amber-200"
+                        : "border-white/10 bg-white/[0.02] text-muted-foreground hover:border-amber-400/40 hover:bg-amber-500/10 hover:text-foreground",
+                    )}
+                  >
+                    <AdminIcon className="size-4 text-amber-400" />
+                    <span className="flex items-center gap-2">
+                      {adminLink.label}
+                      <Crown className="size-4 text-amber-300" />
+                    </span>
+                  </Link>
+                ) : null}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onSignOut();
+                  }}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-500/40 bg-red-500/[0.08] px-3 py-2 text-sm font-semibold text-red-400 transition-all duration-200 hover:bg-red-500/[0.15]"
+                >
+                  <LogOut className="size-4" />
+                  Sair
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                onClick={onClose}
+                className={cn(
+                  "flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-base font-semibold text-muted-foreground transition-all duration-200 hover:border-primary/40 hover:bg-primary/10 hover:text-foreground",
+                  pathname.startsWith("/login") && "border-primary/40 bg-primary/10 text-primary",
+                )}
+              >
+                <LogIn className="size-5" />
+                Entrar
+              </Link>
+            )}
+          </div>
+        </motion.aside>
+      ) : null}
+    </AnimatePresence>
+  );
+}
+
 export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarProps) {
   const pathname = usePathname();
-  const isAuthenticated = Boolean(user);
-  const isAdmin = user?.role === "admin";
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const isScrolled = useScrollState();
+
+  const isAuthenticated = Boolean(user);
+  const isAdmin = user?.role === "admin";
 
   const favoriteCountValue = Number.isFinite(favoriteCountProp)
     ? Math.max(0, Math.floor(favoriteCountProp))
     : 0;
-  const favoriteBadgeLabel = favoriteCountValue > 99 ? "99+" : `${favoriteCountValue}`;
   const hasFavorites = favoriteCountValue > 0;
+  const favoriteBadgeLabel = favoriteCountValue > 99 ? "99+" : `${favoriteCountValue}`;
 
-  const handleSignOut = () => {
-    void signOut({ redirectTo: "/" });
-  };
+  const userDisplayName = user?.name?.trim() ? user.name : "Usuário";
 
   const baseLinks: NavLink[] = [
-    { href: "/", label: "Início", icon: Home, color: "text-blue-400" },
-    { href: "/destinos", label: "Destinos", icon: MapPin, color: "text-emerald-400" },
-    { href: "/sobre-nos", label: "Sobre nós", icon: Info, color: "text-purple-400" },
+    { href: "/", label: "Início", icon: Home, colorClass: "text-blue-400" },
+    { href: "/destinos", label: "Destinos", icon: MapPin, colorClass: "text-emerald-400" },
+    { href: "/sobre-nos", label: "Sobre nós", icon: Info, colorClass: "text-purple-400" },
   ];
 
   const favoritesLink: NavLink | null = isAuthenticated
@@ -65,425 +484,144 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
         href: "/favoritos",
         label: "Favoritos",
         icon: Heart,
-        color: "text-pink-400",
+        colorClass: "text-pink-400",
         badge: hasFavorites ? favoriteBadgeLabel : undefined,
       }
     : null;
 
   const navigationLinks = favoritesLink ? [...baseLinks, favoritesLink] : baseLinks;
 
-  const userDisplayName = user?.name?.trim() ? user.name : "Usuário";
-  const userFirstName = userDisplayName.split(" ")[0];
-
-  const adminLink = {
+  const adminLink: NavLink = {
     href: "/dashboard",
     label: "Painel Admin",
     icon: LayoutDashboard,
-    color: "text-amber-400",
-  } as const;
+    colorClass: "text-amber-400",
+  };
   const AdminIcon = adminLink.icon;
 
-  const closeMobileMenu = () => setMobileMenuOpen(false);
-  const toggleUserMenu = () => setUserMenuOpen(!userMenuOpen);
-  const closeUserMenu = () => setUserMenuOpen(false);
+  const toggleUserMenu = useCallback(() => setUserMenuOpen((previous) => !previous), []);
+  const closeUserMenu = useCallback(() => setUserMenuOpen(false), []);
+  const toggleMobileMenu = useCallback(() => setMobileMenuOpen((previous) => !previous), []);
+  const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
+
+  const handleSignOut = () => {
+    void signOut({ redirectTo: "/" });
+  };
+
+  useEffect(() => {
+    closeMobileMenu();
+    closeUserMenu();
+  }, [closeMobileMenu, closeUserMenu, pathname]);
 
   return (
     <header
       className={cn(
-        "fixed inset-x-0 top-0 z-50",
-        "before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-primary/70 before:to-transparent",
+        "fixed inset-x-0 top-0 z-50 transition-all duration-500",
+        isScrolled ? "bg-background/80 backdrop-blur-xl shadow-[0_10px_40px_-20px_rgba(15,23,42,0.45)]" : "bg-transparent",
       )}
     >
-      <div className="relative border-b border-white/10 bg-gradient-to-b from-background/60 to-background/30 backdrop-blur-xl supports-[backdrop-filter]:bg-background/50">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-5 md:py-4">
-          {/* LOGO - Compacta e Elegante */}
-          <Link
-            href="/"
-            onClick={closeMobileMenu}
-            className="group relative flex items-center gap-3 px-2 py-1.5 transition-all duration-300 hover:-translate-y-1"
-          >
-            {/* Logo com animações sutis */}
-            <span className="relative">
-              {/* Glow azul suave de fundo 
-              <span className="pointer-events-none absolute -inset-3 blur-xl opacity-0 transition-all duration-500 group-hover:opacity-60">
-                <span className="absolute inset-0 bg-blue-500/40" />
-                <span className="absolute inset-0 bg-red-500/25" />
-              </span>
-              */}
-              
-              {/* Anel de luz rotativo único */}
-              <span className="pointer-events-none absolute -inset-6 opacity-0 transition-opacity duration-500 group-hover:opacity-70">
-                <span className="absolute inset-0 animate-[spin_6s_linear_infinite] bg-[conic-gradient(from_0deg,transparent_0deg,theme(colors.blue.400/30)_90deg,transparent_180deg,theme(colors.red.400/30)_270deg,transparent_360deg)]" />
-              </span>
-              
-              {/* Logo principal */}
-              <Image
-                src="/evastur-logo.png"
-                alt="Evastur"
-                width={120}
-                height={24}
-                priority
-                className="relative z-10 h-6 w-auto select-none object-contain drop-shadow-[0_0_8px_rgba(59,130,246,0.3)] transition-all duration-300 group-hover:scale-105 group-hover:drop-shadow-[0_0_16px_rgba(59,130,246,0.6)] sm:h-7"
-                style={{
-                  filter: 'drop-shadow(0 0 4px rgba(239, 68, 68, 0.25)) contrast(1.05) brightness(1.03)',
-                  imageRendering: 'crisp-edges',
-                }}
-              />
-              
-              {/* Partículas de brilho sutis */}
-              <span className="pointer-events-none absolute -right-2 -top-1 size-1.5 rounded-full bg-blue-400 opacity-0 shadow-[0_0_6px_theme(colors.blue.400)] transition-all duration-500 group-hover:opacity-80 group-hover:animate-ping" />
-              <span className="pointer-events-none absolute -left-1 bottom-0 size-1 rounded-full bg-red-400 opacity-0 shadow-[0_0_4px_theme(colors.red.400)] transition-all duration-500 group-hover:opacity-80 group-hover:animate-ping" style={{ animationDelay: '0.3s' }} />
-            </span>
+      <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+        <Link
+          href="/"
+          className="group relative inline-flex items-center gap-3 rounded-full px-3 py-2"
+        >
+          <span className="relative">
+            <span className="pointer-events-none absolute -inset-3 rounded-full bg-gradient-to-r from-sky-500/20 via-transparent to-rose-500/20 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100" />
+            <Image
+              src="/evastur-logo.png"
+              alt="Evastur"
+              width={132}
+              height={28}
+              priority
+              className="relative z-10 h-7 w-auto transition-transform duration-500 group-hover:scale-105"
+            />
+          </span>
+          <span className="hidden flex-col text-left sm:flex">
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Evastur</span>
+            <span className="text-sm font-medium text-foreground/80">Experiências premium ao redor do mundo</span>
+          </span>
+        </Link>
 
-            {/* Texto ao lado da logo 
-              <span className="hidden flex-col sm:flex">
-                <span className="inline-flex items-center gap-2 text-lg font-bold tracking-tight">
-                  <span className="bg-gradient-to-r from-blue-500 via-blue-400 to-red-500 bg-clip-text text-transparent">
-                    Evastur
-                  </span>
-                  <Sparkles className="size-4 text-yellow-400 opacity-0 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:opacity-100 group-hover:drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]" />
-                </span>
-                <span className="text-[11px] font-medium leading-tight text-muted-foreground transition-colors duration-300 group-hover:text-blue-300/60">
-                  Experiências que brilham ✦
-                </span>
-              </span>
-              */}
-          </Link>
+        <DesktopNavigation navigationLinks={navigationLinks} pathname={pathname} />
 
-          {/* DESKTOP NAV */}
-          <nav className="hidden flex-1 items-center justify-end gap-2 lg:flex lg:gap-3">
-            <div className="flex items-center gap-1">
-              {navigationLinks.map(({ href, label, icon: Icon, color, badge }) => {
-                const isActive =
-                  pathname === href || pathname.startsWith(href + "/");
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    className={cn(
-                      "group/nav relative inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.02] px-4 py-2 text-sm font-medium shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/5",
-                      isActive && "border-primary/30 bg-primary/5 text-primary",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(60%_120%_at_50%_150%,theme(colors.primary/20),transparent)] opacity-0 transition-opacity duration-300 group-hover/nav:opacity-100",
-                        isActive && "opacity-100",
-                      )}
-                    />
-                    <Icon
-                      className={cn(
-                        "size-4 transition-transform duration-300 group-hover/nav:scale-110",
-                        isActive ? "text-primary" : color,
-                      )}
-                    />
-                    <span className="flex items-center gap-1">
-                      {label}
-                      {badge ? (
-                        <span className="inline-flex min-w-[1.5rem] items-center justify-center rounded-full bg-pink-500/20 px-2 py-0.5 text-[0.65rem] font-semibold text-pink-600 shadow-sm">
-                          {badge}
-                        </span>
-                      ) : null}
-                    </span>
-                    <span
-                      className={cn(
-                        "pointer-events-none absolute -bottom-px left-1/2 h-[2px] w-0 -translate-x-1/2 rounded bg-primary/70 transition-all duration-500 group-hover/nav:w-4/5",
-                        isActive && "w-4/5",
-                      )}
-                    />
-                  </Link>
-                );
-              })}
-            </div>
-
-            {/* DESKTOP USER ACTIONS - Melhorado */}
-            {isAuthenticated ? (
-              <div className="flex items-center gap-2">
-                {isAdmin && (
-                  <Link
-                    href={adminLink.href}
-                    className={cn(
-                      "group/admin inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.02] px-4 py-2 text-sm font-medium shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:-translate-y-0.5 hover:border-amber-400/30 hover:bg-amber-500/5",
-                      pathname.startsWith("/dashboard") &&
-                        "border-amber-400/30 bg-amber-500/5 text-primary",
-                    )}
-                  >
-                    <AdminIcon
-                      className={cn(
-                        "size-4 transition-transform duration-300 group-hover/admin:scale-110",
-                        pathname.startsWith("/dashboard") ? "text-primary" : adminLink.color
-                      )}
-                    />
-                    {adminLink.label}
-                    <Crown className="ml-1 size-3 text-amber-400 opacity-60 transition-opacity duration-300 group-hover/admin:opacity-100" />
-                  </Link>
-                )}
-
-                {/* Dropdown do Usuário */}
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={toggleUserMenu}
-                    className="group/user inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-gradient-to-br from-white/[0.05] to-white/[0.02] px-3 py-2 text-sm font-medium shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:-translate-y-0.5 hover:border-cyan-400/30 hover:bg-cyan-500/5 hover:shadow-lg hover:shadow-cyan-500/10"
-                  >
-                    {user?.image ? (
-                      <Image
-                        src={user.image}
-                        alt={userDisplayName}
-                        width={32}
-                        height={32}
-                        unoptimized
-                        className="size-8 rounded-full border-2 border-white/20 object-cover ring-2 ring-cyan-400/20 transition-all duration-300 group-hover/user:scale-[1.08] group-hover/user:border-cyan-400/40 group-hover/user:ring-cyan-400/40"
-                      />
-                    ) : (
-                      <span className="grid size-8 place-items-center rounded-full border-2 border-white/20 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 ring-2 ring-cyan-400/20 transition-all duration-300 group-hover/user:scale-[1.08] group-hover/user:border-cyan-400/40 group-hover/user:ring-cyan-400/40">
-                        <User className="size-4 text-cyan-400" />
-                      </span>
-                    )}
-                    <span className="flex flex-col items-start">
-                      <span className="text-xs text-muted-foreground">Olá,</span>
-                      <span className="font-semibold leading-tight">{userFirstName}</span>
-                    </span>
-                    <ChevronDown className={cn(
-                      "size-4 text-muted-foreground transition-transform duration-300",
-                      userMenuOpen && "rotate-180"
-                    )} />
-                  </button>
-
-                  {/* Dropdown Menu */}
-                  {userMenuOpen && (
-                    <>
-                      <div 
-                        className="fixed inset-0 z-40" 
-                        onClick={closeUserMenu}
-                      />
-                      <div className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-2xl border border-white/10 bg-background/95 shadow-xl shadow-black/20 backdrop-blur-xl">
-                        <div className="border-b border-white/10 p-4">
-                          <p className="text-sm font-semibold">{userDisplayName}</p>
-                          <p className="text-xs text-muted-foreground">{user?.email}</p>
-                        </div>
-                        <div className="p-2">
-                          <Link
-                            href="/usuario"
-                            onClick={closeUserMenu}
-                            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors hover:bg-white/5"
-                          >
-                            <User className="size-4 text-cyan-400" />
-                            Meu Perfil
-                          </Link>
-                          <Link
-                            href="/favoritos"
-                            onClick={closeUserMenu}
-                            className="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors hover:bg-white/5"
-                          >
-                            <Heart className="size-4 text-pink-400" />
-                            Favoritos
-                            {hasFavorites ? (
-                              <span className="ml-auto inline-flex min-w-[1.5rem] items-center justify-center rounded-full bg-pink-500/20 px-2 py-0.5 text-[0.65rem] font-semibold text-pink-600 shadow-sm">
-                                {favoriteBadgeLabel}
-                              </span>
-                            ) : null}
-                          </Link>
-                        </div>
-                      </div>
-                    </>
+        <div className="flex items-center gap-2">
+          {isAuthenticated ? (
+            <>
+              {isAdmin ? (
+                <Link
+                  href={adminLink.href}
+                  className={cn(
+                    "hidden items-center gap-2 rounded-full border border-amber-400/40 bg-amber-500/10 px-3 py-1.5 text-sm font-semibold text-amber-100 shadow-[inset_0_1px_0_theme(colors.white/20)] transition-all duration-300 hover:-translate-y-[2px] hover:border-amber-300/70 hover:bg-amber-400/20 lg:flex",
+                    pathname.startsWith("/dashboard") && "border-amber-400/60 bg-amber-500/20",
                   )}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleSignOut}
-                  className="group/logout inline-flex items-center gap-2 rounded-full border border-red-500/20 bg-red-500/[0.06] px-4 py-2 text-sm font-medium text-red-500 shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:-translate-y-0.5 hover:border-red-500/30 hover:bg-red-500/10"
                 >
-                  <LogOut className="size-4 transition-transform duration-300 group-hover/logout:scale-110" />
-                  Sair
-                </button>
-              </div>
-            ) : (
-              <Link
-                href="/login"
-                className={cn(
-                  "group/login inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.02] px-4 py-2 text-sm font-medium shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:-translate-y-0.5 hover:border-green-400/30 hover:bg-green-500/5",
-                  pathname.startsWith("/login") &&
-                    "border-primary/30 bg-primary/5 text-primary",
-                )}
-              >
-                <LogIn className={cn(
-                  "size-4 transition-transform duration-300 group-hover/login:scale-110",
-                  pathname.startsWith("/login") ? "text-primary" : "text-green-400"
-                )} />
-                Entrar
-              </Link>
-            )}
-          </nav>
+                  <AdminIcon className="size-4" />
+                  {adminLink.label}
+                  <Crown className="size-4" />
+                </Link>
+              ) : null}
 
-          {/* MOBILE MENU BUTTON */}
+              <div className="hidden lg:block">
+                <UserMenu
+                  isOpen={userMenuOpen}
+                  onToggle={toggleUserMenu}
+                  onClose={closeUserMenu}
+                  onSignOut={handleSignOut}
+                  user={user}
+                  userDisplayName={userDisplayName}
+                  hasFavorites={hasFavorites}
+                  favoriteBadgeLabel={favoriteBadgeLabel}
+                />
+              </div>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className={cn(
+                "hidden items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-semibold text-muted-foreground transition-all duration-300 hover:-translate-y-[2px] hover:border-primary/40 hover:bg-primary/10 hover:text-foreground lg:inline-flex",
+                pathname.startsWith("/login") && "border-primary/40 bg-primary/10 text-primary",
+              )}
+            >
+              <LogIn className="size-4" />
+              Entrar
+            </Link>
+          )}
+
           <button
             type="button"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.02] p-2.5 text-foreground shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:border-primary/30 hover:bg-primary/5 lg:hidden"
-            aria-label="Toggle menu"
+            className="inline-flex size-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-foreground shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:-translate-y-[2px] hover:border-primary/40 hover:bg-primary/10 lg:hidden"
+            aria-label="Abrir menu"
+            onClick={toggleMobileMenu}
           >
-            {mobileMenuOpen ? (
-              <X className="size-5" />
-            ) : (
-              <Menu className="size-5" />
-            )}
+            <AnimatePresence initial={false} mode="wait">
+              <motion.span
+                key={mobileMenuOpen ? "close" : "menu"}
+                {...NAV_ANIMATION}
+                transition={{ duration: 0.2 }}
+                className="grid place-items-center"
+              >
+                {mobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+              </motion.span>
+            </AnimatePresence>
           </button>
         </div>
-
-        {/* MOBILE MENU */}
-        <div
-          className={cn(
-            "overflow-hidden transition-all duration-300 ease-in-out lg:hidden",
-            mobileMenuOpen ? "max-h-[800px] opacity-100" : "max-h-0 opacity-0",
-          )}
-        >
-          <nav className="border-t border-white/10 bg-background/95 px-4 py-4 backdrop-blur-xl">
-            <div className="flex flex-col gap-2">
-              {navigationLinks.map(({ href, label, icon: Icon, color, badge }) => {
-                const isActive =
-                  pathname === href || pathname.startsWith(href + "/");
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    onClick={closeMobileMenu}
-                    className={cn(
-                      "group/nav relative flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-base font-medium shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:border-primary/30 hover:bg-primary/5",
-                      isActive && "border-primary/30 bg-primary/5 text-primary",
-                    )}
-                  >
-                    <Icon
-                      className={cn(
-                        "size-5 transition-transform duration-300 group-hover/nav:scale-110",
-                        isActive ? "text-primary" : color,
-                      )}
-                    />
-                    <span className="flex items-center gap-1">
-                      {label}
-                      {badge ? (
-                        <span className="inline-flex min-w-[1.6rem] items-center justify-center rounded-full bg-pink-500/20 px-2 py-0.5 text-[0.7rem] font-semibold text-pink-600 shadow-sm">
-                          {badge}
-                        </span>
-                      ) : null}
-                    </span>
-                  </Link>
-                );
-              })}
-
-              {isAuthenticated ? (
-                <>
-                  <div className="my-2 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-                  
-                  {/* Card do Usuário no Mobile */}
-                  <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.05] to-white/[0.02] p-4 shadow-[inset_0_1px_0_theme(colors.white/10)]">
-                    <div className="mb-3 flex items-center gap-3">
-                      {user?.image ? (
-                        <Image
-                          src={user.image}
-                          alt={userDisplayName}
-                          width={48}
-                          height={48}
-                          unoptimized
-                          className="size-12 rounded-full border-2 border-white/20 object-cover ring-2 ring-cyan-400/20"
-                        />
-                      ) : (
-                        <span className="grid size-12 place-items-center rounded-full border-2 border-white/20 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 ring-2 ring-cyan-400/20">
-                          <User className="size-6 text-cyan-400" />
-                        </span>
-                      )}
-                      <div className="flex-1">
-                        <p className="font-semibold">{userDisplayName}</p>
-                        <p className="text-xs text-muted-foreground">{user?.email}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-col gap-1">
-                      <Link
-                        href="/usuario"
-                        onClick={closeMobileMenu}
-                        className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors hover:bg-white/5"
-                      >
-                        <User className="size-4 text-cyan-400" />
-                        Meu Perfil
-                      </Link>
-                      <Link
-                        href="/favoritos"
-                        onClick={closeMobileMenu}
-                        className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors hover:bg-white/5"
-                      >
-                        <Heart className="size-4 text-pink-400" />
-                        <span className="flex items-center gap-2">
-                          Favoritos
-                          {hasFavorites ? (
-                            <span className="inline-flex min-w-[1.6rem] items-center justify-center rounded-full bg-pink-500/20 px-2 py-0.5 text-[0.7rem] font-semibold text-pink-600 shadow-sm">
-                              {favoriteBadgeLabel}
-                            </span>
-                          ) : null}
-                        </span>
-                      </Link>
-                    </div>
-                  </div>
-
-                  {isAdmin && (
-                    <Link
-                      href={adminLink.href}
-                      onClick={closeMobileMenu}
-                      className={cn(
-                        "group/admin flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-base font-medium shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:border-primary/30 hover:bg-primary/5",
-                        pathname.startsWith("/dashboard") &&
-                          "border-primary/30 bg-primary/5 text-primary",
-                      )}
-                    >
-                      <AdminIcon
-                        className={cn(
-                          "size-5",
-                          pathname.startsWith("/dashboard") ? "text-primary" : adminLink.color
-                        )}
-                      />
-                      <span className="flex-1">{adminLink.label}</span>
-                      <Crown className="size-4 text-amber-400 opacity-60" />
-                    </Link>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      closeMobileMenu();
-                      handleSignOut();
-                    }}
-                    className="flex items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/[0.06] px-4 py-3 text-base font-medium text-red-500 shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:border-red-500/30 hover:bg-red-500/10"
-                  >
-                    <LogOut className="size-5" />
-                    <span>Sair</span>
-                  </button>
-                </>
-              ) : (
-                <>
-                  <div className="my-2 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-                  
-                  <Link
-                    href="/login"
-                    onClick={closeMobileMenu}
-                    className={cn(
-                      "group/login flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-base font-medium shadow-[inset_0_1px_0_theme(colors.white/10)] transition-all duration-300 hover:border-primary/30 hover:bg-primary/5",
-                      pathname.startsWith("/login") &&
-                        "border-primary/30 bg-primary/5 text-primary",
-                    )}
-                  >
-                    <LogIn className={cn(
-                      "size-5",
-                      pathname.startsWith("/login") ? "text-primary" : "text-green-400"
-                    )} />
-                    <span>Entrar</span>
-                  </Link>
-                </>
-              )}
-            </div>
-          </nav>
-        </div>
       </div>
+
+      <MobileBackdrop isVisible={mobileMenuOpen} onClose={closeMobileMenu} />
+      <MobileNavigation
+        navigationLinks={navigationLinks}
+        isOpen={mobileMenuOpen}
+        onClose={closeMobileMenu}
+        pathname={pathname}
+        isAuthenticated={isAuthenticated}
+        onSignOut={handleSignOut}
+        user={user}
+        userDisplayName={userDisplayName}
+        hasFavorites={hasFavorites}
+        favoriteBadgeLabel={favoriteBadgeLabel}
+        adminLink={adminLink}
+        isAdmin={isAdmin}
+      />
     </header>
   );
 }

@@ -420,19 +420,19 @@ function MobileNavigation({
                   <Link
                     href={adminLink.href}
                     onClick={onClose}
-                    className="group flex items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_18px_28px_-16px_rgba(79,70,229,0.65)] transition-all hover:from-blue-500 hover:via-indigo-500 hover:to-purple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400"
+                    className="group flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
                   >
-                    <span className="flex items-center gap-3">
-                      <span className="grid h-9 w-9 place-items-center rounded-xl bg-white/20 text-white transition-colors group-hover:bg-white/25">
+                    <span className="flex items-center gap-2">
+                      <span className="grid h-8 w-8 place-items-center rounded-lg bg-slate-100 text-slate-600 transition-colors group-hover:bg-slate-200">
                         <AdminIcon className="h-4 w-4" aria-hidden />
                       </span>
                       <span className="flex flex-col text-left leading-tight">
                         <span className="font-semibold">{adminLink.label}</span>
-                        <span className="text-xs font-medium text-white/80">Gerencie a plataforma</span>
+                        <span className="text-xs font-medium text-slate-500">Gerencie a plataforma</span>
                       </span>
                     </span>
                     <ArrowUpRight
-                      className="h-4 w-4 text-white/80 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                      className="h-4 w-4 text-slate-500 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
                       aria-hidden
                     />
                   </Link>
@@ -578,17 +578,17 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
                 <Link
                   href={adminLink.href}
                   className={cn(
-                    "group hidden items-center gap-3 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-4 py-1.5 text-sm font-semibold text-white shadow-[0_12px_24px_-10px_rgba(79,70,229,0.65)] transition-all hover:from-blue-500 hover:via-indigo-500 hover:to-purple-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 lg:inline-flex",
+                    "group hidden items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 lg:inline-flex",
                     pathname.startsWith("/dashboard") && "ring-2 ring-offset-2 ring-offset-white ring-blue-300",
                   )}
                 >
-                  <span className="grid h-8 w-8 place-items-center rounded-full bg-white/15 text-white transition-colors group-hover:bg-white/25">
+                  <span className="grid h-7 w-7 place-items-center rounded-full bg-slate-100 text-slate-600 transition-colors group-hover:bg-slate-200">
                     <AdminIcon className="h-4 w-4" aria-hidden />
                   </span>
                   <span className="flex items-center gap-1">
                     {adminLink.label}
                     <ArrowUpRight
-                      className="h-4 w-4 text-white/80 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                      className="h-4 w-4 text-slate-500 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
                       aria-hidden
                     />
                   </span>

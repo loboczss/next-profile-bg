@@ -34,6 +34,13 @@ export async function POST(request: Request) {
       : `${normalizedUsername}@example.com`;
   const normalizedRole = role === "admin" ? "admin" : "user";
 
+  if (!prisma) {
+    return NextResponse.json(
+      { ok: false, error: "Banco de dados indisponível. Configure o DATABASE_URL." },
+      { status: 500 },
+    );
+  }
+
   const user = await prisma.user.upsert({
     where: { username: normalizedUsername },
     update: {

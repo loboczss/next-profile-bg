@@ -58,6 +58,13 @@ export async function PATCH(request: Request) {
   const { fullName, username, email, password } = parsed.data;
   const userId = Number(session.user.id);
 
+  if (!prisma) {
+    return NextResponse.json(
+      { error: "Banco de dados indisponível. Configure o DATABASE_URL." },
+      { status: 500 },
+    );
+  }
+
   try {
     const [usernameExists, emailExists] = await Promise.all([
       prisma.user.findFirst({

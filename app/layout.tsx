@@ -24,7 +24,7 @@ export default async function RootLayout({
   const session = await auth();
   let favoriteCount = 0;
 
-  if (session?.user?.id) {
+  if (prisma && session?.user?.id) {
     try {
       favoriteCount = await prisma.favorite.count({
         where: { userId: Number(session.user.id) },
@@ -32,6 +32,10 @@ export default async function RootLayout({
     } catch (error) {
       console.error("Erro ao contar favoritos do usuário", error);
     }
+  } else if (!prisma) {
+    console.error(
+      "Prisma Client não está disponível. Contagem de favoritos não pôde ser carregada.",
+    );
   }
 
   return (

@@ -34,6 +34,22 @@ export async function POST(request: Request) {
   const buffer = Buffer.from(arrayBuffer);
   let logs: UploadLogEntry[] = [];
 
+  if (!prisma) {
+    logs.push({
+      level: "error",
+      message: "Banco de dados indisponível. Configure o DATABASE_URL antes de atualizar a foto.",
+      timestamp: new Date().toISOString(),
+    });
+
+    return NextResponse.json(
+      {
+        error: "Banco de dados indisponível. Configure o DATABASE_URL.",
+        logs,
+      },
+      { status: 500 },
+    );
+  }
+
   try {
     const result = await storeProfileImage(session.user.id, ext, buffer);
     logs = result.logs;

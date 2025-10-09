@@ -61,6 +61,13 @@ async function deleteDestination(
     };
   }
 
+  if (!prisma) {
+    return {
+      status: "error",
+      message: "Banco de dados indisponível no momento. Tente novamente mais tarde.",
+    };
+  }
+
   try {
     const destination = await prisma.destination.findUnique({
       where: { id: destinationId },
@@ -106,14 +113,15 @@ async function deleteDestination(
 // Página que lista todos os destinos cadastrados e oferece destaque para cada experiência.
 export default async function DestinationsPage() {
   const session = await auth();
+  const prismaClient = prisma;
 
   let destinations: SerializedDestination[] = [];
   let destinationsError = false;
   const favoriteDestinationIds = new Set<number>();
 
-  if (session?.user?.id) {
+  if (prismaClient && session?.user?.id) {
     try {
-      const favorites = await prisma.favorite.findMany({
+      const favorites = await prismaClient.favorite.findMany({
         where: { userId: Number(session.user.id) },
         select: { destinationId: true },
       });
@@ -121,19 +129,28 @@ export default async function DestinationsPage() {
     } catch (error) {
       console.error("Erro ao buscar favoritos do usuário", error);
     }
+  } else if (!prismaClient) {
+    console.error("Prisma Client não está disponível. Lista de favoritos carregada vazia.");
   }
-  try {
-    // Busca todos os destinos ordenados por data de criação.
-    const destinationsFromDb = await prisma.destination.findMany({
-      orderBy: { createdAt: "desc" },
-    });
-    destinations = destinationsFromDb.map((destination) => ({
-      ...serializeDestination(destination),
-      isFavorite: favoriteDestinationIds.has(destination.id),
-    }));
-  } catch (error) {
-    console.error("Erro ao buscar destinos", error);
+  if (prismaClient) {
+    try {
+      // Busca todos os destinos ordenados por data de criação.
+      const destinationsFromDb = await prismaClient.destination.findMany({
+        orderBy: { createdAt: "desc" },
+      });
+      destinations = destinationsFromDb.map((destination) => ({
+        ...serializeDestination(destination),
+        isFavorite: favoriteDestinationIds.has(destination.id),
+      }));
+    } catch (error) {
+      console.error("Erro ao buscar destinos", error);
+      destinationsError = true;
+    }
+  } else {
     destinationsError = true;
+    console.error(
+      "Prisma Client não está disponível. Exibindo página de destinos sem dados do banco de dados.",
+    );
   }
 
   const destinationCount = destinations.length;

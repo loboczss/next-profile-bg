@@ -10,6 +10,8 @@ import { assertImage, sanitizeExt } from "@/lib/file";
 
 export const runtime = "nodejs";
 
+const prismaClient = prisma;
+
 const RATE_LIMIT_WINDOW = 10 * 60 * 1000;
 const RATE_LIMIT_MAX = 10;
 const rateLimitMap = new Map<string, { count: number; windowStart: number }>();
@@ -95,8 +97,12 @@ async function resolveSelectedBackgrounds({
   backgroundGroup: string | null;
   backgroundImageId: number | null;
 }) {
+  if (!prismaClient) {
+    return [];
+  }
+
   if (backgroundMode === "SINGLE" && backgroundImageId) {
-    const image = await prisma.backgroundImage.findUnique({
+    const image = await prismaClient.backgroundImage.findUnique({
       where: { id: backgroundImageId },
     });
     return image ? [image] : [];
@@ -107,7 +113,7 @@ async function resolveSelectedBackgrounds({
       return [];
     }
 
-    return prisma.backgroundImage.findMany({
+    return prismaClient.backgroundImage.findMany({
       where: {
         isVisible: true,
         groupKey: backgroundGroup,
@@ -116,7 +122,7 @@ async function resolveSelectedBackgrounds({
     });
   }
 
-  return prisma.backgroundImage.findMany({
+  return prismaClient.backgroundImage.findMany({
     where: { isVisible: true },
     orderBy: { createdAt: "desc" },
     take: 20,
@@ -124,8 +130,15 @@ async function resolveSelectedBackgrounds({
 }
 
 export async function GET() {
+  if (!prismaClient) {
+    return NextResponse.json(
+      { error: "Banco de dados indisponível. Configure o DATABASE_URL." },
+      { status: 500 },
+    );
+  }
+
   try {
-    const settings = await prisma.globalSetting.findUnique({
+    const settings = await prismaClient.globalSetting.findUnique({
       where: { id: 1 },
       select: {
         backgroundUrl: true,
@@ -159,12 +172,19 @@ export async function GET() {
 }
 
 export async function DELETE() {
+  if (!prismaClient) {
+    return NextResponse.json(
+      { error: "Banco de dados indisponível. Configure o DATABASE_URL." },
+      { status: 500 },
+    );
+  }
+
   try {
-    await prisma.$transaction([
-      prisma.backgroundImage.updateMany({
+    await prismaClient.$transaction([
+      prismaClient.backgroundImage.updateMany({
         data: { isVisible: false },
       }),
-      prisma.globalSetting.updateMany({
+      prismaClient.globalSetting.updateMany({
         data: {
           backgroundUrl: null,
           backgroundMode: "ALL",
@@ -185,6 +205,13 @@ export async function PUT(request: NextRequest) {
   const ip = getClientIp(request);
   if (!checkRateLimit(ip)) {
     return NextResponse.json({ error: "Muitas requisições" }, { status: 429 });
+  }
+
+  if (!prismaClient) {
+    return NextResponse.json(
+      { error: "Banco de dados indisponível. Configure o DATABASE_URL." },
+      { status: 500 },
+    );
   }
 
   const contentType = request.headers.get("content-type") ?? "";
@@ -225,7 +252,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Tipo de conteúdo não suportado" }, { status: 400 });
     }
 
-    const background = await prisma.backgroundImage.create({
+    const background = await prismaClient.backgroundImage.create({
       data: {
         url: backgroundUrl,
         title,
@@ -233,7 +260,7 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-    await prisma.globalSetting.upsert({
+    await prismaClient.globalSetting.upsert({
       where: { id: 1 },
       update: { backgroundUrl, backgroundImageId: background.id },
       create: { id: 1, backgroundUrl, backgroundImageId: background.id },
@@ -267,6 +294,13 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+  if (!prismaClient) {
+    return NextResponse.json(
+      { error: "Banco de dados indisponível. Configure o DATABASE_URL." },
+      { status: 500 },
+    );
+  }
+
   const body = await request.json().catch(() => null);
   const parsed = modeSchema.safeParse(body);
 
@@ -294,7 +328,7 @@ export async function PATCH(request: NextRequest) {
         );
       }
 
-      const image = await prisma.backgroundImage.findUnique({
+      const image = await prismaClient.backgroundImage.findUnique({
         where: { id: imageId },
         select: { id: true },
       });
@@ -320,7 +354,7 @@ export async function PATCH(request: NextRequest) {
       connectImageId = null;
     } else {
       if (typeof imageId === "number") {
-        const image = await prisma.backgroundImage.findUnique({
+        const image = await prismaClient.backgroundImage.findUnique({
           where: { id: imageId },
           select: { id: true },
         });
@@ -358,10 +392,10 @@ export async function PATCH(request: NextRequest) {
           : { connect: { id: connectImageId } };
     }
 
-    const existing = await prisma.globalSetting.findUnique({ where: { id: 1 } });
+    const existing = await prismaClient.globalSetting.findUnique({ where: { id: 1 } });
 
     if (existing) {
-      await prisma.globalSetting.update({
+      await prismaClient.globalSetting.update({
         where: { id: 1 },
         data: updateData,
       });
@@ -376,7 +410,7 @@ export async function PATCH(request: NextRequest) {
         createData.backgroundImage = { connect: { id: connectImageId } };
       }
 
-      await prisma.globalSetting.create({ data: createData });
+      await prismaClient.globalSetting.create({ data: createData });
     }
 
     revalidatePath("/");

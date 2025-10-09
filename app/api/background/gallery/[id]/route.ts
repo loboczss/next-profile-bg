@@ -45,6 +45,13 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
+  if (!prisma) {
+    return NextResponse.json(
+      { error: "Banco de dados indisponível. Configure o DATABASE_URL." },
+      { status: 500 },
+    );
+  }
+
   try {
     const exists = await prisma.backgroundImage.findUnique({
       where: { id },
@@ -88,6 +95,13 @@ export async function DELETE(request: NextRequest) {
 
   if (!Number.isInteger(id) || id <= 0) {
     return NextResponse.json({ error: "Identificador inválido" }, { status: 400 });
+  }
+
+  if (!prisma) {
+    return NextResponse.json(
+      { error: "Banco de dados indisponível. Configure o DATABASE_URL." },
+      { status: 500 },
+    );
   }
 
   try {

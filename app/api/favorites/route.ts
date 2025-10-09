@@ -54,6 +54,16 @@ export async function POST(request: Request) {
   const userId = Number(session.user.id);
   const { destinationId } = parsedBody;
 
+  if (!prisma) {
+    return jsonResponse(
+      {
+        status: "error",
+        message: "Banco de dados indisponível. Configure o DATABASE_URL.",
+      },
+      500,
+    );
+  }
+
   try {
     const destination = await prisma.destination.findUnique({
       where: { id: destinationId },
@@ -149,6 +159,16 @@ export async function DELETE(request: Request) {
 
   const userId = Number(session.user.id);
   const { destinationId } = parsedBody;
+
+  if (!prisma) {
+    return jsonResponse(
+      {
+        status: "error",
+        message: "Banco de dados indisponível. Configure o DATABASE_URL.",
+      },
+      500,
+    );
+  }
 
   try {
     const destination = await prisma.destination.findUnique({

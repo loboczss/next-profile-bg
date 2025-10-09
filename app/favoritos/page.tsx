@@ -9,6 +9,7 @@ export const runtime = "nodejs";
 
 export default async function FavoritesPage() {
   const session = await auth();
+  const prismaClient = prisma;
 
   if (!session?.user?.id) {
     redirect(`/login?callbackUrl=${encodeURIComponent("/favoritos")}`);
@@ -17,22 +18,26 @@ export default async function FavoritesPage() {
   const userId = Number(session.user.id);
 
   let favoriteDestinations: SerializedDestination[] = [];
-  try {
-    const favorites = await prisma.favorite.findMany({
-      where: { userId },
-      include: { destination: true },
-      orderBy: { createdAt: "desc" },
-    });
+  if (prismaClient) {
+    try {
+      const favorites = await prismaClient.favorite.findMany({
+        where: { userId },
+        include: { destination: true },
+        orderBy: { createdAt: "desc" },
+      });
 
-    favoriteDestinations = favorites
-      .filter((favorite) => favorite.destination)
-      .map((favorite) => ({
-        ...serializeDestination(favorite.destination),
-        isFavorite: true,
-        favoriteCreatedAt: favorite.createdAt.toISOString(),
-      }));
-  } catch (error) {
-    console.error("Erro ao carregar favoritos", error);
+      favoriteDestinations = favorites
+        .filter((favorite) => favorite.destination)
+        .map((favorite) => ({
+          ...serializeDestination(favorite.destination),
+          isFavorite: true,
+          favoriteCreatedAt: favorite.createdAt.toISOString(),
+        }));
+    } catch (error) {
+      console.error("Erro ao carregar favoritos", error);
+    }
+  } else {
+    console.error("Prisma Client não está disponível. Lista de favoritos carregada vazia.");
   }
 
   return (

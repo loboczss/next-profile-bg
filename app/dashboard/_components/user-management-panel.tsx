@@ -2,7 +2,17 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Edit, LockReset, Plus, RefreshCcw, Search, ShieldHalf, ShieldPlus, ShieldQuestion, Trash2 } from "lucide-react";
+import {
+  Edit,
+  Plus,
+  RefreshCcw,
+  RotateCcwKey,
+  Search,
+  ShieldHalf,
+  ShieldPlus,
+  ShieldQuestion,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -479,7 +489,7 @@ export function UserManagementPanel({ users, total, page, pageSize, searchTerm }
                             onClick={() => handleResetPassword(user.id)}
                             disabled={isResetPending}
                           >
-                            <LockReset className="h-4 w-4" />
+                            <RotateCcwKey className="h-4 w-4" />
                           </Button>
                           <ConfirmDeleteButton
                             onConfirm={() => handleDelete(user.id)}

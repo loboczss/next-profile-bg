@@ -19,8 +19,30 @@ import { prisma } from "@/lib/prisma";
 
 const PAGE_SIZE = 8;
 
+type DashboardSearchParams = Record<string, string | string[] | undefined>;
+
+type AdminActivityLogRecord = {
+  id: number;
+  action: string;
+  message: string;
+  createdAt: Date;
+  actor?: { fullName: string | null; username: string | null } | null;
+  subject?: { fullName: string | null; username: string | null } | null;
+};
+
+type AdminActivityLogDelegate = {
+  findMany: (args: {
+    orderBy?: { createdAt?: "asc" | "desc" };
+    take?: number;
+    include?: {
+      actor?: { select?: { fullName?: boolean; username?: boolean } };
+      subject?: { select?: { fullName?: boolean; username?: boolean } };
+    };
+  }) => Promise<AdminActivityLogRecord[]>;
+};
+
 interface DashboardPageProps {
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams?: Promise<DashboardSearchParams>;
 }
 
 // Função utilitária para consolidar contagens por papel de usuário.
@@ -32,6 +54,7 @@ function toRoleCount(groups: { role: string; _count: { _all: number } }[]) {
 }
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
+  const resolvedSearchParams: DashboardSearchParams = (await searchParams) ?? {};
   const session = await auth();
 
   if (!session?.user) {
@@ -44,9 +67,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const currentPage = Math.max(
     1,
-    Number(typeof searchParams?.page === "string" ? Number(searchParams.page) : 1) || 1,
+    Number(typeof resolvedSearchParams.page === "string" ? Number(resolvedSearchParams.page) : 1) || 1,
   );
-  const searchTerm = typeof searchParams?.q === "string" ? searchParams.q.trim() : "";
+  const searchTerm =
+    typeof resolvedSearchParams.q === "string" ? resolvedSearchParams.q.trim() : "";
 
   const userFilter: Prisma.UserWhereInput = searchTerm
     ? {
@@ -67,65 +91,82 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const sixMonthsAgo = new Date(startOfMonth.getFullYear(), startOfMonth.getMonth() - 5, 1);
 
-  const [users, totalUsers, roleGroup, activeUsers, newUsersThisMonth, backgroundSettings, backgroundCount, destinationsCount, favoritesCount, activityLogsRaw, recentUserCreations] =
-    await Promise.all([
-      prisma.user.findMany({
-        where: userFilter,
-        orderBy: { createdAt: "desc" },
-        skip: (currentPage - 1) * PAGE_SIZE,
-        take: PAGE_SIZE,
-        select: {
-          id: true,
-          username: true,
-          fullName: true,
-          email: true,
-          role: true,
-          imageUrl: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      }),
-      prisma.user.count({ where: userFilter }),
-      prisma.user.groupBy({
-        by: ["role"],
-        _count: { _all: true },
-      }),
-      prisma.user.count({
-        where: {
-          updatedAt: { gte: lastThirtyDays },
-        },
-      }),
-      prisma.user.count({
-        where: {
-          createdAt: { gte: startOfMonth },
-        },
-      }),
-      prisma.globalSetting.findUnique({
-        where: { id: 1 },
-        select: {
-          backgroundUrl: true,
-        },
-      }),
-      prisma.backgroundImage.count({ where: { isVisible: true } }),
-      prisma.destination.count(),
-      prisma.favorite.count(),
-      prisma.adminActivityLog.findMany({
+  const [
+    users,
+    totalUsers,
+    roleGroup,
+    activeUsers,
+    newUsersThisMonth,
+    backgroundSettings,
+    backgroundCount,
+    destinationsCount,
+    favoritesCount,
+    recentUserCreations,
+  ] = await Promise.all([
+    prisma.user.findMany({
+      where: userFilter,
+      orderBy: { createdAt: "desc" },
+      skip: (currentPage - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      select: {
+        id: true,
+        username: true,
+        fullName: true,
+        email: true,
+        role: true,
+        imageUrl: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    }),
+    prisma.user.count({ where: userFilter }),
+    prisma.user.groupBy({
+      by: ["role"],
+      _count: { _all: true },
+    }),
+    prisma.user.count({
+      where: {
+        updatedAt: { gte: lastThirtyDays },
+      },
+    }),
+    prisma.user.count({
+      where: {
+        createdAt: { gte: startOfMonth },
+      },
+    }),
+    prisma.globalSetting.findUnique({
+      where: { id: 1 },
+      select: {
+        backgroundUrl: true,
+      },
+    }),
+    prisma.backgroundImage.count({ where: { isVisible: true } }),
+    prisma.destination.count(),
+    prisma.favorite.count(),
+    prisma.user.findMany({
+      where: {
+        createdAt: { gte: sixMonthsAgo },
+      },
+      select: {
+        createdAt: true,
+      },
+    }),
+  ]);
+
+  const prismaWithActivityLog = prisma as unknown as {
+    adminActivityLog?: AdminActivityLogDelegate;
+  };
+
+  const activityLogsRaw = prismaWithActivityLog.adminActivityLog
+    ? await prismaWithActivityLog.adminActivityLog.findMany({
         orderBy: { createdAt: "desc" },
         take: 8,
         include: {
           actor: { select: { fullName: true, username: true } },
           subject: { select: { fullName: true, username: true } },
         },
-      }),
-      prisma.user.findMany({
-        where: {
-          createdAt: { gte: sixMonthsAgo },
-        },
-        select: {
-          createdAt: true,
-        },
-      }),
-    ]);
+      })
+    : [];
 
   // Caso não existam logs persistidos (instalação recente), utiliza-se a atualização de usuários como fallback.
   let activityItems: ActivityItem[] = activityLogsRaw.map((log) => ({

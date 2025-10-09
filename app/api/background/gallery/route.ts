@@ -25,6 +25,13 @@ const createSchema = z.object({
 });
 
 export async function GET() {
+  if (!prisma) {
+    return NextResponse.json(
+      { error: "Banco de dados indisponível. Configure o DATABASE_URL." },
+      { status: 500 },
+    );
+  }
+
   try {
     const images = await prisma.backgroundImage.findMany({
       orderBy: { createdAt: "desc" },
@@ -44,6 +51,13 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     const message = parsed.error.issues.at(0)?.message ?? "Dados inválidos";
     return NextResponse.json({ error: message }, { status: 400 });
+  }
+
+  if (!prisma) {
+    return NextResponse.json(
+      { error: "Banco de dados indisponível. Configure o DATABASE_URL." },
+      { status: 500 },
+    );
   }
 
   try {

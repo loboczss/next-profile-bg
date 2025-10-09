@@ -91,6 +91,42 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const sixMonthsAgo = new Date(startOfMonth.getFullYear(), startOfMonth.getMonth() - 5, 1);
 
+  const navItems = [
+    { id: "overview", label: "Visão geral", icon: LayoutDashboard },
+    { id: "users", label: "Usuários", icon: Users },
+    { id: "backgrounds", label: "Backgrounds", icon: Image },
+    { id: "content", label: "Conteúdos", icon: NotebookPen },
+    { id: "settings", label: "Configurações", icon: Settings },
+  ];
+
+  const dashboardUserInfo = {
+    name: session.user.fullName ?? session.user.name ?? session.user.username ?? "Administrador",
+    role: session.user.role,
+    imageUrl: session.user.image ?? null,
+  };
+
+  if (!prisma) {
+    return (
+      <DashboardAnimatedWrapper userName={session.user.name ?? "Administrador"}>
+        <DashboardShell
+          navItems={navItems}
+          user={dashboardUserInfo}
+          backgroundUrl={null}
+        >
+          <section id="overview" className="space-y-6">
+            <div className="rounded-3xl border border-rose-200/70 bg-rose-50/80 p-6 text-rose-900 shadow-sm">
+              <h2 className="text-lg font-semibold">Banco de dados indisponível</h2>
+              <p className="mt-2 text-sm text-rose-700">
+                Não foi possível se conectar ao banco de dados. As funcionalidades administrativas estarão
+                temporariamente indisponíveis até que a configuração seja corrigida.
+              </p>
+            </div>
+          </section>
+        </DashboardShell>
+      </DashboardAnimatedWrapper>
+    );
+  }
+
   const [
     users,
     totalUsers,
@@ -232,23 +268,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const backgroundUrl = backgroundSettings?.backgroundUrl ?? null;
 
-  const navItems = [
-    { id: "overview", label: "Visão geral", icon: LayoutDashboard },
-    { id: "users", label: "Usuários", icon: Users },
-    { id: "backgrounds", label: "Backgrounds", icon: Image },
-    { id: "content", label: "Conteúdos", icon: NotebookPen },
-    { id: "settings", label: "Configurações", icon: Settings },
-  ];
-
   return (
     <DashboardAnimatedWrapper userName={session.user.name ?? "Administrador"}>
       <DashboardShell
         navItems={navItems}
-        user={{
-          name: session.user.fullName ?? session.user.name ?? session.user.username ?? "Administrador",
-          role: session.user.role,
-          imageUrl: session.user.image ?? null,
-        }}
+        user={dashboardUserInfo}
         backgroundUrl={backgroundUrl}
       >
         {/* Seção principal com métricas, gráfico e linha do tempo */}

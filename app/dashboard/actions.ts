@@ -99,6 +99,13 @@ export async function createDestination(
     };
   }
 
+  if (!prisma) {
+    return {
+      status: "error",
+      message: "Banco de dados indisponível no momento. Tente novamente mais tarde.",
+    };
+  }
+
   try {
     // Persiste o destino no banco, convertendo valores numéricos quando necessário.
     await prisma.destination.create({

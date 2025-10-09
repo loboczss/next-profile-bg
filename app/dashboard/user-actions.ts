@@ -85,6 +85,13 @@ async function registerActivity(
   subjectId: number | null,
   metadata: Record<string, unknown> | null = null,
 ) {
+  if (!prisma) {
+    console.error(
+      "Prisma Client não está disponível. Registro de atividade administrativa não será efetuado.",
+    );
+    return;
+  }
+
   try {
     const session = await auth();
     const actorId = session?.user?.id ? Number(session.user.id) : null;
@@ -127,6 +134,13 @@ export async function createUserAction(input: z.infer<typeof createUserSchema>):
       status: "error",
       message: "Revise os campos destacados.",
       errors,
+    };
+  }
+
+  if (!prisma) {
+    return {
+      status: "error",
+      message: "Banco de dados indisponível no momento. Tente novamente mais tarde.",
     };
   }
 
@@ -196,6 +210,13 @@ export async function updateUserAction(input: z.infer<typeof updateUserSchema>):
   }
 
   const { id, password, ...data } = parsed.data;
+
+  if (!prisma) {
+    return {
+      status: "error",
+      message: "Banco de dados indisponível no momento. Tente novamente mais tarde.",
+    };
+  }
 
   try {
     const existing = await prisma.user.findUnique({ where: { id } });
@@ -277,6 +298,13 @@ export async function deleteUserAction(id: number): Promise<ActionState> {
     };
   }
 
+  if (!prisma) {
+    return {
+      status: "error",
+      message: "Banco de dados indisponível no momento. Tente novamente mais tarde.",
+    };
+  }
+
   try {
     const user = await prisma.user.delete({ where: { id } });
 
@@ -300,6 +328,13 @@ export async function deleteUserAction(id: number): Promise<ActionState> {
 
 export async function resetUserPasswordAction(id: number): Promise<ActionState> {
   await ensureAdminSession();
+
+  if (!prisma) {
+    return {
+      status: "error",
+      message: "Banco de dados indisponível no momento. Tente novamente mais tarde.",
+    };
+  }
 
   try {
     const user = await prisma.user.findUnique({ where: { id } });

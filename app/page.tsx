@@ -11,46 +11,55 @@ import { Hotel, Wand2, Headphones, Sparkles, ArrowRight } from "lucide-react";
 
 export default async function HomePage() {
   const session = await auth();
+  const prismaClient = prisma;
+
+  if (!prismaClient) {
+    console.error(
+      "Prisma Client não está disponível. Exibindo conteúdo padrão sem dados do banco de dados.",
+    );
+  }
 
   // 1) Background "global" (igual, sem mexer no backend)
   let backgroundUrl: string | null = null;
   let backgroundMode: "ALL" | "GROUP" | "SINGLE" = "ALL";
   let backgroundGroup: string | null = null;
   let backgroundImageId: number | null = null;
-  try {
-    const settings = await prisma.globalSetting.findUnique({
-      where: { id: 1 },
-      select: {
-        backgroundUrl: true,
-        backgroundMode: true,
-        backgroundGroup: true,
-        backgroundImageId: true,
-        backgroundImage: { select: { url: true, isVisible: true } },
-      },
-    });
-    backgroundUrl = settings?.backgroundUrl ?? null;
-    backgroundMode = settings?.backgroundMode ?? "ALL";
-    backgroundGroup = settings?.backgroundGroup ?? null;
-    backgroundImageId = settings?.backgroundImageId ?? null;
+  if (prismaClient) {
+    try {
+      const settings = await prismaClient.globalSetting.findUnique({
+        where: { id: 1 },
+        select: {
+          backgroundUrl: true,
+          backgroundMode: true,
+          backgroundGroup: true,
+          backgroundImageId: true,
+          backgroundImage: { select: { url: true, isVisible: true } },
+        },
+      });
+      backgroundUrl = settings?.backgroundUrl ?? null;
+      backgroundMode = settings?.backgroundMode ?? "ALL";
+      backgroundGroup = settings?.backgroundGroup ?? null;
+      backgroundImageId = settings?.backgroundImageId ?? null;
 
-    if (
-      backgroundMode === "SINGLE" &&
-      settings?.backgroundImage &&
-      settings.backgroundImage.isVisible
-    ) {
-      backgroundUrl = settings.backgroundImage.url;
+      if (
+        backgroundMode === "SINGLE" &&
+        settings?.backgroundImage &&
+        settings.backgroundImage.isVisible
+      ) {
+        backgroundUrl = settings.backgroundImage.url;
+      }
+    } catch {
+      backgroundUrl = null;
     }
-  } catch {
-    backgroundUrl = null;
   }
 
   // 2) Destinos (igual, sem mexer no backend)
   let destinations: SerializedDestination[] = [];
   const favoriteDestinationIds = new Set<number>();
 
-  if (session?.user?.id) {
+  if (prismaClient && session?.user?.id) {
     try {
-      const favorites = await prisma.favorite.findMany({
+      const favorites = await prismaClient.favorite.findMany({
         where: { userId: Number(session.user.id) },
         select: { destinationId: true },
       });
@@ -60,60 +69,64 @@ export default async function HomePage() {
     }
   }
 
-  try {
-    const destinationsFromDb = await prisma.destination.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 12,
-    });
-    destinations = destinationsFromDb.map((destination) => ({
-      ...serializeDestination(destination),
-      isFavorite: favoriteDestinationIds.has(destination.id),
-    }));
-  } catch {
-    destinations = [];
+  if (prismaClient) {
+    try {
+      const destinationsFromDb = await prismaClient.destination.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 12,
+      });
+      destinations = destinationsFromDb.map((destination) => ({
+        ...serializeDestination(destination),
+        isFavorite: favoriteDestinationIds.has(destination.id),
+      }));
+    } catch {
+      destinations = [];
+    }
   }
 
   // 3) Slides do hero (igual, só organizei a leitura)
   const heroImages: string[] = [];
 
-  try {
-    if (backgroundMode === "SINGLE" && backgroundImageId) {
-      const image = await prisma.backgroundImage.findUnique({
-        where: { id: backgroundImageId },
-        select: { url: true, isVisible: true },
-      });
+  if (prismaClient) {
+    try {
+      if (backgroundMode === "SINGLE" && backgroundImageId) {
+        const image = await prismaClient.backgroundImage.findUnique({
+          where: { id: backgroundImageId },
+          select: { url: true, isVisible: true },
+        });
 
-      if (image?.isVisible && image.url) {
-        heroImages.push(image.url);
-      } else if (backgroundUrl) {
+        if (image?.isVisible && image.url) {
+          heroImages.push(image.url);
+        } else if (backgroundUrl) {
+          heroImages.push(backgroundUrl);
+        }
+      } else if (backgroundMode === "GROUP" && backgroundGroup) {
+        const images = await prismaClient.backgroundImage.findMany({
+          where: { isVisible: true, groupKey: backgroundGroup },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+        });
+
+        if (images.length) {
+          heroImages.push(...images.map((image) => image.url));
+        } else if (backgroundUrl) {
+          heroImages.push(backgroundUrl);
+        }
+      } else {
+        const images = await prismaClient.backgroundImage.findMany({
+          where: { isVisible: true },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+        });
+
+        if (images.length) {
+          heroImages.push(...images.map((image) => image.url));
+        }
+      }
+    } catch {
+      if (backgroundUrl) {
         heroImages.push(backgroundUrl);
       }
-    } else if (backgroundMode === "GROUP" && backgroundGroup) {
-      const images = await prisma.backgroundImage.findMany({
-        where: { isVisible: true, groupKey: backgroundGroup },
-        orderBy: { createdAt: "desc" },
-        take: 10,
-      });
-
-      if (images.length) {
-        heroImages.push(...images.map((image) => image.url));
-      } else if (backgroundUrl) {
-        heroImages.push(backgroundUrl);
-      }
-    } else {
-      const images = await prisma.backgroundImage.findMany({
-        where: { isVisible: true },
-        orderBy: { createdAt: "desc" },
-        take: 10,
-      });
-
-      if (images.length) {
-        heroImages.push(...images.map((image) => image.url));
-      }
-    }
-  } catch {
-    if (backgroundUrl) {
-      heroImages.push(backgroundUrl);
     }
   }
 

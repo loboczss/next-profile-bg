@@ -81,6 +81,13 @@ export async function POST(request: Request) {
   const { username, password, fullName, email, profileType } = parsed.data;
   const role = profileType === "admin" ? "admin" : "user";
 
+  if (!prisma) {
+    return NextResponse.json(
+      { error: "Banco de dados indisponível. Configure o DATABASE_URL." },
+      { status: 500 },
+    );
+  }
+
   try {
     const passwordHash = await hashPassword(password);
     const user = await prisma.user.create({

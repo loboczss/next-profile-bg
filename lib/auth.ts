@@ -64,6 +64,14 @@ export const {
             };
 
         let user = null;
+        if (!prisma) {
+          const error = new CredentialsSignin(
+            "Banco de dados indisponível. Configure o DATABASE_URL.",
+          );
+          error.code = "database_unavailable";
+          throw error;
+        }
+
         try {
           user = await prisma.user.findFirst({ where: identifierFilter });
         } catch (dbError) {
@@ -124,28 +132,30 @@ export const {
       }
 
       if (token.userId) {
-        try {
-          const dbUser = await prisma.user.findUnique({
-            where: { id: Number(token.userId) },
-            select: {
-              username: true,
-              imageUrl: true,
-              role: true,
-              fullName: true,
-              email: true,
-            },
-          });
+        if (prisma) {
+          try {
+            const dbUser = await prisma.user.findUnique({
+              where: { id: Number(token.userId) },
+              select: {
+                username: true,
+                imageUrl: true,
+                role: true,
+                fullName: true,
+                email: true,
+              },
+            });
 
-          if (dbUser) {
-            token.name = dbUser.fullName ?? dbUser.username;
-            token.picture = dbUser.imageUrl ?? null;
-            token.role = (dbUser.role as "user" | "admin") ?? "user";
-            token.username = dbUser.username;
-            token.fullName = dbUser.fullName ?? null;
-            token.email = dbUser.email ?? null;
+            if (dbUser) {
+              token.name = dbUser.fullName ?? dbUser.username;
+              token.picture = dbUser.imageUrl ?? null;
+              token.role = (dbUser.role as "user" | "admin") ?? "user";
+              token.username = dbUser.username;
+              token.fullName = dbUser.fullName ?? null;
+              token.email = dbUser.email ?? null;
+            }
+          } catch {
+            // ignore database lookup errors in JWT callback
           }
-        } catch {
-          // ignore database lookup errors in JWT callback
         }
       }
 

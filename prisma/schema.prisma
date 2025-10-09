@@ -19,12 +19,22 @@ model User {
   updatedAt    DateTime @updatedAt
   destinations Destination[]
   favorites    Favorite[]
+  activityAuthored AdminActivityLog[] @relation("activity_actor")
+  activityTarget   AdminActivityLog[] @relation("activity_target")
 }
 
 enum BackgroundDisplayMode {
   ALL
   GROUP
   SINGLE
+}
+
+enum AdminActivityAction {
+  USER_CREATED
+  USER_UPDATED
+  USER_ROLE_UPDATED
+  USER_DELETED
+  PASSWORD_RESET
 }
 
 model GlobalSetting {
@@ -79,4 +89,19 @@ model Favorite {
   destination Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
 
   @@unique([userId, destinationId])
+}
+
+model AdminActivityLog {
+  id        Int                   @id @default(autoincrement())
+  action    AdminActivityAction
+  message   String
+  metadata  Json?
+  actorId   Int?
+  subjectId Int?
+  createdAt DateTime              @default(now())
+
+  actor   User? @relation("activity_actor", fields: [actorId], references: [id], onDelete: SetNull)
+  subject User? @relation("activity_target", fields: [subjectId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
 }

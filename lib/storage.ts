@@ -204,10 +204,21 @@ export async function storeProfileImage(userId: string, ext: string, buffer: Buf
 
 export async function storeBackgroundImage(ext: string, buffer: Buffer) {
   const dropboxPath = `/apps/${appName}/backgrounds/current.${ext}`;
-  return tryDropboxUpload(dropboxPath, buffer, {
+  const uploadedUrl = await tryDropboxUpload(dropboxPath, buffer, {
     itemDescription: "background",
     successMessage: "Upload do background concluído no Dropbox.",
   });
+
+  const version = Date.now().toString();
+
+  try {
+    const url = new URL(uploadedUrl);
+    url.searchParams.set("v", version);
+    return url.toString();
+  } catch {
+    const separator = uploadedUrl.includes("?") ? "&" : "?";
+    return `${uploadedUrl}${separator}v=${version}`;
+  }
 }
 
 export async function storeDestinationPhoto(

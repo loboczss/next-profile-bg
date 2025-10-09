@@ -578,11 +578,11 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
                 <Link
                   href={adminLink.href}
                   className={cn(
-                    "group hidden items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 lg:inline-flex",
+                    "group hidden items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 lg:inline-flex",
                     pathname.startsWith("/dashboard") && "ring-2 ring-offset-2 ring-offset-white ring-blue-300",
                   )}
                 >
-                  <span className="grid h-7 w-7 place-items-center rounded-full bg-slate-100 text-slate-600 transition-colors group-hover:bg-slate-200">
+                  <span className="grid h-6 w-6 place-items-center rounded-full bg-slate-100 text-slate-600 transition-colors group-hover:bg-slate-200">
                     <AdminIcon className="h-4 w-4" aria-hidden />
                   </span>
                   <span className="flex items-center gap-1">

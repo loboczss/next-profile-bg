@@ -1,12 +1,19 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { AdminActivityAction, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { auth } from "@/lib/auth";
 import { hashPassword } from "@/lib/hash";
 import { prisma } from "@/lib/prisma";
+
+type AdminActivityAction =
+  | "USER_CREATED"
+  | "USER_UPDATED"
+  | "USER_ROLE_UPDATED"
+  | "USER_DELETED"
+  | "PASSWORD_RESET";
 
 // Schema base para validação e reaproveitamento nos formulários de criação/edição.
 const baseUserSchema = z.object({
@@ -82,11 +89,25 @@ async function registerActivity(
     const session = await auth();
     const actorId = session?.user?.id ? Number(session.user.id) : null;
 
-    await prisma.adminActivityLog.create({
+    const prismaWithActivityLog = prisma as unknown as {
+      adminActivityLog?: {
+        create: (args: {
+          data: {
+            action: AdminActivityAction;
+            message: string;
+            metadata?: Record<string, unknown> | null;
+            actorId: number | null;
+            subjectId: number | null;
+          };
+        }) => Promise<unknown>;
+      };
+    };
+
+    await prismaWithActivityLog.adminActivityLog?.create({
       data: {
         action,
         message,
-        metadata,
+        metadata: metadata ?? undefined,
         actorId,
         subjectId,
       },
@@ -124,7 +145,7 @@ export async function createUserAction(input: z.infer<typeof createUserSchema>):
     });
 
     await registerActivity(
-      AdminActivityAction.USER_CREATED,
+      "USER_CREATED",
       `Usuário ${user.fullName} criado`,
       user.id,
       { role: user.role },
@@ -205,9 +226,7 @@ export async function updateUserAction(input: z.infer<typeof updateUserSchema>):
     const hasRoleChanged = existing.role !== user.role;
 
     await registerActivity(
-      hasRoleChanged
-        ? AdminActivityAction.USER_ROLE_UPDATED
-        : AdminActivityAction.USER_UPDATED,
+      hasRoleChanged ? "USER_ROLE_UPDATED" : "USER_UPDATED",
       `Usuário ${user.fullName} atualizado`,
       user.id,
       {
@@ -262,7 +281,7 @@ export async function deleteUserAction(id: number): Promise<ActionState> {
     const user = await prisma.user.delete({ where: { id } });
 
     await registerActivity(
-      AdminActivityAction.USER_DELETED,
+      "USER_DELETED",
       `Usuário ${user.fullName} removido`,
       user.id,
       { role: user.role },
@@ -299,7 +318,7 @@ export async function resetUserPasswordAction(id: number): Promise<ActionState> 
     });
 
     await registerActivity(
-      AdminActivityAction.PASSWORD_RESET,
+      "PASSWORD_RESET",
       `Senha redefinida para ${user.fullName}`,
       user.id,
       { username: user.username },

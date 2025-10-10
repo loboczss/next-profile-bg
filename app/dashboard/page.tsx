@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { Brush, Image, LayoutDashboard, NotebookPen, Settings, ShieldCheck, Sparkles, Users } from "lucide-react";
 import { Prisma } from "@prisma/client";
 
 import { BackgroundGalleryManager } from "@/components/BackgroundGalleryManager";
@@ -8,7 +7,7 @@ import { CreateDestinationForm } from "@/components/destinations/create-destinat
 import { DashboardAnimatedWrapper } from "./dashboard-animated-wrapper";
 import { BackgroundPresets } from "./_components/background-presets";
 import { ActivityTimeline, ActivityItem } from "./_components/activity-timeline";
-import { DashboardShell } from "./_components/dashboard-shell";
+import { DashboardShell, type DashboardNavItem } from "./_components/dashboard-shell";
 import { GlobalPreferencesPanel } from "./_components/global-preferences-panel";
 import { OverviewChart } from "./_components/overview-chart";
 import { StatCard } from "./_components/stat-card";
@@ -91,12 +90,12 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const sixMonthsAgo = new Date(startOfMonth.getFullYear(), startOfMonth.getMonth() - 5, 1);
 
-  const navItems = [
-    { id: "overview", label: "Visão geral", icon: LayoutDashboard },
-    { id: "users", label: "Usuários", icon: Users },
-    { id: "backgrounds", label: "Backgrounds", icon: Image },
-    { id: "content", label: "Conteúdos", icon: NotebookPen },
-    { id: "settings", label: "Configurações", icon: Settings },
+  const navItems: DashboardNavItem[] = [
+    { id: "overview", label: "Visão geral", icon: "overview" },
+    { id: "users", label: "Usuários", icon: "users" },
+    { id: "backgrounds", label: "Backgrounds", icon: "backgrounds" },
+    { id: "content", label: "Conteúdos", icon: "content" },
+    { id: "settings", label: "Configurações", icon: "settings" },
   ];
 
   const dashboardUserInfo = {
@@ -282,7 +281,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               title="Usuários totais"
               value={totalUsers.toString()}
               subtitle="Contas cadastradas na plataforma"
-              icon={Users}
+              icon="users"
               trend={{
                 value: `${activeUsers} ativos`,
                 label: "nos últimos 30 dias",
@@ -293,7 +292,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               title="Administradores"
               value={adminCount.toString()}
               subtitle="Controle de permissões avançadas"
-              icon={ShieldCheck}
+              icon="shield-check"
               highlight={
                 <p>
                   Editores: <strong>{editorCount}</strong> • Visualizadores: <strong>{viewerCount}</strong>
@@ -304,13 +303,13 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               title="Novos no mês"
               value={newUsersThisMonth.toString()}
               subtitle="Cadastros confirmados desde o início do mês"
-              icon={Sparkles}
+              icon="sparkles"
             />
             <StatCard
               title="Conteúdos publicados"
               value={(destinationsCount + favoritesCount).toString()}
               subtitle="Destinos ativos e favoritos registrados"
-              icon={Brush}
+              icon="brush"
               highlight={<p>{destinationsCount} destinos • {backgroundCount} backgrounds visíveis</p>}
             />
           </div>

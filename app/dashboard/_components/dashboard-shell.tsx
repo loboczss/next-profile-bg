@@ -3,17 +3,37 @@
 import { ReactNode, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Menu, Moon, Sun } from "lucide-react";
+import {
+  Image,
+  LayoutDashboard,
+  Menu,
+  Moon,
+  NotebookPen,
+  Settings,
+  Sun,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import { useTheme } from "next-themes";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+const navIconComponents = {
+  overview: LayoutDashboard,
+  users: Users,
+  backgrounds: Image,
+  content: NotebookPen,
+  settings: Settings,
+} as const satisfies Record<string, LucideIcon>;
+
+export type DashboardNavIcon = keyof typeof navIconComponents;
+
 export type DashboardNavItem = {
   id: string;
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: DashboardNavIcon;
 };
 
 interface DashboardShellProps {
@@ -89,7 +109,7 @@ export function DashboardShell({
 
         <nav className="space-y-2">
           {navItems.map((item) => {
-            const Icon = item.icon;
+            const Icon = navIconComponents[item.icon] ?? LayoutDashboard;
             return (
               <Link
                 key={item.id}
@@ -165,7 +185,7 @@ export function DashboardShell({
           <div className="border-b border-white/40 bg-white/90 px-4 py-4 shadow-sm backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/90 lg:hidden">
             <nav className="grid gap-2">
               {navItems.map((item) => {
-                const Icon = item.icon;
+                const Icon = navIconComponents[item.icon] ?? LayoutDashboard;
                 return (
                   <Link
                     key={item.id}

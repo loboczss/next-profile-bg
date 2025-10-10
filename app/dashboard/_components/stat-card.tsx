@@ -2,14 +2,24 @@
 
 import { ReactNode } from "react";
 import { motion } from "framer-motion";
+import { Brush, ShieldCheck, Sparkles, Users, type LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+
+const statCardIcons = {
+  users: Users,
+  "shield-check": ShieldCheck,
+  sparkles: Sparkles,
+  brush: Brush,
+} as const satisfies Record<string, LucideIcon>;
+
+export type StatCardIcon = keyof typeof statCardIcons;
 
 interface StatCardProps {
   title: string;
   value: string;
   subtitle?: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: StatCardIcon;
   highlight?: ReactNode;
   trend?: {
     value: string;
@@ -19,7 +29,9 @@ interface StatCardProps {
 }
 
 // Cartão responsivo utilizado no dashboard para exibir métricas principais e tendências.
-export function StatCard({ title, value, subtitle, icon: Icon, highlight, trend }: StatCardProps) {
+export function StatCard({ title, value, subtitle, icon, highlight, trend }: StatCardProps) {
+  const Icon = statCardIcons[icon] ?? Users;
+
   return (
     <motion.article
       initial={{ opacity: 0, y: 20 }}

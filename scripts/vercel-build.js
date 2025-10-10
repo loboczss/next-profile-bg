@@ -2,14 +2,34 @@
 const { execSync } = require('node:child_process');
 
 function run(command, options = {}) {
-  const { env, ...execOptions } = options;
+  const { env, captureOutput = false, ...execOptions } = options;
   const mergedEnv = env ? { ...process.env, ...env } : process.env;
 
-  execSync(command, {
-    stdio: 'inherit',
-    ...execOptions,
-    env: mergedEnv,
-  });
+  try {
+    const stdout = execSync(command, {
+      stdio: captureOutput ? 'pipe' : 'inherit',
+      ...execOptions,
+      env: mergedEnv,
+    });
+
+    if (captureOutput && stdout) {
+      process.stdout.write(stdout);
+    }
+
+    return { stdout };
+  } catch (error) {
+    if (captureOutput) {
+      if (error.stdout) {
+        process.stdout.write(error.stdout);
+      }
+
+      if (error.stderr) {
+        process.stderr.write(error.stderr);
+      }
+    }
+
+    throw error;
+  }
 }
 
 const hasDatabaseUrl = typeof process.env.DATABASE_URL === 'string' && process.env.DATABASE_URL.trim().length > 0;
@@ -36,10 +56,24 @@ if (hasDatabaseUrl) {
   }
 
   try {
-    run('prisma migrate deploy', { env: migrateEnvOverrides });
+    run('prisma migrate deploy', { env: migrateEnvOverrides, captureOutput: true });
   } catch (error) {
-    console.error('Failed to run "prisma migrate deploy".', error);
-    process.exit(error.status ?? 1);
+    const output = [error.stderr, error.stdout]
+      .flat()
+      .filter(Boolean)
+      .map((value) => (Buffer.isBuffer(value) ? value.toString('utf8') : String(value)))
+      .join('\n');
+    const normalizedOutput = output.toLowerCase();
+    const normalizedMessage = typeof error.message === 'string' ? error.message.toLowerCase() : '';
+
+    if (normalizedOutput.includes('p1001') || normalizedMessage.includes('p1001')) {
+      console.warn(
+        'Skipping "prisma migrate deploy" because the database server is unreachable (Prisma error P1001).',
+      );
+    } else {
+      console.error('Failed to run "prisma migrate deploy".', error);
+      process.exit(error.status ?? 1);
+    }
   }
 } else {
   console.warn('Skipping "prisma migrate deploy" because DATABASE_URL is not defined.');

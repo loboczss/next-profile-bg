@@ -42,10 +42,8 @@ export function DestinationGrid({
   return (
     <div
       className={cn(
-        "grid gap-8",
-        destinations.length > 1
-          ? "lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3"
-          : "lg:grid-cols-1",
+        "grid gap-6 justify-items-center sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4",
+        destinations.length === 1 ? "sm:grid-cols-1" : undefined,
         onDelete && destinations.length > 0 ? "[&>div]:h-full" : undefined
       )}
       role="list"

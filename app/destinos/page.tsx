@@ -43,7 +43,9 @@ async function deleteDestination(
 
   // Verifica se há um usuário autenticado antes de realizar a exclusão.
   const session = await auth();
-  if (!session?.user?.id) {
+  const user = session?.user;
+
+  if (!user?.id) {
     return {
       status: "error",
       message: "Você precisa estar autenticado para excluir um destino.",
@@ -81,7 +83,7 @@ async function deleteDestination(
       };
     }
 
-    if (destination.userId !== Number(session.user.id)) {
+    if (destination.userId !== Number(user.id) && user.role !== "admin") {
       // Impede que um usuário exclua destinos de terceiros.
       return {
         status: "error",
@@ -113,6 +115,7 @@ async function deleteDestination(
 // Página que lista todos os destinos cadastrados e oferece destaque para cada experiência.
 export default async function DestinationsPage() {
   const session = await auth();
+  const isAdmin = session?.user?.role === "admin";
   const prismaClient = prisma;
 
   let destinations: SerializedDestination[] = [];
@@ -327,7 +330,7 @@ export default async function DestinationsPage() {
                 <DestinationGrid
                   destinations={destinations}
                   canFavorite={Boolean(session?.user?.id)}
-                  onDelete={session?.user ? deleteDestination : undefined}
+                  onDelete={isAdmin ? deleteDestination : undefined}
                 />
               )}
             </div>

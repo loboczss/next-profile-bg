@@ -1,20 +1,16 @@
 import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
 
-import { BackgroundGalleryManager } from "@/components/BackgroundGalleryManager";
-import { ChangeBackground } from "@/components/ChangeBackground";
-import { CreateDestinationForm } from "@/components/destinations/create-destination-form";
 import { DashboardAnimatedWrapper } from "./dashboard-animated-wrapper";
-import { BackgroundPresets } from "./_components/background-presets";
 import { ActivityTimeline, ActivityItem } from "./_components/activity-timeline";
 import { DashboardShell, type DashboardNavItem } from "./_components/dashboard-shell";
 import { GlobalPreferencesPanel } from "./_components/global-preferences-panel";
 import { OverviewChart } from "./_components/overview-chart";
 import { StatCard } from "./_components/stat-card";
 import { UserManagementPanel, DashboardUser } from "./_components/user-management-panel";
-import { createDestination } from "./actions";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { dashboardNavItems } from "./nav-items";
 
 const PAGE_SIZE = 8;
 
@@ -90,13 +86,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const sixMonthsAgo = new Date(startOfMonth.getFullYear(), startOfMonth.getMonth() - 5, 1);
 
-  const navItems: DashboardNavItem[] = [
-    { id: "overview", label: "Visão geral", icon: "overview" },
-    { id: "users", label: "Usuários", icon: "users" },
-    { id: "backgrounds", label: "Backgrounds", icon: "backgrounds" },
-    { id: "content", label: "Conteúdos", icon: "content" },
-    { id: "settings", label: "Configurações", icon: "settings" },
-  ];
+  const navItems: DashboardNavItem[] = dashboardNavItems;
 
   const dashboardUserInfo = {
     name: session.user.fullName ?? session.user.name ?? session.user.username ?? "Administrador",
@@ -133,7 +123,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     activeUsers,
     newUsersThisMonth,
     backgroundSettings,
-    backgroundCount,
     destinationsCount,
     favoritesCount,
     recentUserCreations,
@@ -175,7 +164,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         backgroundUrl: true,
       },
     }),
-    prisma.backgroundImage.count({ where: { isVisible: true } }),
     prisma.destination.count(),
     prisma.favorite.count(),
     prisma.user.findMany({
@@ -273,6 +261,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         navItems={navItems}
         user={dashboardUserInfo}
         backgroundUrl={backgroundUrl}
+        activeItemId="overview"
       >
         {/* Seção principal com métricas, gráfico e linha do tempo */}
         <section id="overview" className="space-y-8">
@@ -306,11 +295,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               icon="sparkles"
             />
             <StatCard
-              title="Conteúdos publicados"
+              title="Catálogo ativo"
               value={(destinationsCount + favoritesCount).toString()}
-              subtitle="Destinos ativos e favoritos registrados"
+              subtitle="Destinos e favoritos registrados na plataforma"
               icon="brush"
-              highlight={<p>{destinationsCount} destinos • {backgroundCount} backgrounds visíveis</p>}
+              highlight={<p>{destinationsCount} destinos • {favoritesCount} favoritos</p>}
             />
           </div>
 
@@ -336,53 +325,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           pageSize={PAGE_SIZE}
           searchTerm={searchTerm}
         />
-
-        {/* Configurações de background e galeria */}
-        <section id="backgrounds" className="grid gap-6 xl:grid-cols-3">
-          <div className="xl:col-span-1">
-            <BackgroundPresets />
-          </div>
-          <div className="xl:col-span-2 space-y-6">
-            <div className="rounded-3xl border border-white/60 bg-white/80 p-6 shadow-xl backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/70">
-              <h4 className="text-lg font-semibold text-slate-900 dark:text-white">Upload personalizado</h4>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Envie uma imagem ou utilize uma URL externa para compor o cenário principal do site.
-              </p>
-              <div className="mt-4">
-                <ChangeBackground isAuthenticated />
-              </div>
-            </div>
-            <div className="rounded-3xl border border-white/60 bg-white/80 p-6 shadow-xl backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/70">
-              <h4 className="text-lg font-semibold text-slate-900 dark:text-white">Galeria avançada</h4>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Controle agrupamentos, visibilidade e destaque das imagens do site.
-              </p>
-              <div className="mt-4">
-                <BackgroundGalleryManager />
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Conteúdos e módulos adicionais */}
-        <section id="content" className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-3xl border border-white/60 bg-white/80 p-6 shadow-xl backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/70">
-            <h4 className="text-lg font-semibold text-slate-900 dark:text-white">Cadastrar destino destaque</h4>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Registre novas experiências para alimentar o catálogo principal do site.
-            </p>
-            <div className="mt-4">
-              <CreateDestinationForm action={createDestination} />
-            </div>
-          </div>
-          <div className="rounded-3xl border border-dashed border-slate-200 bg-white/70 p-6 text-sm text-slate-500 shadow-inner backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-300">
-            <h4 className="text-lg font-semibold text-slate-900 dark:text-white">Módulos expansíveis</h4>
-            <p>
-              Utilize este espaço para futuras integrações: formulários customizados, notificações ou pacotes promocionais. A
-              arquitetura do painel foi projetada para receber novos cards sem alterar a base existente.
-            </p>
-          </div>
-        </section>
 
         {/* Preferências globais e ajustes finais */}
         <section id="settings" className="space-y-6">

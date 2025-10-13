@@ -134,6 +134,7 @@ export async function createDestination(
   revalidatePath("/destinos");
   revalidatePath("/");
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/destinos");
 
   return {
     status: "success",

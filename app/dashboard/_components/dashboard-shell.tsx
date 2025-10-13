@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   Image,
   LayoutDashboard,
+  MapPin,
   Menu,
   Moon,
   NotebookPen,
@@ -26,6 +27,7 @@ const navIconComponents = {
   backgrounds: Image,
   content: NotebookPen,
   settings: Settings,
+  destinations: MapPin,
 } as const satisfies Record<string, LucideIcon>;
 
 export type DashboardNavIcon = keyof typeof navIconComponents;
@@ -34,6 +36,7 @@ export type DashboardNavItem = {
   id: string;
   label: string;
   icon: DashboardNavIcon;
+  href?: string;
 };
 
 interface DashboardShellProps {
@@ -45,6 +48,7 @@ interface DashboardShellProps {
     imageUrl?: string | null;
   };
   backgroundUrl?: string | null;
+  activeItemId?: string;
 }
 
 // Container principal responsável por organizar o layout com sidebar fixa,
@@ -54,6 +58,7 @@ export function DashboardShell({
   navItems,
   user,
   backgroundUrl,
+  activeItemId,
 }: DashboardShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { resolvedTheme, setTheme } = useTheme();
@@ -110,17 +115,22 @@ export function DashboardShell({
         <nav className="space-y-2">
           {navItems.map((item) => {
             const Icon = navIconComponents[item.icon] ?? LayoutDashboard;
+            const href = item.href ?? `#${item.id}`;
+            const isActive = item.id === activeItemId;
             return (
               <Link
                 key={item.id}
-                href={`#${item.id}`}
+                href={href}
                 className="group/nav block"
               >
                 <span
                   className={cn(
                     "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all",
-                    "bg-white/30 text-slate-600 backdrop-blur-xl hover:bg-white/80 hover:text-slate-900 dark:bg-slate-900/30 dark:text-slate-300 dark:hover:bg-slate-900/70 dark:hover:text-white",
+                    isActive
+                      ? "bg-white/80 text-slate-900 shadow-sm dark:bg-slate-900/70 dark:text-white"
+                      : "bg-white/30 text-slate-600 backdrop-blur-xl hover:bg-white/80 hover:text-slate-900 dark:bg-slate-900/30 dark:text-slate-300 dark:hover:bg-slate-900/70 dark:hover:text-white",
                   )}
+                  aria-current={isActive ? "page" : undefined}
                 >
                   <Icon className="h-4 w-4" />
                   {item.label}
@@ -186,12 +196,20 @@ export function DashboardShell({
             <nav className="grid gap-2">
               {navItems.map((item) => {
                 const Icon = navIconComponents[item.icon] ?? LayoutDashboard;
+                const href = item.href ?? `#${item.id}`;
+                const isActive = item.id === activeItemId;
                 return (
                   <Link
                     key={item.id}
-                    href={`#${item.id}`}
+                    href={href}
                     onClick={() => setIsSidebarOpen(false)}
-                    className="flex items-center gap-3 rounded-xl border border-white/50 bg-white/80 px-4 py-3 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-white dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-200"
+                    className={cn(
+                      "flex items-center gap-3 rounded-xl border border-white/50 bg-white/80 px-4 py-3 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-white dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-200",
+                      isActive
+                        ? "border-blue-300/70 text-blue-600 dark:border-indigo-500/40 dark:text-indigo-200"
+                        : null,
+                    )}
+                    aria-current={isActive ? "page" : undefined}
                   >
                     <Icon className="h-4 w-4" />
                     {item.label}

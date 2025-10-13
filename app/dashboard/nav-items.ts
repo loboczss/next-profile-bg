@@ -26,6 +26,12 @@ export const dashboardNavItems: DashboardNavItem[] = [
     href: "/dashboard/destinos",
   },
   {
+    id: "purchases",
+    label: "Compras",
+    icon: "purchases",
+    href: "/dashboard/compras",
+  },
+  {
     id: "backgrounds",
     label: "Backgrounds",
     icon: "backgrounds",

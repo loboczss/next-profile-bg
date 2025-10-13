@@ -33,6 +33,7 @@ import type { SerializedDestination } from "@/lib/destinations";
 import { cn } from "@/lib/utils";
 
 import { FavoriteButton } from "./favorite-button";
+import { PurchaseButton } from "@/components/purchases/purchase-button";
 
 interface DestinationCardProps {
   destination: SerializedDestination;
@@ -119,8 +120,14 @@ export function DestinationCard({
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-cyan-500/15" />
           </div>
 
-          <CardHeader className="min-w-0 space-y-3 px-5 pb-0 pt-5">
+          <CardHeader className="min-w-0 space-y-4 px-5 pb-0 pt-5">
             <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl border border-white/60 bg-slate-100 shadow-inner">
+              <div className="absolute left-3 top-3 z-10 inline-flex max-w-[75%] items-center gap-1.5 rounded-full bg-slate-900/65 px-3 py-1 text-xs font-medium text-white shadow">
+                <MapPin className="size-3.5 shrink-0" />
+                <span className="truncate" title={destination.city}>
+                  {destination.city}
+                </span>
+              </div>
               <div className="absolute right-3 top-3 z-10">
                 <FavoriteButton
                   destinationId={destination.id}
@@ -200,41 +207,50 @@ export function DestinationCard({
               )}
             </div>
 
-            <div className="min-w-0 space-y-1">
-              <CardTitle className="truncate text-base font-semibold text-slate-900 sm:text-lg" title={destination.name}>
+            <div className="min-w-0 space-y-2">
+              <CardTitle className="truncate text-lg font-semibold text-slate-900 sm:text-xl" title={destination.name}>
                 {destination.name}
               </CardTitle>
-              <CardDescription className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-slate-600 sm:text-sm">
-                <MapPin className="size-4 shrink-0 text-primary" />
-                <span className="truncate" title={destination.city}>
-                  {destination.city}
+              <CardDescription className="flex flex-wrap items-center gap-2 text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+                <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold tracking-[0.32em] text-slate-600">
+                  Pacote exclusivo
                 </span>
+                <span className="text-slate-400">{stayLabel}</span>
               </CardDescription>
             </div>
           </CardHeader>
 
-          <CardContent className="mt-auto min-w-0 space-y-4 px-5 pb-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex min-w-0 flex-col">
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Investimento a partir de</span>
-                <span className="truncate text-lg font-semibold text-slate-900 sm:text-xl">{formattedPrice}</span>
+          <CardContent className="mt-auto min-w-0 space-y-5 px-5 pb-5">
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex min-w-0 flex-col">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    Investimento a partir de
+                  </span>
+                  <span className="truncate text-2xl font-bold text-slate-900">{formattedPrice}</span>
+                </div>
+                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1.5 text-sm font-semibold text-amber-700 shadow-sm">
+                  <Star className="size-4" />
+                  {destination.rating.toFixed(1)}
+                </span>
               </div>
-              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-amber-100/90 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-600 shadow-sm sm:text-sm sm:normal-case sm:tracking-normal">
-                <Star className="size-4" />
-                {destination.rating.toFixed(1)}
-              </span>
+
+              <div className="grid gap-2 text-xs font-medium text-slate-600 sm:grid-cols-2 sm:text-sm">
+                <span className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2">
+                  <CalendarRange className="size-4 text-primary" />
+                  <span className="truncate">{stayLabel}</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2">
+                  <Users className="size-4 text-primary" />
+                  <span className="truncate">Até {destination.peopleCount} pessoas</span>
+                </span>
+              </div>
             </div>
 
-            <div className="grid gap-2 text-xs font-medium text-slate-600 sm:grid-cols-2 sm:text-sm">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100/80 px-3 py-1.5">
-                <CalendarRange className="size-4 text-primary" />
-                <span className="truncate">{stayLabel}</span>
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100/80 px-3 py-1.5">
-                <Users className="size-4 text-primary" />
-                <span className="truncate">{destination.peopleCount} pessoas</span>
-              </span>
-            </div>
+            <PurchaseButton
+              destination={destination}
+              className="w-full justify-center bg-gradient-to-r from-sky-500 to-cyan-500 text-white shadow-lg hover:from-sky-500/90 hover:to-cyan-500/90"
+            />
 
             <div className="h-px w-full bg-gradient-to-r from-transparent via-blue-200/70 to-transparent" />
           </CardContent>
@@ -384,26 +400,39 @@ export function DestinationCard({
           </section>
 
           {/* AÇÕES */}
-          <div className="mt-6 flex flex-col gap-3 border-t border-slate-200/80 pt-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-slate-600">
-              Deseja visualizar o destino no mapa? Abra o Google Maps em uma nova aba.
-            </p>
+          <div className="mt-8 space-y-4 border-t border-slate-200/80 pt-5">
+            <div className="flex flex-col gap-2 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+              <p>
+                Deseja visualizar o destino no mapa? Abra o Google Maps em uma nova aba.
+              </p>
+              <span className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                Pronto para embarcar?
+              </span>
+            </div>
 
-            <button
-              type="button"
-              className={cn(
-                buttonVariants({ variant: "outline" }),
-                "min-w-[160px] rounded-full border-primary/40 bg-primary/5 text-primary transition hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-              )}
-              onClick={() => {
-                const url = `https://www.google.com/maps/search/${encodeURIComponent(
-                  destination.city
-                )}`;
-                window.open(url, "_blank");
-              }}
-            >
-              Ver no mapa
-            </button>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <PurchaseButton
+                destination={destination}
+                label="Comprar este pacote"
+                className="w-full justify-center bg-gradient-to-r from-sky-500 to-cyan-500 text-white shadow-lg hover:from-sky-500/90 hover:to-cyan-500/90 sm:w-auto"
+              />
+
+              <button
+                type="button"
+                className={cn(
+                  buttonVariants({ variant: "outline" }),
+                  "min-w-[160px] rounded-full border-primary/40 bg-primary/5 text-primary transition hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                )}
+                onClick={() => {
+                  const url = `https://www.google.com/maps/search/${encodeURIComponent(
+                    destination.city
+                  )}`;
+                  window.open(url, "_blank");
+                }}
+              >
+                Ver no mapa
+              </button>
+            </div>
           </div>
         </div>
       </DialogContent>

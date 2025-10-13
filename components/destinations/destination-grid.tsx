@@ -40,43 +40,44 @@ export function DestinationGrid({
   }
 
   return (
-    <div className="relative">
-      <div
-        className={cn(
-          "flex snap-x snap-mandatory gap-6 overflow-x-auto pb-6", // mobile carousel
-          "sm:grid sm:auto-rows-fr sm:grid-cols-2 sm:gap-8 sm:overflow-visible sm:pb-0 xl:grid-cols-3 2xl:grid-cols-4"
-        )}
-        role="list"
-        aria-label="Destinos disponíveis"
-      >
-        {destinations.map((destination) => {
-          const card = onDelete ? (
-            <ManageableDestinationCard
-              destination={destination}
-              action={onDelete}
-              canFavorite={canFavorite}
-              className="h-full"
-              cardClassName="h-full"
-            />
-          ) : (
-            <DestinationCard
-              destination={destination}
-              canFavorite={canFavorite}
-              className="h-full"
-            />
-          );
+    <div
+      className={cn(
+        "grid gap-8",
+        destinations.length > 1
+          ? "lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3"
+          : "lg:grid-cols-1",
+        onDelete && destinations.length > 0 ? "[&>div]:h-full" : undefined
+      )}
+      role="list"
+      aria-label="Destinos disponíveis"
+    >
+      {destinations.map((destination) => {
+        const card = onDelete ? (
+          <ManageableDestinationCard
+            destination={destination}
+            action={onDelete}
+            canFavorite={canFavorite}
+            className="h-full"
+            cardClassName="h-full"
+          />
+        ) : (
+          <DestinationCard
+            destination={destination}
+            canFavorite={canFavorite}
+            className="h-full"
+          />
+        );
 
-          return (
-            <div
-              key={destination.id}
-              role="listitem"
-              className="snap-center shrink-0 basis-[min(92vw,420px)] px-2 first:pl-4 last:pr-4 sm:snap-align-none sm:shrink sm:basis-auto sm:px-0"
-            >
-              {card}
-            </div>
-          );
-        })}
-      </div>
+        return (
+          <div
+            key={destination.id}
+            role="listitem"
+            className="flex w-full justify-center"
+          >
+            {card}
+          </div>
+        );
+      })}
     </div>
   );
 }

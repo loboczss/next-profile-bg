@@ -1,4 +1,4 @@
-import type { Destination, Purchase, PurchaseStatus, User } from "@prisma/client";
+import type { Prisma, PurchaseStatus } from "@prisma/client";
 import { z } from "zod";
 
 export const purchaseStatusValues = [
@@ -15,10 +15,19 @@ export const PURCHASE_STATUS_LABELS: Record<PurchaseStatusValue, string> = {
   EMITIDA: "Emitida",
 };
 
-export type PurchaseWithRelations = Purchase & {
-  package: Destination;
-  user?: User | null;
-};
+export type PurchaseWithRelations = Prisma.PurchaseGetPayload<{
+  include: {
+    package: true;
+    user: {
+      select: {
+        id: true;
+        fullName: true;
+        username: true;
+        email: true;
+      };
+    };
+  };
+}>;
 
 export type SerializedPurchase = {
   id: number;
@@ -69,7 +78,7 @@ export function serializePurchase(purchase: PurchaseWithRelations): SerializedPu
 }
 
 export function mapPurchaseStatusToLabel(status: PurchaseStatus | PurchaseStatusValue): string {
-  const normalizedStatus = typeof status === "string" ? status : status.toString();
+  const normalizedStatus = typeof status === "string" ? status : String(status);
   return PURCHASE_STATUS_LABELS[normalizedStatus as PurchaseStatusValue] ?? normalizedStatus;
 }
 

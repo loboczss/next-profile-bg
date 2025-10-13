@@ -122,21 +122,27 @@ export function AdminPurchasesTable({ purchases }: AdminPurchasesTableProps) {
         return;
       }
 
-      if (data?.purchase) {
-        setRows((previous) =>
-          previous.map((current) =>
-            current.purchase.id === row.purchase.id
-              ? {
-                  purchase: data.purchase!,
-                  draftStatus: data.purchase.status,
-                  draftObservacao: data.purchase.observacao,
-                }
-              : current
-          )
-        );
+      if (!data?.purchase) {
+        toast.success(data?.message ?? "Compra atualizada com sucesso.");
+        router.refresh();
+        return;
       }
 
-      toast.success(data?.message ?? "Compra atualizada com sucesso.");
+      const updatedPurchase: SerializedPurchase = data.purchase;
+
+      setRows((previous) =>
+        previous.map((current) =>
+          current.purchase.id === row.purchase.id
+            ? {
+                purchase: updatedPurchase,
+                draftStatus: updatedPurchase.status,
+                draftObservacao: updatedPurchase.observacao,
+              }
+            : current
+        )
+      );
+
+      toast.success(data.message ?? "Compra atualizada com sucesso.");
       router.refresh();
     } catch (error) {
       console.error("Erro ao salvar compra", error);

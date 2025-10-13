@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { PURCHASE_STATUS_LABELS, serializePurchase } from "@/lib/purchases";
+import { PURCHASE_STATUS_LABELS, serializePurchase, type SerializedPurchase } from "@/lib/purchases";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -46,7 +46,7 @@ export default async function MinhasComprasPage() {
     orderBy: { dataCompra: "desc" },
   });
 
-  const purchases = purchasesFromDb.map(serializePurchase);
+  const purchases: SerializedPurchase[] = purchasesFromDb.map(serializePurchase);
 
   const currencyFormatter = new Intl.NumberFormat("pt-BR", {
     style: "currency",

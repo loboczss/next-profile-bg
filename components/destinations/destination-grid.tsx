@@ -43,8 +43,8 @@ export function DestinationGrid({
     <div className="relative">
       <div
         className={cn(
-          "flex snap-x snap-mandatory gap-5 overflow-x-auto pb-6", // mobile carousel
-          "sm:grid sm:auto-rows-fr sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:pb-0 xl:grid-cols-3 2xl:grid-cols-4"
+          "flex snap-x snap-mandatory gap-6 overflow-x-auto pb-6", // mobile carousel
+          "sm:grid sm:auto-rows-fr sm:grid-cols-2 sm:gap-8 sm:overflow-visible sm:pb-0 xl:grid-cols-3 2xl:grid-cols-4"
         )}
         role="list"
         aria-label="Destinos disponíveis"
@@ -70,7 +70,7 @@ export function DestinationGrid({
             <div
               key={destination.id}
               role="listitem"
-              className="snap-center shrink-0 basis-[calc(100%-3rem)] px-1 first:pl-2 last:pr-2 sm:snap-align-none sm:shrink sm:basis-auto sm:px-0"
+              className="snap-center shrink-0 basis-[min(92vw,420px)] px-2 first:pl-4 last:pr-4 sm:snap-align-none sm:shrink sm:basis-auto sm:px-0"
             >
               {card}
             </div>

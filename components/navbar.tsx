@@ -35,7 +35,6 @@ type NavLink = {
   href: string;
   label: string;
   icon: LucideIcon;
-  badge?: string;
 };
 
 type UserMenuProps = {
@@ -161,7 +160,7 @@ function UserMenu({
         onClick={onToggle}
         aria-expanded={isOpen}
         aria-controls="user-menu-panel"
-        className="group inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition-all duration-150 hover:border-blue-300 hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 active:translate-y-[1px]"
+        className="group inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 active:translate-y-[1px]"
       >
         <UserAvatar image={user?.image} name={userDisplayName} size="sm" />
         <span className="hidden text-left leading-tight sm:block">
@@ -247,8 +246,11 @@ function UserMenu({
 
 function DesktopNavigation({ navigationLinks, pathname }: { navigationLinks: NavLink[]; pathname: string }) {
   return (
-    <nav className="hidden items-center gap-1 rounded-full border border-transparent bg-transparent px-1 py-0.5 lg:flex" aria-label="Principal">
-      {navigationLinks.map(({ href, label, icon: Icon, badge }) => {
+    <nav
+      className="hidden items-center gap-3 rounded-full border border-transparent bg-transparent px-2 py-1 lg:flex"
+      aria-label="Principal"
+    >
+      {navigationLinks.map(({ href, label, icon: Icon }) => {
         const isActive = pathname === href || pathname.startsWith(`${href}/`);
         return (
           <Link
@@ -256,29 +258,23 @@ function DesktopNavigation({ navigationLinks, pathname }: { navigationLinks: Nav
             href={href}
             aria-current={isActive ? "page" : undefined}
             className={cn(
-              "relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors",
-              "text-slate-600 hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500",
-              isActive ? "text-slate-900" : undefined,
+              "group relative inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-medium transition-all duration-200",
+              "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500",
+              isActive && "bg-slate-100 text-slate-900 shadow-sm",
             )}
           >
-            <Icon className="h-4 w-4 text-slate-400" aria-hidden />
-            <span className="relative pb-1">
-              <span className="inline-flex items-center gap-2">
-                {label}
-                {badge ? (
-                  <span className="inline-flex min-w-[1.4rem] items-center justify-center rounded-full bg-rose-100 px-1.5 text-[0.65rem] font-semibold text-rose-600">
-                    {badge}
-                  </span>
-                ) : null}
-              </span>
-              {isActive ? (
-                <motion.span
-                  layoutId="desktop-active-indicator"
-                  className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-blue-600"
-                  transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
-                />
-              ) : null}
-            </span>
+            <Icon
+              className="h-4 w-4 text-slate-400 transition-transform duration-200 group-hover:-translate-y-0.5"
+              aria-hidden
+            />
+            <span className="tracking-wide">{label}</span>
+            {isActive ? (
+              <motion.span
+                layoutId="desktop-active-indicator"
+                className="absolute inset-x-3 bottom-1 h-0.5 rounded-full bg-blue-600"
+                transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+              />
+            ) : null}
           </Link>
         );
       })}
@@ -359,7 +355,7 @@ function MobileNavigation({
             </div>
 
             <nav className="grid gap-2" aria-label="Principal">
-              {navigationLinks.map(({ href, label, icon: Icon, badge }, index) => {
+              {navigationLinks.map(({ href, label, icon: Icon }, index) => {
                 const isActive = pathname === href || pathname.startsWith(`${href}/`);
                 return (
                   <Link
@@ -376,14 +372,7 @@ function MobileNavigation({
                     )}
                   >
                     <Icon className="h-5 w-5 text-slate-500" aria-hidden />
-                    <span className="flex items-center gap-2">
-                      {label}
-                      {badge ? (
-                        <span className="inline-flex min-w-[1.4rem] items-center justify-center rounded-full bg-rose-100 px-1.5 text-xs font-semibold text-rose-600">
-                          {badge}
-                        </span>
-                      ) : null}
-                    </span>
+                    <span className="flex items-center gap-2">{label}</span>
                   </Link>
                 );
               })}
@@ -514,28 +503,7 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
     { href: "/sobre-nos", label: "Sobre nós", icon: Info },
   ];
 
-  const purchasesLink: NavLink | null = isAuthenticated
-    ? {
-        href: "/minhas-compras",
-        label: "Minhas compras",
-        icon: ShoppingBag,
-      }
-    : null;
-
-  const favoritesLink: NavLink | null = isAuthenticated
-    ? {
-        href: "/favoritos",
-        label: "Favoritos",
-        icon: Heart,
-        badge: hasFavorites ? favoriteBadgeLabel : undefined,
-      }
-    : null;
-
-  const navigationLinks = [
-    ...baseLinks,
-    ...(purchasesLink ? [purchasesLink] : []),
-    ...(favoritesLink ? [favoritesLink] : []),
-  ];
+  const navigationLinks = baseLinks;
 
   const adminLink: NavLink = {
     href: "/dashboard",
@@ -607,7 +575,7 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
                 <Link
                   href={adminLink.href}
                   className={cn(
-                    "group hidden items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 lg:inline-flex",
+                    "group hidden items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs font-medium text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 lg:inline-flex",
                     pathname.startsWith("/dashboard") && "ring-2 ring-offset-2 ring-offset-white ring-blue-300",
                   )}
                 >
@@ -642,7 +610,7 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
               <Link
                 href="/login"
                 className={cn(
-                  "inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500",
+                  "inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-sm hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500",
                   pathname.startsWith("/login") && "border-blue-300 text-blue-700",
                 )}
               >
@@ -651,7 +619,7 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
               </Link>
               <Link
                 href="/signup"
-                className="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                className="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
               >
                 Criar conta
               </Link>
@@ -660,7 +628,7 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
 
           <button
             type="button"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-colors hover:border-blue-300 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 lg:hidden"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 lg:hidden"
             aria-label={mobileMenuOpen ? "Fechar menu" : "Abrir menu"}
             aria-expanded={mobileMenuOpen}
             aria-controls={MOBILE_MENU_ID}

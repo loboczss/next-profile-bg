@@ -600,11 +600,8 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
           href="/"
           className="flex shrink-0 items-center gap-3 rounded-full px-2 py-1.5 text-slate-800 transition-colors hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
         >
-          <Image src="/evastur-logo.png" alt="Evastur" width={128} height={32} priority className="h-7 w-auto" />
-          <span className="hidden flex-col text-left leading-tight sm:flex">
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Evastur</span>
-            <span className="text-sm text-slate-600">Experiências premium ao redor do mundo</span>
-          </span>
+          <Image src="/evastur-logo.png" alt="Evastur" width={128} height={32} priority className="h-6 w-auto" />
+          
         </Link>
 
         <DesktopNavigation navigationLinks={navigationLinks} pathname={pathname} />

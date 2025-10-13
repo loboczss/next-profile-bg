@@ -487,6 +487,7 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const isScrolled = useScrollState();
+  const headerRef = useRef<HTMLElement>(null);
 
   const isAuthenticated = Boolean(user);
   const isAdmin = user?.role === "admin";
@@ -516,6 +517,21 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
   const closeUserMenu = useCallback(() => setUserMenuOpen(false), []);
   const toggleMobileMenu = useCallback(() => setMobileMenuOpen((previous) => !previous), []);
   const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
+
+  const updateNavbarHeight = useCallback(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      if (headerRef.current) {
+        document.documentElement.style.setProperty(
+          "--navbar-height",
+          `${headerRef.current.offsetHeight}px`,
+        );
+      }
+    });
+  }, []);
 
   const handleSignOut = () => {
     void signOut({ redirectTo: "/" });
@@ -547,13 +563,38 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
     closeUserMenu();
   }, [pathname, closeMobileMenu, closeUserMenu]);
 
+  useEffect(() => {
+    updateNavbarHeight();
+  }, [updateNavbarHeight, isScrolled]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const handleResize = () => updateNavbarHeight();
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [updateNavbarHeight]);
+
+  useEffect(() => {
+    return () => {
+      if (typeof document !== "undefined") {
+        document.documentElement.style.removeProperty("--navbar-height");
+      }
+    };
+  }, []);
+
   const headerClasses = cn(
     "fixed inset-x-0 top-0 z-50 border-b border-slate-200 transition-[padding,background,box-shadow] duration-200",
     isScrolled ? "bg-white/95 backdrop-blur-md shadow-[0_4px_18px_rgba(15,23,42,0.08)] py-2.5" : "bg-white py-4",
   );
 
   return (
-    <header className={headerClasses}>
+    <header ref={headerRef} className={headerClasses}>
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <Link
           href="/"
@@ -575,17 +616,17 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
                 <Link
                   href={adminLink.href}
                   className={cn(
-                    "group hidden items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs font-medium text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 lg:inline-flex",
-                    pathname.startsWith("/dashboard") && "ring-2 ring-offset-2 ring-offset-white ring-blue-300",
+                    "group relative hidden items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 via-blue-500 to-sky-500 px-3 py-1.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-blue-500/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 lg:inline-flex",
+                    pathname.startsWith("/dashboard") && "ring-2 ring-offset-2 ring-offset-white ring-blue-400",
                   )}
                 >
-                  <span className="grid h-5 w-5 place-items-center rounded-full bg-slate-100 text-slate-600 transition-colors group-hover:bg-slate-200">
-                    <AdminIcon className="h-4 w-4" aria-hidden />
+                  <span className="flex size-6 items-center justify-center rounded-full bg-white/20 text-white transition-all group-hover:bg-white/25">
+                    <AdminIcon className="h-3.5 w-3.5" aria-hidden />
                   </span>
                   <span className="flex items-center gap-1">
                     {adminLink.label}
                     <ArrowUpRight
-                      className="h-4 w-4 text-slate-500 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                      className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
                       aria-hidden
                     />
                   </span>

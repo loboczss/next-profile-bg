@@ -43,7 +43,7 @@ export default async function RootLayout({
       <body className="font-sans antialiased">
         <AuthProvider session={session}>
           <Navbar user={session?.user ?? null} favoriteCount={favoriteCount} />
-          <div className="pt-20 lg:pt-24">{children}</div>
+          <main className="min-h-screen pt-[var(--navbar-height,5rem)]">{children}</main>
           <Toaster richColors closeButton position="top-right" />
         </AuthProvider>
       </body>

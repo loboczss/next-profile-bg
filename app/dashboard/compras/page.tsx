@@ -6,7 +6,7 @@ import { DashboardShell } from "../_components/dashboard-shell";
 import { dashboardNavItems } from "../nav-items";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { serializePurchase } from "@/lib/purchases";
+import { serializePurchase, type SerializedPurchase } from "@/lib/purchases";
 
 export const dynamic = "force-dynamic";
 
@@ -61,7 +61,7 @@ export default async function DashboardPurchasesPage() {
     orderBy: { dataCompra: "desc" },
   });
 
-  const purchases = purchasesFromDb.map(serializePurchase);
+  const purchases: SerializedPurchase[] = purchasesFromDb.map(serializePurchase);
 
   const totalPurchases = purchases.length;
   const totalPending = purchases.filter((purchase) => purchase.status === "AGUARDANDO_EMISSAO").length;

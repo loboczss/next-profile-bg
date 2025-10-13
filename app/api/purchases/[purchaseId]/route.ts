@@ -17,9 +17,13 @@ const updatePurchaseSchema = z
     message: "Informe pelo menos um campo para atualizar.",
   });
 
+type PurchaseRouteContext = {
+  params: Promise<{ purchaseId: string }>;
+};
+
 export async function PATCH(
   request: Request,
-  context: { params: { purchaseId: string } }
+  context: PurchaseRouteContext
 ) {
   const session = await auth();
 
@@ -47,7 +51,7 @@ export async function PATCH(
     );
   }
 
-  const purchaseIdRaw = context.params.purchaseId;
+  const { purchaseId: purchaseIdRaw } = await context.params;
   const purchaseId = Number(purchaseIdRaw);
 
   if (!purchaseIdRaw || Number.isNaN(purchaseId) || !Number.isInteger(purchaseId)) {

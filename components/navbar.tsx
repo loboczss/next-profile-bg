@@ -17,6 +17,7 @@ import {
   LogOut,
   MapPin,
   Menu,
+  ShoppingBag,
   User,
   X,
 } from "lucide-react";
@@ -200,6 +201,14 @@ function UserMenu({
               >
                 <User className="h-4 w-4 text-blue-600" aria-hidden />
                 Meu perfil
+              </Link>
+              <Link
+                href="/minhas-compras"
+                onClick={onClose}
+                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+              >
+                <ShoppingBag className="h-4 w-4 text-emerald-500" aria-hidden />
+                Minhas compras
               </Link>
               <Link
                 href="/favoritos"
@@ -391,19 +400,27 @@ function MobileNavigation({
                 </div>
 
                 <div className="grid gap-2 text-sm">
-                  <Link
-                    href="/usuario"
-                    onClick={onClose}
-                    className="flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
-                  >
-                    <User className="h-4 w-4 text-blue-600" aria-hidden />
-                    Meu perfil
-                  </Link>
-                  <Link
-                    href="/favoritos"
-                    onClick={onClose}
-                    className="flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
-                  >
+                <Link
+                  href="/usuario"
+                  onClick={onClose}
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                >
+                  <User className="h-4 w-4 text-blue-600" aria-hidden />
+                  Meu perfil
+                </Link>
+                <Link
+                  href="/minhas-compras"
+                  onClick={onClose}
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                >
+                  <ShoppingBag className="h-4 w-4 text-emerald-500" aria-hidden />
+                  Minhas compras
+                </Link>
+                <Link
+                  href="/favoritos"
+                  onClick={onClose}
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                >
                     <Heart className="h-4 w-4 text-rose-500" aria-hidden />
                     <span className="flex items-center gap-2">
                       Favoritos
@@ -497,6 +514,14 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
     { href: "/sobre-nos", label: "Sobre nós", icon: Info },
   ];
 
+  const purchasesLink: NavLink | null = isAuthenticated
+    ? {
+        href: "/minhas-compras",
+        label: "Minhas compras",
+        icon: ShoppingBag,
+      }
+    : null;
+
   const favoritesLink: NavLink | null = isAuthenticated
     ? {
         href: "/favoritos",
@@ -506,7 +531,11 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
       }
     : null;
 
-  const navigationLinks = favoritesLink ? [...baseLinks, favoritesLink] : baseLinks;
+  const navigationLinks = [
+    ...baseLinks,
+    ...(purchasesLink ? [purchasesLink] : []),
+    ...(favoritesLink ? [favoritesLink] : []),
+  ];
 
   const adminLink: NavLink = {
     href: "/dashboard",

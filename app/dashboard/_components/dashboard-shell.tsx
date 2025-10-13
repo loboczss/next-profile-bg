@@ -11,6 +11,7 @@ import {
   Moon,
   NotebookPen,
   Settings,
+  ShoppingBag,
   Sun,
   Users,
   type LucideIcon,
@@ -28,6 +29,7 @@ const navIconComponents = {
   content: NotebookPen,
   settings: Settings,
   destinations: MapPin,
+  purchases: ShoppingBag,
 } as const satisfies Record<string, LucideIcon>;
 
 export type DashboardNavIcon = keyof typeof navIconComponents;

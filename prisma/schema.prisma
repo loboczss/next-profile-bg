@@ -19,6 +19,7 @@ model User {
   updatedAt    DateTime @updatedAt
   destinations Destination[]
   favorites    Favorite[]
+  purchases    Purchase[]
   activityAuthored AdminActivityLog[] @relation("activity_actor")
   activityTarget   AdminActivityLog[] @relation("activity_target")
 }
@@ -77,6 +78,7 @@ model Destination {
   userId Int
 
   favorites Favorite[]
+  purchases Purchase[]
 }
 
 model Favorite {
@@ -104,4 +106,25 @@ model AdminActivityLog {
   subject User? @relation("activity_target", fields: [subjectId], references: [id], onDelete: SetNull)
 
   @@index([createdAt])
+}
+
+enum PurchaseStatus {
+  AGUARDANDO_EMISSAO
+  EMITIDA
+}
+
+model Purchase {
+  id         Int            @id @default(autoincrement())
+  userId     Int
+  packageId  Int
+  status     PurchaseStatus @default(AGUARDANDO_EMISSAO)
+  observacao String         @default("")
+  dataCompra DateTime       @default(now())
+
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  package Destination @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([packageId])
+  @@index([status])
 }

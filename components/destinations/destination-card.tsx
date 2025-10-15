@@ -94,119 +94,134 @@ export function DestinationCard({
   return (
     <Card
       className={cn(
-        "group relative flex h-full w-full max-w-[26rem] flex-col overflow-hidden rounded-[28px] border border-slate-200/70 bg-gradient-to-br from-white via-white to-slate-50 shadow-xl transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl",
-        "backdrop-blur",
+        "group relative flex h-full w-full max-w-[24rem] flex-col overflow-hidden rounded-[32px] border border-white/70 bg-white/95 shadow-[0_30px_80px_-40px_rgba(15,23,42,0.45)] transition-all duration-500",
+        "before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-[36px] before:bg-gradient-to-br before:from-sky-200/50 before:via-white before:to-indigo-200/40 before:opacity-0 before:transition-opacity before:duration-500 group-hover:before:opacity-100",
+        "after:pointer-events-none after:absolute after:-right-10 after:top-6 after:-z-10 after:h-28 after:w-28 after:rounded-full after:bg-sky-200/40 after:blur-2xl",
+        "group-hover:-translate-y-3 group-hover:shadow-[0_50px_120px_-48px_rgba(14,116,144,0.55)]",
         fullHeight ? "h-full" : "h-auto",
         className
       )}
     >
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100">
+      <div className="pointer-events-none absolute -left-12 bottom-8 -z-10 h-24 w-24 rounded-full bg-indigo-200/40 blur-2xl" />
+      <div className="pointer-events-none absolute -right-16 bottom-0 -z-10 h-28 w-28 rounded-full bg-sky-100/40 blur-3xl" />
+
+      <div className="relative mx-5 mt-5 overflow-hidden rounded-[28px] border border-white/80 bg-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
         <Image
           src={photos[activeIndex]}
           alt={destination.name}
           fill
           className={cn(
-            "object-cover transition duration-700 ease-out",
-            isImageLoaded ? "scale-100 opacity-100" : "scale-105 opacity-0"
-          )}
-          sizes="(min-width: 768px) 416px, 100vw"
-          onLoadingComplete={() => setIsImageLoaded(true)}
-          priority={false}
-        />
-
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-900/10 via-transparent to-slate-900/40" />
-
-        <div className="absolute left-4 right-4 top-4 flex items-start justify-between gap-2">
-          <span className="inline-flex max-w-[70%] items-center gap-2 rounded-full bg-slate-900/70 px-3 py-1 text-xs font-medium text-white shadow">
-            <MapPin className="size-3.5" />
-            <span className="truncate" title={destination.city}>
-              {destination.city}
-            </span>
-          </span>
-          <FavoriteButton
-            destinationId={destination.id}
-            initialIsFavorite={initialFavorite}
-            canFavorite={canFavorite}
-            onStatusChange={(isFavorite) =>
-              onFavoriteChange?.(destination.id, isFavorite)
-            }
+              "object-cover transition duration-700 ease-out",
+              isImageLoaded ? "scale-100 opacity-100" : "scale-105 opacity-0"
+            )}
+            sizes="(min-width: 768px) 416px, 100vw"
+            onLoadingComplete={() => setIsImageLoaded(true)}
+            priority={false}
           />
-        </div>
 
-        <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
-          <span className="inline-flex items-center gap-2 rounded-full bg-amber-400/95 px-3 py-1.5 text-sm font-semibold text-slate-900 shadow">
-            <Star className="size-4" />
-            {destination.rating.toFixed(1)}
-          </span>
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-900/5 via-transparent to-slate-900/50" />
+
+          <div className="absolute inset-x-0 top-4 flex items-start justify-between gap-2 px-4">
+            <span className="inline-flex max-w-[70%] items-center gap-2 rounded-full bg-slate-900/70 px-3 py-1 text-xs font-medium text-white shadow-lg">
+              <MapPin className="size-3.5" />
+              <span className="truncate" title={destination.city}>
+                {destination.city}
+              </span>
+            </span>
+            <FavoriteButton
+              destinationId={destination.id}
+              initialIsFavorite={initialFavorite}
+              canFavorite={canFavorite}
+              onStatusChange={(isFavorite) =>
+                onFavoriteChange?.(destination.id, isFavorite)
+              }
+            />
+          </div>
+
+          <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
+            <span className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-300 to-amber-200 px-3 py-1.5 text-sm font-semibold text-slate-900 shadow-lg">
+              <Star className="size-4" />
+              {destination.rating.toFixed(1)}
+            </span>
+
+            {hasMultiplePhotos && (
+              <div className="flex items-center gap-2 rounded-full bg-white/80 px-2 py-1 shadow-lg backdrop-blur">
+                <button
+                  type="button"
+                  onClick={handlePrevious}
+                  className="flex size-8 items-center justify-center rounded-full bg-white/0 text-slate-700 transition hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-200"
+                  aria-label="Foto anterior"
+                >
+                  <ChevronLeft className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  className="flex size-8 items-center justify-center rounded-full bg-white/0 text-slate-700 transition hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-200"
+                  aria-label="Próxima foto"
+                >
+                  <ChevronRight className="size-4" />
+                </button>
+              </div>
+            )}
+          </div>
 
           {hasMultiplePhotos && (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handlePrevious}
-                className="flex size-8 items-center justify-center rounded-full bg-white/85 text-slate-700 shadow transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
-                aria-label="Foto anterior"
-              >
-                <ChevronLeft className="size-4" />
-              </button>
-              <button
-                type="button"
-                onClick={handleNext}
-                className="flex size-8 items-center justify-center rounded-full bg-white/85 text-slate-700 shadow transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
-                aria-label="Próxima foto"
-              >
-                <ChevronRight className="size-4" />
-              </button>
+            <div className="absolute inset-x-0 bottom-2 flex justify-center gap-1.5 px-4">
+              {photos.map((photo, index) => (
+                <button
+                  key={`${photo}-${index}`}
+                  type="button"
+                  onClick={() => setActiveIndex(index)}
+                  aria-label={`Ver foto ${index + 1}`}
+                  className={cn(
+                    "h-2.5 w-2.5 rounded-full border border-white/50 bg-white/40 transition",
+                    index === activeIndex ? "bg-white shadow" : "hover:bg-white/70"
+                  )}
+                >
+                  <span className="sr-only">{`Foto ${index + 1}`}</span>
+                </button>
+              ))}
             </div>
           )}
         </div>
 
-        {hasMultiplePhotos && (
-          <div className="absolute inset-x-0 bottom-2 flex justify-center gap-1.5 px-4">
-            {photos.map((photo, index) => (
-              <button
-                key={`${photo}-${index}`}
-                type="button"
-                onClick={() => setActiveIndex(index)}
-                aria-label={`Ver foto ${index + 1}`}
-                className={cn(
-                  "h-2.5 w-2.5 rounded-full border border-white/40 bg-white/40 transition",
-                  index === activeIndex ? "bg-white shadow" : "hover:bg-white/70"
-                )}
-              >
-                <span className="sr-only">{`Foto ${index + 1}`}</span>
-              </button>
-            ))}
+      <div className="flex flex-1 flex-col gap-5 px-6 pb-6 pt-5">
+        <div className="flex items-center justify-between text-sky-600">
+          <span className="inline-flex items-center gap-2 rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.28em]">
+            <Sparkles className="size-4" />
+            Evastur apresenta
+          </span>
+            <span className="hidden items-center gap-1 rounded-full bg-white px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-400 shadow-sm sm:inline-flex">
+              {photos.length} {photos.length === 1 ? "Cena" : "Cenas"}
+            </span>
           </div>
-        )}
-      </div>
 
-      <div className="flex flex-1 flex-col gap-5 p-5">
-        <div className="space-y-4">
+          <div className="space-y-4">
           <div className="space-y-3">
-            <CardTitle className="text-balance text-2xl font-semibold leading-tight text-slate-900">
+            <CardTitle className="text-balance text-[1.85rem] font-semibold leading-tight text-slate-900">
               {destination.name}
             </CardTitle>
             <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-500">
+              <span className="rounded-full bg-slate-50 px-3 py-1 text-slate-500">
                 Pacote exclusivo
               </span>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-500">
+              <span className="rounded-full bg-slate-50 px-3 py-1 text-slate-500">
                 Atualizado {dateFormatter.format(new Date(destination.updatedAt))}
               </span>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
-            <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 font-medium shadow-sm">
+            <span className="inline-flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1.5 font-medium shadow-sm">
               <CalendarRange className="size-4 text-primary" />
               {stayLabel}
             </span>
-            <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 font-medium shadow-sm">
+            <span className="inline-flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1.5 font-medium shadow-sm">
               <Users className="size-4 text-primary" />
               Até {destination.peopleCount} pessoas
             </span>
-            <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 font-medium shadow-sm">
+            <span className="inline-flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1.5 font-medium shadow-sm">
               <Star className="size-4 text-primary" />
               Avaliação {destination.rating.toFixed(1)} / 5
             </span>
@@ -218,7 +233,7 @@ export function DestinationCard({
         </div>
 
         <div className="mt-auto flex flex-col gap-4">
-          <div className="flex items-center justify-between rounded-2xl border border-slate-200/70 bg-white/80 p-4 shadow-sm">
+          <div className="flex items-center justify-between rounded-3xl border border-slate-100 bg-gradient-to-r from-slate-50 via-white to-slate-50 p-4 shadow-inner">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
                 Investimento
@@ -235,12 +250,12 @@ export function DestinationCard({
             <DialogTrigger asChild>
               <Button
                 variant="outline"
-                className="w-full justify-center rounded-full border-slate-200 bg-white/90 px-5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-white"
+                className="w-full justify-center rounded-full border-slate-200/60 bg-white px-5 py-2 text-sm font-semibold text-slate-700 shadow-[0_12px_30px_-18px_rgba(14,116,144,0.7)] transition hover:border-slate-300 hover:bg-white"
               >
                 Ver detalhes completos
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-3xl overflow-hidden border border-slate-200/70 bg-gradient-to-br from-white via-slate-50 to-sky-50 p-0 shadow-2xl">
+            <DialogContent className="max-w-3xl overflow-hidden border border-slate-200/70 bg-gradient-to-br from-white via-slate-50 to-sky-50 p-0 shadow-[0_40px_120px_-45px_rgba(14,116,144,0.45)]">
               <div className="flex flex-col">
                 <div className="relative h-56 w-full overflow-hidden bg-slate-200 sm:h-64">
                   <Image
@@ -250,7 +265,7 @@ export function DestinationCard({
                     className="object-cover"
                     sizes="(min-width: 768px) 640px, 100vw"
                   />
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-900/70 via-slate-900/10 to-transparent p-6">
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-900/80 via-slate-900/10 to-transparent p-6">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <span className="inline-flex items-center gap-2 rounded-full bg-slate-900/80 px-3 py-1 text-xs font-semibold text-white">
                         <MapPin className="size-3.5" />
@@ -316,7 +331,7 @@ export function DestinationCard({
                       {destination.description}
                     </p>
                     <div className="grid gap-4 sm:grid-cols-2">
-                      <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm">
+                      <div className="rounded-2xl border border-slate-200/70 bg-white/80 p-4 shadow-sm">
                         <div className="flex items-center gap-3">
                           <MapPin className="size-5 text-primary" />
                           <div>
@@ -327,7 +342,7 @@ export function DestinationCard({
                           </div>
                         </div>
                       </div>
-                      <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm">
+                      <div className="rounded-2xl border border-slate-200/70 bg-white/80 p-4 shadow-sm">
                         <div className="flex items-center gap-3">
                           <CalendarRange className="size-5 text-primary" />
                           <div>
@@ -338,7 +353,7 @@ export function DestinationCard({
                           </div>
                         </div>
                       </div>
-                      <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm">
+                      <div className="rounded-2xl border border-slate-200/70 bg-white/80 p-4 shadow-sm">
                         <div className="flex items-center gap-3">
                           <Users className="size-5 text-primary" />
                           <div>
@@ -351,7 +366,7 @@ export function DestinationCard({
                           </div>
                         </div>
                       </div>
-                      <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm">
+                      <div className="rounded-2xl border border-slate-200/70 bg-white/80 p-4 shadow-sm">
                         <div className="flex items-center gap-3">
                           <Star className="size-5 text-primary" />
                           <div>
@@ -364,7 +379,7 @@ export function DestinationCard({
                       </div>
                     </div>
 
-                    <div className="rounded-2xl border border-slate-200/70 bg-gradient-to-br from-white to-slate-50 p-5 shadow-sm">
+                    <div className="rounded-2xl border border-slate-200/70 bg-gradient-to-br from-white to-slate-50 p-5 shadow-inner">
                       <p className="text-xs font-semibold uppercase tracking-[0.32em] text-slate-400">
                         Investimento aproximado
                       </p>
@@ -378,7 +393,7 @@ export function DestinationCard({
                   <PurchaseButton
                     destination={destination}
                     label="Solicitar proposta personalizada"
-                    className="w-full justify-center rounded-full bg-gradient-to-r from-sky-500 to-cyan-500 px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:from-sky-500/90 hover:to-cyan-500/90"
+                    className="w-full justify-center rounded-full bg-gradient-to-r from-sky-500 to-cyan-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_25px_60px_-30px_rgba(14,116,144,0.7)] transition hover:from-sky-500/90 hover:to-cyan-500/90"
                   />
                 </div>
               </div>
@@ -388,7 +403,7 @@ export function DestinationCard({
           <PurchaseButton
             destination={destination}
             label="Quero este destino"
-            className="w-full justify-center rounded-full bg-gradient-to-r from-sky-500 to-cyan-500 px-5 py-2 text-sm font-semibold text-white shadow-lg transition hover:from-sky-500/90 hover:to-cyan-500/90"
+            className="w-full justify-center rounded-full bg-gradient-to-r from-sky-500 to-cyan-500 px-5 py-2 text-sm font-semibold text-white shadow-[0_22px_50px_-28px_rgba(14,116,144,0.7)] transition hover:from-sky-500/90 hover:to-cyan-500/90"
           />
         </div>
       </div>

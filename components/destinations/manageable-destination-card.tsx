@@ -17,7 +17,6 @@ interface ManageableDestinationCardProps {
   action: DestinationDeleteAction;
   canFavorite?: boolean;
   className?: string;
-  cardClassName?: string;
 }
 
 export function ManageableDestinationCard({
@@ -25,7 +24,6 @@ export function ManageableDestinationCard({
   action,
   canFavorite = true,
   className,
-  cardClassName,
 }: ManageableDestinationCardProps) {
   const [state, formAction, isPending] = useActionState(
     action,
@@ -33,16 +31,20 @@ export function ManageableDestinationCard({
   );
 
   return (
-    <div className={cn("flex h-full flex-col gap-4", className)}>
+    <div
+      className={cn(
+        "flex min-h-full min-w-[17rem] max-w-[23rem] flex-col gap-4",
+        className
+      )}
+    >
       <DestinationCard
         destination={destination}
         fullHeight={false}
         canFavorite={canFavorite}
-        className={cn("flex-1", cardClassName)}
       />
       <form
         action={formAction}
-        className="flex flex-col gap-3 rounded-2xl border border-red-100/60 bg-white/80 p-4 shadow-md transition-colors hover:border-red-200 sm:flex-row sm:items-center sm:justify-between"
+        className="flex flex-col gap-3 rounded-[28px] border border-red-500/30 bg-red-500/10 p-4 text-red-200 shadow-[0_20px_50px_-25px_rgba(239,68,68,0.45)] backdrop-blur-md transition hover:border-red-500/50 sm:flex-row sm:items-center sm:justify-between"
       >
         <input type="hidden" name="destinationId" value={destination.id} />
         <Button
@@ -50,7 +52,7 @@ export function ManageableDestinationCard({
           variant="destructive"
           size="sm"
           disabled={isPending}
-          className="min-w-[160px] rounded-full"
+          className="min-w-[160px] rounded-full bg-red-500 text-white shadow-lg shadow-red-500/40 transition hover:bg-red-400"
         >
           {isPending ? "Excluindo..." : "Excluir destino"}
         </Button>
@@ -58,7 +60,7 @@ export function ManageableDestinationCard({
           <p
             className={cn(
               "text-sm font-medium",
-              state.status === "error" ? "text-red-600" : "text-emerald-600"
+              state.status === "error" ? "text-red-200" : "text-emerald-200"
             )}
             role="status"
             aria-live="polite"

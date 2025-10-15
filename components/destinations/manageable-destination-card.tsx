@@ -18,6 +18,7 @@ interface ManageableDestinationCardProps {
   canFavorite?: boolean;
   className?: string;
   cardClassName?: string;
+  isActive?: boolean;
 }
 
 export function ManageableDestinationCard({
@@ -26,6 +27,7 @@ export function ManageableDestinationCard({
   canFavorite = true,
   className,
   cardClassName,
+  isActive = false,
 }: ManageableDestinationCardProps) {
   const [state, formAction, isPending] = useActionState(
     action,
@@ -39,10 +41,11 @@ export function ManageableDestinationCard({
         fullHeight={false}
         canFavorite={canFavorite}
         className={cn("flex-1", cardClassName)}
+        isActive={isActive}
       />
       <form
         action={formAction}
-        className="flex flex-col gap-3 rounded-2xl border border-red-100/60 bg-white/80 p-4 shadow-md transition-colors hover:border-red-200 sm:flex-row sm:items-center sm:justify-between"
+        className="flex flex-col gap-3 rounded-2xl border border-red-500/30 bg-red-500/5 p-4 text-red-100 shadow-inner transition hover:border-red-400/50 sm:flex-row sm:items-center sm:justify-between"
       >
         <input type="hidden" name="destinationId" value={destination.id} />
         <Button
@@ -58,7 +61,7 @@ export function ManageableDestinationCard({
           <p
             className={cn(
               "text-sm font-medium",
-              state.status === "error" ? "text-red-600" : "text-emerald-600"
+              state.status === "error" ? "text-red-200" : "text-emerald-200"
             )}
             role="status"
             aria-live="polite"

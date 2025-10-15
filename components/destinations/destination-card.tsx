@@ -94,13 +94,13 @@ export function DestinationCard({
   return (
     <Card
       className={cn(
-        "group relative flex h-full w-full max-w-[26rem] flex-col overflow-hidden rounded-[28px] border border-slate-200/70 bg-gradient-to-br from-white via-white to-slate-50 shadow-xl transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl",
+        "group relative flex h-full w-full max-w-[34rem] flex-col overflow-hidden rounded-[28px] border border-slate-200/70 bg-gradient-to-br from-white via-white to-slate-50 shadow-xl transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl",
         "backdrop-blur",
         fullHeight ? "h-full" : "h-auto",
         className
       )}
     >
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100">
+      <div className="relative aspect-[16/9] w-full overflow-hidden bg-slate-100">
         <Image
           src={photos[activeIndex]}
           alt={destination.name}
@@ -109,7 +109,7 @@ export function DestinationCard({
             "object-cover transition duration-700 ease-out",
             isImageLoaded ? "scale-100 opacity-100" : "scale-105 opacity-0"
           )}
-          sizes="(min-width: 768px) 416px, 100vw"
+          sizes="(min-width: 768px) 544px, 100vw"
           onLoadingComplete={() => setIsImageLoaded(true)}
           priority={false}
         />

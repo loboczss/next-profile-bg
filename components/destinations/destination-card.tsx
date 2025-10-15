@@ -240,9 +240,9 @@ export function DestinationCard({
                 Ver detalhes completos
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-3xl overflow-hidden border border-slate-200/70 bg-gradient-to-br from-white via-slate-50 to-sky-50 p-0 shadow-2xl">
-              <div className="flex flex-col">
-                <div className="relative h-56 w-full overflow-hidden bg-slate-200 sm:h-64">
+            <DialogContent className="w-[min(100vw-2rem,960px)] max-h-[90vh] overflow-hidden border border-slate-200/70 bg-gradient-to-br from-white via-slate-50 to-sky-50 p-0 shadow-2xl">
+              <div className="grid h-full grid-cols-1 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:divide-x lg:divide-slate-200/60">
+                <div className="relative h-56 w-full overflow-hidden bg-slate-200 sm:h-64 lg:h-full">
                   <Image
                     src={photos[activeIndex]}
                     alt={destination.name}
@@ -301,7 +301,7 @@ export function DestinationCard({
                   )}
                 </div>
 
-                <div className="flex flex-col gap-6 p-6 sm:p-8">
+                <div className="flex min-h-0 flex-col gap-6 overflow-y-auto p-6 sm:p-8">
                   <DialogHeader className="gap-3 text-left">
                     <DialogTitle className="text-2xl font-semibold text-slate-900">
                       {destination.name}

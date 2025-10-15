@@ -45,7 +45,7 @@ export function ManageableDestinationCard({
       />
       <form
         action={formAction}
-        className="flex flex-col gap-3 rounded-2xl border border-red-500/30 bg-red-500/5 p-4 text-red-100 shadow-inner transition hover:border-red-400/50 sm:flex-row sm:items-center sm:justify-between"
+        className="flex flex-col gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700 shadow-inner transition hover:border-red-300 sm:flex-row sm:items-center sm:justify-between"
       >
         <input type="hidden" name="destinationId" value={destination.id} />
         <Button
@@ -61,7 +61,7 @@ export function ManageableDestinationCard({
           <p
             className={cn(
               "text-sm font-medium",
-              state.status === "error" ? "text-red-200" : "text-emerald-200"
+              state.status === "error" ? "text-red-600" : "text-emerald-600"
             )}
             role="status"
             aria-live="polite"

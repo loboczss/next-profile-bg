@@ -142,8 +142,8 @@ export function DestinationCarousel({
       </div>
 
       <div className="relative">
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-24 bg-gradient-to-r from-slate-950 via-slate-950/60 to-transparent" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24 bg-gradient-to-l from-slate-950 via-slate-950/60 to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-24 bg-gradient-to-r from-white via-white/70 to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24 bg-gradient-to-l from-white via-white/70 to-transparent" />
 
         <div
           ref={listRef}
@@ -159,7 +159,7 @@ export function DestinationCarousel({
             <button
               type="button"
               onClick={() => handleNavigate(-1)}
-              className="absolute left-4 top-1/2 z-20 -translate-y-1/2 rounded-full border border-white/10 bg-slate-950/80 p-3 text-slate-100 shadow-lg backdrop-blur transition hover:bg-slate-900"
+              className="absolute left-4 top-1/2 z-20 -translate-y-1/2 rounded-full border border-sky-100 bg-white/80 p-3 text-slate-600 shadow-lg backdrop-blur transition hover:bg-white"
               aria-label="Ver destino anterior"
             >
               <ChevronLeft className="size-5" />
@@ -167,7 +167,7 @@ export function DestinationCarousel({
             <button
               type="button"
               onClick={() => handleNavigate(1)}
-              className="absolute right-4 top-1/2 z-20 -translate-y-1/2 rounded-full border border-white/10 bg-slate-950/80 p-3 text-slate-100 shadow-lg backdrop-blur transition hover:bg-slate-900"
+              className="absolute right-4 top-1/2 z-20 -translate-y-1/2 rounded-full border border-sky-100 bg-white/80 p-3 text-slate-600 shadow-lg backdrop-blur transition hover:bg-white"
               aria-label="Ver próximo destino"
             >
               <ChevronRight className="size-5" />

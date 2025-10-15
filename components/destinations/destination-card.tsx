@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   CalendarRange,
@@ -9,12 +9,10 @@ import {
   ChevronRight,
   MapPin,
   Star,
+  Ticket,
   Users,
-  Sparkles,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -23,11 +21,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { PurchaseButton } from "@/components/purchases/purchase-button";
 import type { SerializedDestination } from "@/lib/destinations";
 import { cn } from "@/lib/utils";
 
 import { FavoriteButton } from "./favorite-button";
-import { PurchaseButton } from "@/components/purchases/purchase-button";
 
 interface DestinationCardProps {
   destination: SerializedDestination;
@@ -45,11 +43,11 @@ export function DestinationCard({
   className,
 }: DestinationCardProps) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const photos = destination.photos.length > 0 ? destination.photos : ["/placeholder.jpg"];
   const initialFavorite = Boolean(destination.isFavorite);
+  const hasMultiplePhotos = photos.length > 1;
 
   const priceFormatter = useMemo(
     () =>
@@ -73,325 +71,282 @@ export function DestinationCard({
   const formattedPrice = priceFormatter.format(destination.price);
   const formattedStartDate = dateFormatter.format(new Date(destination.startDate));
   const formattedEndDate = dateFormatter.format(new Date(destination.endDate));
-  const stayLabel = `${formattedStartDate} a ${formattedEndDate}`;
+  const travelWindowLabel = `${formattedStartDate} → ${formattedEndDate}`;
+  const ratingLabel = destination.rating.toFixed(1);
 
-  const handlePrevious = () => {
-    setActiveIndex((current) =>
-      current === 0 ? photos.length - 1 : Math.max(current - 1, 0)
-    );
+  const shortDescription = useMemo(() => {
+    const text = destination.description.trim();
+    if (text.length <= 160) {
+      return text;
+    }
+    return `${text.slice(0, 157).trimEnd()}…`;
+  }, [destination.description]);
+
+  const goToPreviousPhoto = () => {
+    setActiveIndex((current) => (current === 0 ? photos.length - 1 : current - 1));
   };
 
-  const handleNext = () => {
+  const goToNextPhoto = () => {
     setActiveIndex((current) => (current + 1) % photos.length);
   };
 
-  useEffect(() => {
-    setIsImageLoaded(false);
-  }, [activeIndex]);
-
-  const hasMultiplePhotos = photos.length > 1;
+  const handleDialogChange = (open: boolean) => {
+    setIsDialogOpen(open);
+  };
 
   return (
-    <Card
-      className={cn(
-        "group relative flex h-full w-full max-w-[34rem] flex-col overflow-hidden rounded-[28px] border border-slate-200/70 bg-gradient-to-br from-white via-white to-slate-50 shadow-xl transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl",
-        "backdrop-blur",
-        fullHeight ? "h-full" : "h-auto",
-        className
-      )}
-    >
-      <div className="relative aspect-[16/9] w-full overflow-hidden bg-slate-100">
-        <Image
-          src={photos[activeIndex]}
-          alt={destination.name}
-          fill
+    <Dialog open={isDialogOpen} onOpenChange={handleDialogChange}>
+      <DialogTrigger asChild>
+        <button
+          type="button"
           className={cn(
-            "object-cover transition duration-700 ease-out",
-            isImageLoaded ? "scale-100 opacity-100" : "scale-105 opacity-0"
+            "group relative flex w-full max-w-[22rem] flex-col overflow-hidden rounded-[26px] bg-slate-950/70 text-left shadow-2xl shadow-slate-950/30 ring-1 ring-white/5 transition-all duration-300 hover:z-10 hover:-translate-y-2 hover:scale-[1.02] hover:ring-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400",
+            fullHeight ? "h-full" : "h-auto",
+            className
           )}
-          sizes="(min-width: 768px) 544px, 100vw"
-          onLoadingComplete={() => setIsImageLoaded(true)}
-          priority={false}
-        />
+        >
+          <div className="relative h-64 w-full overflow-hidden">
+            <Image
+              src={photos[activeIndex]}
+              alt={destination.name}
+              fill
+              className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+              sizes="(min-width: 768px) 352px, 100vw"
+              priority={false}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-slate-950/70" />
 
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-900/10 via-transparent to-slate-900/40" />
-
-        <div className="absolute left-4 right-4 top-4 flex items-start justify-between gap-2">
-          <span className="inline-flex max-w-[70%] items-center gap-2 rounded-full bg-slate-900/70 px-3 py-1 text-xs font-medium text-white shadow">
-            <MapPin className="size-3.5" />
-            <span className="truncate" title={destination.city}>
-              {destination.city}
-            </span>
-          </span>
-          <FavoriteButton
-            destinationId={destination.id}
-            initialIsFavorite={initialFavorite}
-            canFavorite={canFavorite}
-            onStatusChange={(isFavorite) =>
-              onFavoriteChange?.(destination.id, isFavorite)
-            }
-          />
-        </div>
-
-        <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
-          <span className="inline-flex items-center gap-2 rounded-full bg-amber-400/95 px-3 py-1.5 text-sm font-semibold text-slate-900 shadow">
-            <Star className="size-4" />
-            {destination.rating.toFixed(1)}
-          </span>
-
-          {hasMultiplePhotos && (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handlePrevious}
-                className="flex size-8 items-center justify-center rounded-full bg-white/85 text-slate-700 shadow transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
-                aria-label="Foto anterior"
-              >
-                <ChevronLeft className="size-4" />
-              </button>
-              <button
-                type="button"
-                onClick={handleNext}
-                className="flex size-8 items-center justify-center rounded-full bg-white/85 text-slate-700 shadow transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
-                aria-label="Próxima foto"
-              >
-                <ChevronRight className="size-4" />
-              </button>
-            </div>
-          )}
-        </div>
-
-        {hasMultiplePhotos && (
-          <div className="absolute inset-x-0 bottom-2 flex justify-center gap-1.5 px-4">
-            {photos.map((photo, index) => (
-              <button
-                key={`${photo}-${index}`}
-                type="button"
-                onClick={() => setActiveIndex(index)}
-                aria-label={`Ver foto ${index + 1}`}
-                className={cn(
-                  "h-2.5 w-2.5 rounded-full border border-white/40 bg-white/40 transition",
-                  index === activeIndex ? "bg-white shadow" : "hover:bg-white/70"
-                )}
-              >
-                <span className="sr-only">{`Foto ${index + 1}`}</span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="flex flex-1 flex-col gap-5 p-5">
-        <div className="space-y-4">
-          <div className="space-y-3">
-            <CardTitle className="text-balance text-2xl font-semibold leading-tight text-slate-900">
-              {destination.name}
-            </CardTitle>
-            <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-500">
-                Pacote exclusivo
+            <div className="absolute top-4 left-4 right-4 flex items-start justify-between gap-2">
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.28em] text-white/80 backdrop-blur">
+                <MapPin className="size-3.5" />
+                <span className="truncate" title={destination.city}>
+                  {destination.city}
+                </span>
               </span>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-500">
-                Atualizado {dateFormatter.format(new Date(destination.updatedAt))}
-              </span>
+              <FavoriteButton
+                destinationId={destination.id}
+                initialIsFavorite={initialFavorite}
+                canFavorite={canFavorite}
+                onStatusChange={(isFavorite) => onFavoriteChange?.(destination.id, isFavorite)}
+              />
+            </div>
+
+            {hasMultiplePhotos && (
+              <div className="absolute inset-y-0 left-0 right-0 hidden items-center justify-between px-2 opacity-0 transition duration-200 group-hover:flex group-hover:opacity-100">
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    goToPreviousPhoto();
+                  }}
+                  className="flex size-10 items-center justify-center rounded-full bg-white/80 text-slate-900 shadow-lg transition hover:bg-white"
+                  aria-label="Foto anterior"
+                >
+                  <ChevronLeft className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    goToNextPhoto();
+                  }}
+                  className="flex size-10 items-center justify-center rounded-full bg-white/80 text-slate-900 shadow-lg transition hover:bg-white"
+                  aria-label="Próxima foto"
+                >
+                  <ChevronRight className="size-4" />
+                </button>
+              </div>
+            )}
+
+            <div className="absolute bottom-0 left-0 right-0 space-y-3 p-4">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-white/60">
+                <span>{travelWindowLabel}</span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-1 text-[10px]">
+                  <Users className="size-3.5" /> {destination.peopleCount}{" "}
+                  {destination.peopleCount === 1 ? "pessoa" : "pessoas"}
+                </span>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-balance text-2xl font-semibold leading-tight text-white">
+                  {destination.name}
+                </h3>
+                <p className="text-sm text-white/80 line-clamp-2">{shortDescription}</p>
+              </div>
+              <div className="flex items-center justify-between text-sm font-semibold text-white">
+                <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 shadow">
+                  <Star className="size-4 text-amber-300" /> {ratingLabel}
+                </span>
+                <span className="text-base font-bold">{formattedPrice}</span>
+              </div>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
-            <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 font-medium shadow-sm">
-              <CalendarRange className="size-4 text-primary" />
-              {stayLabel}
-            </span>
-            <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 font-medium shadow-sm">
-              <Users className="size-4 text-primary" />
-              Até {destination.peopleCount} pessoas
-            </span>
-            <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 font-medium shadow-sm">
-              <Star className="size-4 text-primary" />
-              Avaliação {destination.rating.toFixed(1)} / 5
-            </span>
-          </div>
-
-          <p className="text-sm leading-relaxed text-slate-600 [display:-webkit-box] [-webkit-line-clamp:4] [-webkit-box-orient:vertical] overflow-hidden text-pretty">
-            {destination.description}
-          </p>
-        </div>
-
-        <div className="mt-auto flex flex-col gap-4">
-          <div className="flex items-center justify-between rounded-2xl border border-slate-200/70 bg-white/80 p-4 shadow-sm">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
-                Investimento
-              </p>
-              <p className="text-xl font-bold text-slate-900">{formattedPrice}</p>
+          <div className="flex flex-col gap-3 border-t border-white/5 bg-slate-950/80 p-4">
+            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-white/50">
+              <Ticket className="size-3.5" /> Pacote cinematográfico
             </div>
-            <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-600">
-              <Sparkles className="size-4" />
-              Curadoria premium
-            </span>
+            <PurchaseButton
+              destination={destination}
+              label="Reservar agora"
+              variant="secondary"
+              size="sm"
+              className="w-full justify-center rounded-full bg-white/95 text-slate-900 transition hover:bg-white"
+            />
+            <span className="text-center text-xs text-white/60">Clique para ver todos os detalhes</span>
+          </div>
+        </button>
+      </DialogTrigger>
+
+      <DialogContent className="max-w-5xl overflow-hidden rounded-[32px] border border-white/10 bg-slate-950/95 p-0 text-white shadow-[0_50px_80px_-40px_rgba(0,0,0,0.6)]">
+        <div className="relative flex flex-col gap-8">
+          <div className="relative h-[340px] w-full overflow-hidden sm:h-[420px]">
+            <Image
+              src={photos[activeIndex]}
+              alt={destination.name}
+              fill
+              className="object-cover"
+              sizes="(min-width: 1024px) 896px, 100vw"
+              priority
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent" />
+
+            <div className="absolute inset-x-0 bottom-0 flex flex-col gap-5 p-8">
+              <div className="flex flex-wrap items-center gap-3 text-sm font-semibold text-white/80">
+                <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5">
+                  <MapPin className="size-4" /> {destination.city}
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5">
+                  <CalendarRange className="size-4" /> {travelWindowLabel}
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5">
+                  <Users className="size-4" /> Até {destination.peopleCount}{" "}
+                  {destination.peopleCount === 1 ? "viajante" : "viajantes"}
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5">
+                  <Star className="size-4 text-amber-300" /> {ratingLabel} / 5
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                <DialogHeader className="text-left text-white">
+                  <DialogTitle className="text-3xl font-bold text-white">
+                    {destination.name}
+                  </DialogTitle>
+                  <DialogDescription className="text-sm text-white/70">
+                    Uma experiência completa com saída em {formattedStartDate} e retorno em {formattedEndDate}.
+                  </DialogDescription>
+                </DialogHeader>
+                <p className="text-base leading-relaxed text-white/80">
+                  {destination.description}
+                </p>
+              </div>
+            </div>
+
+            {hasMultiplePhotos && (
+              <div className="absolute left-0 right-0 top-1/2 flex -translate-y-1/2 items-center justify-between px-4">
+                <button
+                  type="button"
+                  onClick={() => goToPreviousPhoto()}
+                  className="flex size-12 items-center justify-center rounded-full bg-white/90 text-slate-900 shadow-lg shadow-slate-950/30 transition hover:bg-white"
+                  aria-label="Foto anterior"
+                >
+                  <ChevronLeft className="size-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => goToNextPhoto()}
+                  className="flex size-12 items-center justify-center rounded-full bg-white/90 text-slate-900 shadow-lg shadow-slate-950/30 transition hover:bg-white"
+                  aria-label="Próxima foto"
+                >
+                  <ChevronRight className="size-5" />
+                </button>
+              </div>
+            )}
           </div>
 
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button
-                variant="outline"
-                className="w-full justify-center rounded-full border-slate-200 bg-white/90 px-5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-white"
-              >
-                Ver detalhes completos
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-3xl overflow-hidden border border-slate-200/70 bg-gradient-to-br from-white via-slate-50 to-sky-50 p-0 shadow-2xl">
-              <div className="flex flex-col">
-                <div className="relative h-56 w-full overflow-hidden bg-slate-200 sm:h-64">
-                  <Image
-                    src={photos[activeIndex]}
-                    alt={destination.name}
-                    fill
-                    className="object-cover"
-                    sizes="(min-width: 768px) 640px, 100vw"
-                  />
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-900/70 via-slate-900/10 to-transparent p-6">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <span className="inline-flex items-center gap-2 rounded-full bg-slate-900/80 px-3 py-1 text-xs font-semibold text-white">
-                        <MapPin className="size-3.5" />
-                        {destination.city}
-                      </span>
-                      <span className="inline-flex items-center gap-2 rounded-full bg-amber-400/95 px-3 py-1.5 text-sm font-semibold text-slate-900">
-                        <Star className="size-4" />
-                        {destination.rating.toFixed(1)} / 5
-                      </span>
-                    </div>
-                  </div>
-
-                  {hasMultiplePhotos && (
-                    <div className="absolute inset-x-0 bottom-3 flex items-center justify-center gap-2">
-                      <button
-                        type="button"
-                        onClick={handlePrevious}
-                        className="flex size-10 items-center justify-center rounded-full bg-white/85 text-slate-700 shadow transition hover:bg-white"
-                        aria-label="Foto anterior"
-                      >
-                        <ChevronLeft className="size-4" />
-                      </button>
-                      <div className="flex items-center gap-1.5">
-                        {photos.map((photo, index) => (
-                          <button
-                            key={`${photo}-${index}`}
-                            type="button"
-                            onClick={() => setActiveIndex(index)}
-                            className={cn(
-                              "h-2.5 w-2.5 rounded-full border border-white/50",
-                              index === activeIndex ? "bg-white" : "bg-white/50"
-                            )}
-                            aria-label={`Ver foto ${index + 1}`}
-                          >
-                            <span className="sr-only">{`Foto ${index + 1}`}</span>
-                          </button>
-                        ))}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleNext}
-                        className="flex size-10 items-center justify-center rounded-full bg-white/85 text-slate-700 shadow transition hover:bg-white"
-                        aria-label="Próxima foto"
-                      >
-                        <ChevronRight className="size-4" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-6 p-6 sm:p-8">
-                  <DialogHeader className="gap-3 text-left">
-                    <DialogTitle className="text-2xl font-semibold text-slate-900">
-                      {destination.name}
-                    </DialogTitle>
-                    <DialogDescription className="text-sm text-slate-500">
-                      {stayLabel} • {destination.peopleCount} {destination.peopleCount === 1 ? "pessoa" : "pessoas"}
-                    </DialogDescription>
-                  </DialogHeader>
-
-                  <div className="space-y-5 text-sm text-slate-600">
-                    <p className="text-base leading-relaxed text-slate-600">
-                      {destination.description}
+          <div className="flex flex-col gap-8 px-8 pb-10">
+            <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
+              <div className="space-y-6">
+                <div className="grid gap-4 text-sm text-white/80 sm:grid-cols-2">
+                  <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.32em] text-white/60">Período</p>
+                    <p className="mt-2 text-base font-semibold text-white">{travelWindowLabel}</p>
+                    <p className="mt-1 text-xs text-white/60">
+                      Ajuste as datas com nossos especialistas em viagens.
                     </p>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm">
-                        <div className="flex items-center gap-3">
-                          <MapPin className="size-5 text-primary" />
-                          <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">
-                              Localização
-                            </p>
-                            <p className="text-sm font-medium text-slate-700">{destination.city}</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm">
-                        <div className="flex items-center gap-3">
-                          <CalendarRange className="size-5 text-primary" />
-                          <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">
-                              Período sugerido
-                            </p>
-                            <p className="text-sm font-medium text-slate-700">{stayLabel}</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm">
-                        <div className="flex items-center gap-3">
-                          <Users className="size-5 text-primary" />
-                          <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">
-                              Ideal para
-                            </p>
-                            <p className="text-sm font-medium text-slate-700">
-                              Até {destination.peopleCount} {destination.peopleCount === 1 ? "viajante" : "viajantes"}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm">
-                        <div className="flex items-center gap-3">
-                          <Star className="size-5 text-primary" />
-                          <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">
-                              Avaliação média
-                            </p>
-                            <p className="text-sm font-medium text-slate-700">{destination.rating.toFixed(1)} de 5</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-slate-200/70 bg-gradient-to-br from-white to-slate-50 p-5 shadow-sm">
-                      <p className="text-xs font-semibold uppercase tracking-[0.32em] text-slate-400">
-                        Investimento aproximado
-                      </p>
-                      <p className="mt-1 text-2xl font-bold text-slate-900">{formattedPrice}</p>
-                      <p className="mt-2 text-xs text-slate-500">
-                        Valores sujeitos a atualização conforme disponibilidade e personalização do roteiro.
-                      </p>
-                    </div>
                   </div>
-
-                  <PurchaseButton
-                    destination={destination}
-                    label="Solicitar proposta personalizada"
-                    className="w-full justify-center rounded-full bg-gradient-to-r from-sky-500 to-cyan-500 px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:from-sky-500/90 hover:to-cyan-500/90"
-                  />
+                  <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.32em] text-white/60">Investimento</p>
+                    <p className="mt-2 text-2xl font-bold text-emerald-300">{formattedPrice}</p>
+                    <p className="mt-1 text-xs text-white/60">
+                      Valor médio para o pacote completo por pessoa.
+                    </p>
+                  </div>
+                  <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.32em] text-white/60">Avaliação</p>
+                    <p className="mt-2 text-base font-semibold text-white">{ratingLabel} de 5</p>
+                    <p className="mt-1 text-xs text-white/60">
+                      Nota baseada nas experiências de viajantes reais.
+                    </p>
+                  </div>
+                  <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.32em] text-white/60">Capacidade</p>
+                    <p className="mt-2 text-base font-semibold text-white">
+                      Até {destination.peopleCount} {destination.peopleCount === 1 ? "pessoa" : "pessoas"}
+                    </p>
+                    <p className="mt-1 text-xs text-white/60">
+                      Personalize o roteiro para diferentes perfis de viagem.
+                    </p>
+                  </div>
                 </div>
               </div>
-            </DialogContent>
-          </Dialog>
 
-          <PurchaseButton
-            destination={destination}
-            label="Quero este destino"
-            className="w-full justify-center rounded-full bg-gradient-to-r from-sky-500 to-cyan-500 px-5 py-2 text-sm font-semibold text-white shadow-lg transition hover:from-sky-500/90 hover:to-cyan-500/90"
-          />
+              <aside className="flex h-fit flex-col gap-5 rounded-3xl border border-white/10 bg-white/5 p-6">
+                <p className="text-sm text-white/80">
+                  Pronto para garantir sua vaga? Nossa equipe prepara todos os detalhes enquanto você escolhe o melhor momento para embarcar.
+                </p>
+                <PurchaseButton
+                  destination={destination}
+                  label="Solicitar proposta personalizada"
+                  className="w-full justify-center rounded-full bg-emerald-400 text-slate-950 transition hover:bg-emerald-300"
+                />
+              </aside>
+            </div>
+
+            {hasMultiplePhotos && (
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold uppercase tracking-[0.32em] text-white/60">
+                  Galeria do destino
+                </h4>
+                <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [-ms-overflow-style:none]">
+                  {photos.map((photo, index) => (
+                    <button
+                      key={`${photo}-${index}`}
+                      type="button"
+                      onClick={() => setActiveIndex(index)}
+                      className={cn(
+                        "relative h-24 w-36 shrink-0 overflow-hidden rounded-2xl border-2 border-transparent transition",
+                        index === activeIndex ? "border-white" : "opacity-70 hover:opacity-100"
+                      )}
+                      aria-label={`Selecionar foto ${index + 1}`}
+                    >
+                      <Image
+                        src={photo}
+                        alt={`${destination.name} - Foto ${index + 1}`}
+                        fill
+                        className="object-cover"
+                        sizes="144px"
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </Card>
+      </DialogContent>
+    </Dialog>
   );
 }

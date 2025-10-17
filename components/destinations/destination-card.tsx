@@ -180,7 +180,7 @@ export function DestinationCard({
         </button>
       </DialogTrigger>
 
-      <DialogContent className="max-h-[90vh] w-[min(95vw,1200px)] overflow-hidden rounded-[40px] border border-slate-200 bg-white p-0 text-slate-700 shadow-[0_50px_120px_-60px_rgba(14,165,233,0.35)]">
+      <DialogContent className="max-h-[90vh] w-full max-w-[min(95vw,1400px)] overflow-hidden rounded-[40px] border border-slate-200 bg-white p-0 text-slate-700 shadow-[0_50px_120px_-60px_rgba(14,165,233,0.35)]">
         <div className="flex max-h-[90vh] flex-col">
           <div className="relative h-[280px] w-full sm:h-[360px] lg:h-[420px]">
             <Image

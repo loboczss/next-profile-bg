@@ -74,8 +74,8 @@ export default function Hero({ images, userName }: HeroProps) {
             sizes="100vw"
           />
         ))}
-        <div className="absolute inset-0 bg-slate-950/70" />
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/90 via-slate-950/60 to-slate-950/90" />
+        <div className="absolute inset-0 bg-slate-950/40" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-slate-950/35 to-slate-950/70" />
       </div>
 
       <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-10 px-6 py-16 sm:px-10 sm:py-20 lg:flex-row lg:items-center lg:gap-12 lg:py-24">

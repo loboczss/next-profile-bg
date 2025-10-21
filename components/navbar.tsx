@@ -160,7 +160,7 @@ function UserMenu({
         onClick={onToggle}
         aria-expanded={isOpen}
         aria-controls="user-menu-panel"
-        className="group inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 active:translate-y-[1px]"
+        className="group inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md hover:text-slate-900 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500 active:translate-y-[1px]"
       >
         <UserAvatar image={user?.image} name={userDisplayName} size="sm" />
         <span className="hidden text-left leading-tight sm:block">
@@ -196,7 +196,7 @@ function UserMenu({
               <Link
                 href="/usuario"
                 onClick={onClose}
-                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500"
               >
                 <User className="h-4 w-4 text-blue-600" aria-hidden />
                 Meu perfil
@@ -204,7 +204,7 @@ function UserMenu({
               <Link
                 href="/minhas-compras"
                 onClick={onClose}
-                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500"
               >
                 <ShoppingBag className="h-4 w-4 text-emerald-500" aria-hidden />
                 Minhas compras
@@ -212,7 +212,7 @@ function UserMenu({
               <Link
                 href="/favoritos"
                 onClick={onClose}
-                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500"
               >
                 <Heart className="h-4 w-4 text-rose-500" aria-hidden />
                 <span className="flex items-center gap-2">
@@ -232,7 +232,7 @@ function UserMenu({
                 onClose();
                 onSignOut();
               }}
-              className="mt-3 flex w-full items-center gap-2 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm font-semibold text-red-600 transition-colors hover:border-red-200 hover:bg-red-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 active:translate-y-[1px]"
+              className="mt-3 flex w-full items-center gap-2 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm font-semibold text-red-600 transition-colors hover:border-red-200 hover:bg-red-100 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-red-500 active:translate-y-[1px]"
             >
               <LogOut className="h-4 w-4" aria-hidden />
               Sair
@@ -259,7 +259,7 @@ function DesktopNavigation({ navigationLinks, pathname }: { navigationLinks: Nav
             aria-current={isActive ? "page" : undefined}
             className={cn(
               "group relative inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-medium transition-all duration-200",
-              "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500",
+              "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500",
               isActive && "bg-slate-100 text-slate-900 shadow-sm",
             )}
           >
@@ -347,7 +347,7 @@ function MobileNavigation({
               <button
                 type="button"
                 onClick={onClose}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500"
               >
                 <X className="h-5 w-5" aria-hidden />
                 <span className="sr-only">Fechar menu</span>
@@ -366,7 +366,7 @@ function MobileNavigation({
                     aria-current={isActive ? "page" : undefined}
                     className={cn(
                       "flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 text-base font-medium transition-colors",
-                      "text-slate-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500",
+                      "text-slate-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500",
                       "active:translate-y-[1px]",
                       isActive && "border-blue-300 bg-blue-50 text-blue-700",
                     )}
@@ -392,7 +392,7 @@ function MobileNavigation({
                 <Link
                   href="/usuario"
                   onClick={onClose}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500"
                 >
                   <User className="h-4 w-4 text-blue-600" aria-hidden />
                   Meu perfil
@@ -400,7 +400,7 @@ function MobileNavigation({
                 <Link
                   href="/minhas-compras"
                   onClick={onClose}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500"
                 >
                   <ShoppingBag className="h-4 w-4 text-emerald-500" aria-hidden />
                   Minhas compras
@@ -408,7 +408,7 @@ function MobileNavigation({
                 <Link
                   href="/favoritos"
                   onClick={onClose}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500"
                 >
                     <Heart className="h-4 w-4 text-rose-500" aria-hidden />
                     <span className="flex items-center gap-2">
@@ -426,7 +426,7 @@ function MobileNavigation({
                   <Link
                     href={adminLink.href}
                     onClick={onClose}
-                    className="group flex items-center justify-between gap-2.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                    className="group flex items-center justify-between gap-2.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500"
                   >
                     <span className="flex items-center gap-1.5">
                       <span className="grid h-7 w-7 place-items-center rounded-lg bg-slate-100 text-slate-600 transition-colors group-hover:bg-slate-200">
@@ -450,7 +450,7 @@ function MobileNavigation({
                     onClose();
                     onSignOut();
                   }}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm font-semibold text-red-600 transition-colors hover:border-red-200 hover:bg-red-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm font-semibold text-red-600 transition-colors hover:border-red-200 hover:bg-red-100 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-red-500"
                 >
                   <LogOut className="h-4 w-4" aria-hidden />
                   Sair
@@ -461,7 +461,7 @@ function MobileNavigation({
                 <Link
                   href="/login"
                   onClick={onClose}
-                  className="flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-3 text-base font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                  className="flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-3 text-base font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-700 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500"
                 >
                   <LogIn className="h-5 w-5" aria-hidden />
                   Entrar
@@ -469,7 +469,7 @@ function MobileNavigation({
                 <Link
                   href="/signup"
                   onClick={onClose}
-                  className="flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-3 text-base font-semibold text-white transition-colors hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                  className="flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-3 text-base font-semibold text-white transition-colors hover:bg-blue-700 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500"
                 >
                   Criar conta
                 </Link>
@@ -598,7 +598,7 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <Link
           href="/"
-          className="flex shrink-0 items-center gap-3 rounded-full px-2 py-1.5 text-slate-800 transition-colors hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+          className="flex shrink-0 items-center gap-3 rounded-full px-2 py-1.5 text-slate-800 transition-colors hover:text-blue-700 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500"
         >
           <Image src="/evastur-logo.png" alt="Evastur" width={128} height={32} priority className="h-6 w-auto" />
           
@@ -613,7 +613,7 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
                 <Link
                   href={adminLink.href}
                   className={cn(
-                    "group relative hidden items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 via-blue-500 to-sky-500 px-3 py-1.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-blue-500/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 lg:inline-flex",
+                    "group relative hidden items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 via-blue-500 to-sky-500 px-3 py-1.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-blue-500/35 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500 lg:inline-flex",
                     pathname.startsWith("/dashboard") && "ring-2 ring-offset-2 ring-offset-white ring-blue-400",
                   )}
                 >
@@ -648,7 +648,7 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
               <Link
                 href="/login"
                 className={cn(
-                  "inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-sm hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500",
+                  "inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-sm hover:text-blue-700 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500",
                   pathname.startsWith("/login") && "border-blue-300 text-blue-700",
                 )}
               >
@@ -657,7 +657,7 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
               </Link>
               <Link
                 href="/signup"
-                className="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                className="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-sm focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500"
               >
                 Criar conta
               </Link>
@@ -666,7 +666,7 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
 
           <button
             type="button"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 lg:hidden"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:text-blue-700 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500 lg:hidden"
             aria-label={mobileMenuOpen ? "Fechar menu" : "Abrir menu"}
             aria-expanded={mobileMenuOpen}
             aria-controls={MOBILE_MENU_ID}

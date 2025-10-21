@@ -131,7 +131,7 @@ export function DestinationCarousel({
       <div className="mb-4 flex items-center justify-between px-1">
         <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.32em] text-slate-400">
           <Sparkles className="size-4 text-sky-300" />
-          <span>Catálogo cinematográfico</span>
+          <span>Catálogo de destinos</span>
         </div>
         <div className="flex items-center gap-2 text-xs font-medium text-slate-300">
           <Clapperboard className="size-4 text-sky-300" />

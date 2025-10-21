@@ -59,7 +59,7 @@ export default function ContactPage() {
         <section className="space-y-6 text-center">
           <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-sky-200/80 bg-white/80 px-4 py-2 text-sm font-medium text-sky-600 shadow-sm backdrop-blur">
             <Sparkles className="size-4" aria-hidden="true" />
-            Concierge Next Profile
+            Concierge Evastur
           </div>
           <div className="space-y-4">
             <h1 className="text-4xl font-semibold leading-tight text-slate-900 md:text-5xl">
@@ -141,7 +141,7 @@ export default function ContactPage() {
               </div>
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <p className="text-sm text-slate-500">
-                  Ao enviar, você concorda em receber contato da equipe Next Profile. Seus dados são tratados conforme a nossa política de privacidade.
+                  Ao enviar, você concorda em receber contato da equipe Evastur. Seus dados são tratados conforme a nossa política de privacidade.
                 </p>
                 <Button type="submit" className="inline-flex items-center gap-2 px-6 py-2 text-base">
                   <Plane className="size-4" aria-hidden="true" />

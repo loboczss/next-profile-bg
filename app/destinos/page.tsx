@@ -1,26 +1,25 @@
+import Image from "next/image";
+import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import {
-  Plane,
-  MapPin,
-  Ship,
-  Luggage,
-  Globe,
   Sparkles,
+  Globe,
+  Star,
+  Luggage,
   TrendingUp,
-  Heart,
-  Clock,
-  Shield,
-  Phone,
-  Mail,
-  MessageCircle,
-  ChevronRight,
   Waves,
   Mountain,
   Palmtree,
   Building,
   Camera,
-  Flame,
-  Star,
+  Ship,
+  Shield,
+  Clock,
+  Heart,
+  Phone,
+  Mail,
+  MessageCircle,
+  ChevronRight,
 } from "lucide-react";
 
 import { DestinationGrid } from "@/components/destinations/destination-grid";
@@ -34,14 +33,12 @@ import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
-// Ação server-side responsável por remover destinos cadastrados pelo usuário.
 async function deleteDestination(
   _prevState: DestinationDeleteState,
   formData: FormData
 ): Promise<DestinationDeleteState> {
   "use server";
 
-  // Verifica se há um usuário autenticado antes de realizar a exclusão.
   const session = await auth();
   const user = session?.user;
 
@@ -56,7 +53,6 @@ async function deleteDestination(
   const destinationId = Number(destinationIdRaw);
 
   if (!destinationIdRaw || Number.isNaN(destinationId) || !Number.isInteger(destinationId)) {
-    // Bloqueia requisições com identificadores inválidos.
     return {
       status: "error",
       message: "Destino inválido.",
@@ -84,7 +80,6 @@ async function deleteDestination(
     }
 
     if (destination.userId !== Number(user.id) && user.role !== "admin") {
-      // Impede que um usuário exclua destinos de terceiros.
       return {
         status: "error",
         message: "Você não tem permissão para excluir este destino.",
@@ -102,7 +97,6 @@ async function deleteDestination(
     };
   }
 
-  // Revalida as páginas que exibem o destino removido.
   revalidatePath("/destinos");
   revalidatePath("/");
 
@@ -112,7 +106,6 @@ async function deleteDestination(
   };
 }
 
-// Página que lista todos os destinos cadastrados e oferece destaque para cada experiência.
 export default async function DestinationsPage() {
   const session = await auth();
   const isAdmin = session?.user?.role === "admin";
@@ -135,9 +128,9 @@ export default async function DestinationsPage() {
   } else if (!prismaClient) {
     console.error("Prisma Client não está disponível. Lista de favoritos carregada vazia.");
   }
+
   if (prismaClient) {
     try {
-      // Busca todos os destinos ordenados por data de criação.
       const destinationsFromDb = await prismaClient.destination.findMany({
         orderBy: { createdAt: "desc" },
       });
@@ -193,237 +186,347 @@ export default async function DestinationsPage() {
     ? newestDestination.city
     : "Cadastre um novo destino e inspire os viajantes";
 
-  return (
-    <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-blue-50 via-white to-cyan-50">
-      {/* Elementos decorativos animados de fundo */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute top-24 left-10 h-72 w-72 animate-pulse rounded-full bg-blue-200 blur-3xl opacity-30"></div>
-        <div className="absolute bottom-40 right-20 h-96 w-96 animate-pulse rounded-full bg-cyan-200 blur-3xl opacity-30 [animation-delay:2s]"></div>
-        <div className="absolute top-1/2 left-1/3 h-80 w-80 animate-pulse rounded-full bg-teal-200 blur-3xl opacity-20 [animation-delay:4s]"></div>
-      </div>
+  const heroImage =
+    newestDestination?.photos.find((photo) => photo.trim()) ??
+    bestRatedDestination?.photos.find((photo) => photo.trim()) ??
+    null;
 
-      {/* Seção principal de destinos destacados */}
-      <section id="destinos" className="relative z-10">
-        <div className="mx-auto max-w-7xl px-4 pb-12 pt-24 sm:px-6 lg:px-8">
-          <div className="flex flex-col items-center text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-200/60 bg-white/80 px-5 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-blue-700 shadow-sm">
-              <Sparkles className="h-4 w-4 animate-spin text-blue-500" style={{ animationDuration: "18s" }} />
-              <span>Destaques exclusivos</span>
+  const heroHighlights = [
+    {
+      icon: Globe,
+      label: "Experiências na vitrine",
+      value:
+        destinationCount > 0
+          ? `${destinationCount}${destinationCount > 9 ? "+" : ""}`
+          : "Em breve",
+      description:
+        destinationCount > 0
+          ? "Coleção atualizada pela equipe Evastur"
+          : "Adicione um novo destino no dashboard",
+    },
+    {
+      icon: Star,
+      label: "Melhor avaliação",
+      value: bestRatingLabel,
+      description: bestRatedDestination
+        ? `${bestRatedDestination.city}, ${bestRatedDestination.name}`
+        : "Estamos em busca do próximo favorito",
+    },
+    {
+      icon: Luggage,
+      label: "Oferta inteligente",
+      value: budgetPriceLabel,
+      description: budgetDestination
+        ? `por pessoa em ${budgetDestination.city}`
+        : "Novos pacotes serão publicados em breve",
+    },
+  ];
+
+  const collectionHighlights = [
+    {
+      icon: Waves,
+      title: "Refúgios à beira-mar",
+      description:
+        "Praias cinematográficas e resorts com experiências à flor do mar, perfeitos para desconectar.",
+      tone: "from-sky-100 via-blue-100 to-cyan-100 text-sky-700",
+    },
+    {
+      icon: Mountain,
+      title: "Natureza exuberante",
+      description:
+        "Montanhas, trilhas e retiros de bem-estar em meio à vegetação nativa para renovar as energias.",
+      tone: "from-emerald-100 via-lime-100 to-green-100 text-emerald-700",
+    },
+    {
+      icon: Building,
+      title: "Experiências urbanas",
+      description:
+        "Cidades icônicas, rooftops exclusivos e programas culturais para mergulhar na vida local.",
+      tone: "from-violet-100 via-indigo-100 to-purple-100 text-indigo-700",
+    },
+    {
+      icon: Palmtree,
+      title: "Escapadas tropicais",
+      description:
+        "Vilas privativas, ilhas secretas e serviços sob medida para quem busca clima quente o ano todo.",
+      tone: "from-amber-100 via-orange-100 to-yellow-100 text-amber-700",
+    },
+  ];
+
+  const serviceHighlights = [
+    {
+      icon: Ship,
+      title: "Cruzeiros assinados",
+      description:
+        "Roteiros sofisticados pelo Caribe, Mediterrâneo e Brasil com concierge dedicado.",
+    },
+    {
+      icon: Shield,
+      title: "Curadoria confiável",
+      description:
+        "Parcerias com hospedagens premium, guias locais e experiências imersivas selecionadas a dedo.",
+    },
+    {
+      icon: Heart,
+      title: "Detalhes personalizados",
+      description:
+        "Cada viagem nasce do seu estilo: celebrações, honeymoon, família ou aventuras solo.",
+    },
+    {
+      icon: Clock,
+      title: "Assistência contínua",
+      description:
+        "Equipe monitorando sua jornada antes, durante e depois da viagem com canais 24/7.",
+    },
+  ];
+
+  const contactChannels = [
+    {
+      icon: Phone,
+      label: "WhatsApp",
+      description: "Converse com um especialista em tempo real",
+    },
+    {
+      icon: Mail,
+      label: "E-mail",
+      description: "Receba um roteiro exclusivo diretamente na sua caixa de entrada",
+    },
+    {
+      icon: MessageCircle,
+      label: "Consultoria",
+      description: "Agende uma chamada para cocriaremos a próxima experiência",
+    },
+  ];
+
+  return (
+    <main className="flex min-h-dvh flex-col bg-background text-foreground">
+      <section className="relative overflow-hidden border-b border-border bg-muted/40">
+        <div className="absolute inset-0">
+          {heroImage ? (
+            <Image
+              src={heroImage}
+              alt="Paisagem de destino em destaque"
+              fill
+              className="object-cover"
+              priority
+            />
+          ) : (
+            <div className="size-full bg-gradient-to-br from-sky-100 via-white to-teal-100" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/70" />
+          <div className="pointer-events-none absolute -left-20 top-16 hidden h-64 w-64 rounded-full bg-primary/20 blur-3xl sm:block" />
+          <div className="pointer-events-none absolute -right-24 bottom-0 hidden h-72 w-72 rounded-full bg-sky-200/60 blur-3xl md:block" />
+        </div>
+
+        <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-14 px-6 py-24 sm:px-8 lg:flex-row lg:items-end lg:px-12">
+          <div className="flex-1 space-y-6">
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.32em] text-primary">
+              <Sparkles className="size-4" /> Curadoria Evastur
+            </span>
+            <div className="space-y-4">
+              <h1 className="text-balance text-4xl font-semibold leading-tight sm:text-5xl">
+                Destinos para viver histórias tão grandiosas quanto a sua
+              </h1>
+              <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
+                Explore coleções selecionadas pela nossa equipe para diferentes estilos de viagem. Cada experiência foi pensada para entregar conforto, autenticidade e memórias inesquecíveis.
+              </p>
             </div>
-            <h1 className="mt-6 text-4xl font-bold text-slate-900 md:text-5xl">
-              Conheça os destinos mais inspiradores da Evastur
-            </h1>
-            <p className="mt-4 max-w-3xl text-base text-slate-600 md:text-lg">
-              Explore experiências cuidadosamente selecionadas para diferentes estilos de viagem. Clique em um card para descobrir detalhes, fotos em alta resolução e dicas especiais da nossa equipe.
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/favoritos"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg transition hover:bg-primary/90"
+              >
+                <Heart className="size-4" /> Meus favoritos
+              </Link>
+              <Link
+                href="/contato"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-border px-6 py-3 text-sm font-semibold transition hover:bg-muted"
+              >
+                <MessageCircle className="size-4" /> Falar com especialista
+              </Link>
+            </div>
+          </div>
+
+          <dl className="grid flex-1 gap-4 sm:grid-cols-3 lg:grid-cols-1">
+            {heroHighlights.map(({ icon: Icon, label, value, description }) => (
+              <div
+                key={label}
+                className="group rounded-3xl border border-border/80 bg-background/70 p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+                    {label}
+                  </span>
+                  <Icon className="size-5 text-primary transition group-hover:scale-110" />
+                </div>
+                <dd className="mt-4 text-3xl font-semibold text-foreground">{value}</dd>
+                <dt className="mt-1 text-sm text-muted-foreground">{description}</dt>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+
+      <section className="bg-background">
+        <div className="mx-auto w-full max-w-6xl px-6 py-16 sm:px-8 lg:px-12">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="max-w-2xl space-y-3">
+              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">
+                <TrendingUp className="size-4" /> Coleções em alta
+              </span>
+              <h2 className="text-balance text-2xl font-semibold leading-tight sm:text-3xl">
+                Escolha o ritmo da sua próxima viagem
+              </h2>
+              <p className="text-sm text-muted-foreground sm:text-base">
+                Descubra os cenários que combinam com o seu momento: da energia das grandes metrópoles ao silêncio inspirador das montanhas.
+              </p>
+            </div>
+            <p className="text-sm font-medium text-muted-foreground">
+              Atualização mais recente: {newestCityLabel}
             </p>
           </div>
 
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="group flex items-center gap-4 rounded-2xl border border-white/40 bg-white/80 p-5 shadow-xl backdrop-blur transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/40 text-blue-700">
-                <MapPin className="h-7 w-7" />
-              </div>
-              <div className="text-left">
-                <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
-                  Destinos disponíveis
-                </p>
-                <p className="text-3xl font-bold text-slate-900">{destinationCount}</p>
-                <span className="text-sm text-slate-600">experiências aguardando você</span>
-              </div>
-            </div>
-
-            <div className="group flex items-center gap-4 rounded-2xl border border-white/40 bg-white/80 p-5 shadow-xl backdrop-blur transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/30 text-purple-700">
-                <Star className="h-7 w-7" />
-              </div>
-              <div className="text-left">
-                <p className="text-xs font-semibold uppercase tracking-wide text-purple-600">
-                  Mais bem avaliado
-                </p>
-                <p className="text-3xl font-bold text-slate-900">{bestRatingLabel}</p>
-                <span className="text-sm text-slate-600">
-                  {bestRatedDestination ? bestRatedDestination.name : "Cadastre um destino para inaugurar"}
-                </span>
-              </div>
-            </div>
-
-            <div className="group flex items-center gap-4 rounded-2xl border border-white/40 bg-white/80 p-5 shadow-xl backdrop-blur transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500/20 to-amber-500/30 text-amber-600">
-                <Flame className="h-7 w-7" />
-              </div>
-              <div className="text-left">
-                <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">
-                  Oferta do momento
-                </p>
-                <p className="text-3xl font-bold text-slate-900">{budgetPriceLabel}</p>
-                <span className="text-sm text-slate-600">
-                  {budgetDestination ? `no destino ${budgetDestination.name}` : "Novas promoções chegam em breve"}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <p className="mt-6 text-center text-sm font-medium text-slate-600">
-            Atualização mais recente: {newestCityLabel}
-          </p>
-
-          <div className="mt-10 flex flex-wrap justify-center gap-3">
-            {[
-              { icon: Waves, label: "Praias", bg: "from-blue-100/70 to-cyan-100/70", text: "text-blue-600" },
-              { icon: Mountain, label: "Montanhas", bg: "from-emerald-100/70 to-lime-100/70", text: "text-emerald-600" },
-              { icon: Building, label: "Cidades", bg: "from-purple-100/70 to-indigo-100/70", text: "text-purple-600" },
-              { icon: Palmtree, label: "Tropical", bg: "from-orange-100/70 to-amber-100/70", text: "text-amber-600" },
-              { icon: Camera, label: "Aventura", bg: "from-rose-100/70 to-pink-100/70", text: "text-rose-600" },
-            ].map((category) => (
-              <button
-                key={category.label}
-                className={`group inline-flex items-center gap-2 rounded-full border border-white/50 bg-gradient-to-r ${category.bg} px-6 py-3 text-sm font-semibold text-slate-700 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl`}
+          <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            {collectionHighlights.map(({ icon: Icon, title, description, tone }) => (
+              <article
+                key={title}
+                className={`group flex h-full flex-col gap-4 rounded-3xl border border-border bg-gradient-to-br ${tone} p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg`}
               >
-                <category.icon className={`h-5 w-5 ${category.text} transition-transform duration-300 group-hover:scale-110`} />
-                <span>{category.label}</span>
-              </button>
+                <span className="flex size-12 items-center justify-center rounded-2xl bg-background/70 text-primary shadow">
+                  <Icon className="size-6" />
+                </span>
+                <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+                <p className="text-sm text-muted-foreground">{description}</p>
+              </article>
             ))}
           </div>
+        </div>
+      </section>
 
-          <div className="relative mt-12 overflow-hidden rounded-[32px] border border-white/30 bg-white/80 p-8 shadow-[0_30px_60px_-30px_rgba(15,118,190,0.45)] backdrop-blur">
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-cyan-500/20"></div>
-            <div className="pointer-events-none absolute -left-24 top-20 h-64 w-64 rounded-full bg-blue-500/20 blur-3xl"></div>
-            <div className="pointer-events-none absolute -right-24 bottom-0 h-64 w-64 rounded-full bg-cyan-500/20 blur-3xl"></div>
+      <section className="border-y border-border bg-muted/30">
+        <div className="mx-auto w-full max-w-6xl px-6 py-16 sm:px-8 lg:px-12">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="max-w-2xl space-y-3">
+              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">
+                <Sparkles className="size-4" /> Seleção cinematográfica
+              </span>
+              <h2 className="text-balance text-2xl font-semibold leading-tight sm:text-3xl">
+                Destinos que brilham na vitrine Evastur
+              </h2>
+              <p className="text-sm text-muted-foreground sm:text-base">
+                Clique para explorar fotos em alta resolução, valores atualizados e detalhes das experiências.
+              </p>
+            </div>
 
-            <div className="relative space-y-8">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/30 text-blue-600 shadow">
-                    <MapPin className="h-7 w-7 animate-bounce" />
-                  </div>
-                  <div>
-                    <h2 className="text-3xl font-bold text-slate-900">Coleção de destinos</h2>
-                    <p className="text-sm text-slate-600">
-                      {destinationCount > 0
-                        ? "Clique para abrir o modal com fotos, valores e detalhes exclusivos de cada experiência."
-                        : "Cadastre um destino no dashboard para inaugurar esta vitrine inspiradora."}
-                    </p>
-                  </div>
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-semibold transition hover:bg-muted"
+            >
+              <Camera className="size-4" /> Gerenciar destinos
+            </Link>
+          </div>
+
+          <div className="mt-10">
+            {destinationsError ? (
+              <div className="flex flex-col gap-4 rounded-3xl border border-amber-200 bg-amber-50 p-6 text-amber-900 shadow-sm sm:flex-row sm:items-center">
+                <div className="flex size-12 items-center justify-center rounded-full bg-amber-100">
+                  <Clock className="size-6" />
                 </div>
-                <div className="inline-flex items-center gap-2 self-start rounded-full border border-blue-200/60 bg-blue-50/80 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm">
-                  <Sparkles className="h-4 w-4 text-blue-500" />
-                  <span>
-                    {destinationCount}{" "}
-                    {destinationCount === 1 ? "destino disponível" : "destinos disponíveis"}
-                  </span>
+                <div className="space-y-1">
+                  <h3 className="text-base font-semibold">Estamos atualizando a coleção</h3>
+                  <p className="text-sm text-amber-800">
+                    Tente novamente em alguns instantes ou fale com nossa equipe para receber recomendações personalizadas.
+                  </p>
                 </div>
               </div>
+            ) : (
+              <DestinationGrid
+                destinations={destinations}
+                canFavorite={Boolean(session?.user?.id)}
+                onDelete={isAdmin ? deleteDestination : undefined}
+              />
+            )}
+          </div>
+        </div>
+      </section>
 
-              {destinationsError ? (
-                <div className="flex items-start gap-4 rounded-2xl border border-amber-200 bg-amber-50/80 p-6 text-amber-800 shadow-md">
-                  <div className="grid h-12 w-12 place-items-center rounded-full bg-amber-100">
-                    <Clock className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold">Ops! Estamos atualizando a vitrine</h3>
-                    <p className="text-sm">
-                      Tente novamente em instantes ou fale com nossa equipe para receber recomendações personalizadas.
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <DestinationGrid
-                  destinations={destinations}
-                  canFavorite={Boolean(session?.user?.id)}
-                  onDelete={isAdmin ? deleteDestination : undefined}
-                />
-              )}
+      <section className="bg-background">
+        <div className="mx-auto w-full max-w-6xl px-6 py-16 sm:px-8 lg:px-12">
+          <div className="grid gap-10 lg:grid-cols-[1fr_1.1fr] lg:items-center">
+            <div className="space-y-5">
+              <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.28em] text-primary">
+                <Sparkles className="size-4" /> Experiência completa
+              </span>
+              <h2 className="text-balance text-2xl font-semibold leading-tight sm:text-3xl">
+                Mais do que destinos, criamos jornadas sob medida
+              </h2>
+              <p className="text-sm text-muted-foreground sm:text-base">
+                Combinamos hospedagens de alto padrão, serviços exclusivos e parceiros confiáveis para garantir que cada etapa da sua viagem aconteça com tranquilidade.
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              {serviceHighlights.map(({ icon: Icon, title, description }) => (
+                <article
+                  key={title}
+                  className="group flex h-full flex-col gap-3 rounded-3xl border border-border bg-muted/30 p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                >
+                  <span className="flex size-12 items-center justify-center rounded-2xl bg-background text-primary shadow">
+                    <Icon className="size-6" />
+                  </span>
+                  <h3 className="text-base font-semibold text-foreground">{title}</h3>
+                  <p className="text-sm text-muted-foreground">{description}</p>
+                </article>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Seção complementar com serviços e diferenciais da agência */}
-      <section className="relative z-0">
-        <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
-          <div className="relative overflow-hidden rounded-3xl border border-white/20 bg-white/80 px-6 py-16 shadow-[0_35px_70px_-40px_rgba(14,116,144,0.45)] backdrop-blur lg:px-12">
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white via-transparent to-blue-50" />
-            <div className="pointer-events-none absolute -top-16 left-10 h-40 w-40 rounded-full bg-blue-500/20 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-16 right-10 h-48 w-48 rounded-full bg-cyan-500/20 blur-3xl" />
-
-            <div className="relative grid gap-10 lg:grid-cols-[1fr_1.1fr] lg:items-center">
-              <div className="text-center lg:text-left">
-                <div className="inline-flex items-center gap-3 rounded-full bg-white/80 px-4 py-2 text-sm font-semibold text-blue-700 shadow">
-                  <div className="relative">
-                    <Plane className="h-6 w-6" />
-                    <Sparkles className="absolute -right-1 -top-1 h-4 w-4 text-yellow-500" />
-                  </div>
-                  Evastur, o seu parceiro de jornada
-                </div>
-                <h2 className="mt-6 text-3xl font-bold text-slate-900 md:text-4xl">
-                  Uma experiência premium do planejamento ao pouso
-                </h2>
-                <p className="mt-4 text-base text-slate-600">
-                  Nossa equipe acompanha cada etapa para garantir que você tenha memórias inesquecíveis. Conte com especialistas em destinos nacionais e internacionais, prontos para personalizar cada detalhe.
-                </p>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                {[
-                  { icon: Luggage, title: "Pacotes completos", desc: "Hospedagem, passeios e transfers sob medida." },
-                  { icon: Ship, title: "Cruzeiros incríveis", desc: "Roteiros pelo Caribe, Mediterrâneo e Brasil." },
-                  { icon: Globe, title: "Viagens internacionais", desc: "Assessoria para visto, seguro e câmbio." },
-                  { icon: Shield, title: "Suporte 24/7", desc: "Atendimento dedicado durante toda a viagem." },
-                ].map((service) => (
-                  <div
-                    key={service.title}
-                    className="group relative overflow-hidden rounded-2xl border border-white/40 bg-white/90 p-6 shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl"
-                  >
-                    <div className="pointer-events-none absolute inset-0 translate-y-full bg-gradient-to-br from-blue-500/10 to-cyan-500/20 transition-transform duration-500 group-hover:translate-y-0" />
-                    <div className="relative z-10 space-y-3">
-                      <service.icon className="h-8 w-8 text-blue-600 transition-transform duration-300 group-hover:scale-110" />
-                      <h3 className="text-lg font-semibold text-slate-900">{service.title}</h3>
-                      <p className="text-sm text-slate-600">{service.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+      <section className="border-t border-border bg-muted/40">
+        <div className="mx-auto w-full max-w-5xl px-6 py-14 sm:px-8 lg:px-12">
+          <div className="flex flex-col items-center gap-10 text-center">
+            <div className="space-y-4">
+              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-primary">
+                <Sparkles className="size-4" /> Pronto para embarcar?
+              </span>
+              <h2 className="text-balance text-2xl font-semibold leading-tight sm:text-3xl">
+                Conte com nossa equipe para transformar ideias em roteiros personalizados
+              </h2>
+              <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
+                Compartilhe seu estilo de viagem e receberá propostas exclusivas com fotografias, valores e diferenciais pensados para você.
+              </p>
             </div>
 
-            <div className="relative mt-12 grid gap-8 rounded-2xl border border-white/40 bg-white/80 p-6 shadow-lg backdrop-blur sm:grid-cols-3">
-              {[
-                { icon: TrendingUp, title: "Melhor preço garantido", desc: "Negociamos direto com fornecedores para ofertas imbatíveis." },
-                { icon: Heart, title: "Atendimento humanizado", desc: "Consultores dedicados que entendem seu estilo de viagem." },
-                { icon: Phone, title: "Suporte onde estiver", desc: "Fale com a Evastur por WhatsApp, telefone ou e-mail." },
-              ].map((benefit) => (
-                <div key={benefit.title} className="space-y-3 text-center sm:text-left">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600 sm:mx-0">
-                    <benefit.icon className="h-6 w-6" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-slate-900">{benefit.title}</h3>
-                  <p className="text-sm text-slate-600">{benefit.desc}</p>
+            <div className="grid w-full gap-4 sm:grid-cols-3">
+              {contactChannels.map(({ icon: Icon, label, description }) => (
+                <div
+                  key={label}
+                  className="flex h-full flex-col items-center gap-3 rounded-3xl border border-border bg-background p-6 text-center shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                >
+                  <span className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <Icon className="size-5" />
+                  </span>
+                  <h3 className="text-sm font-semibold">{label}</h3>
+                  <p className="text-xs text-muted-foreground">{description}</p>
                 </div>
               ))}
             </div>
 
-            <div className="relative mt-12 overflow-hidden rounded-3xl border border-white/40 bg-gradient-to-br from-blue-600 to-cyan-600 p-8 text-white shadow-[0_45px_80px_-40px_rgba(37,99,235,0.6)]">
-              <div className="absolute inset-0 bg-white/10" />
-              <div className="relative z-10 text-center">
-                <Heart className="mx-auto h-12 w-12 animate-pulse" />
-                <h2 className="mt-4 text-3xl font-bold md:text-4xl">
-                  Pronto para sua próxima aventura?
-                </h2>
-                <p className="mt-3 text-base text-blue-100 md:text-lg">
-                  Nossa equipe está pronta para desenhar um roteiro único para você. Entre em contato e receba propostas personalizadas em minutos.
-                </p>
-                <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
-                  <button className="group inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 text-base font-semibold text-blue-700 shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-2xl">
-                    <Mail className="h-5 w-5 transition-transform group-hover:-translate-y-0.5" />
-                    Solicitar orçamento
-                    <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-                  </button>
-                  <button className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/60 bg-transparent px-8 py-4 text-base font-semibold text-white transition-all duration-300 hover:scale-105 hover:bg-white/10">
-                    <MessageCircle className="h-5 w-5 transition-transform group-hover:-translate-y-0.5" />
-                    Falar no WhatsApp
-                  </button>
-                </div>
-              </div>
-            </div>
+            <form className="flex w-full max-w-xl flex-col gap-3 sm:flex-row">
+              <input
+                type="email"
+                placeholder="Digite seu melhor e-mail"
+                className="h-12 flex-1 rounded-full border border-border bg-background px-5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <button
+                type="submit"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+              >
+                Quero receber novidades
+                <ChevronRight className="size-4" />
+              </button>
+            </form>
           </div>
         </div>
       </section>

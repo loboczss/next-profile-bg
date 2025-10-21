@@ -24,25 +24,25 @@ const contactChannels = [
   {
     icon: Phone,
     label: "Telefone",
-    value: "+55 (11) 3456-7890",
-    href: "tel:+551134567890",
+    value: "+55 (68) 9 1234-5678",
+    href: "tel:+5568912345678",
   },
   {
     icon: Mail,
     label: "E-mail",
-    value: "experiencias@nextprofile.com",
-    href: "mailto:experiencias@nextprofile.com",
+    value: "contato@evastur.com",
+    href: "mailto:contato@evastur.com",
   },
   {
     icon: MessageCircle,
     label: "WhatsApp Concierge",
-    value: "+55 (11) 99876-5432",
-    href: "https://wa.me/5511998765432",
+    value: "+55 (68) 12345-6789",
+    href: "https://wa.me/5568912345678",
   },
   {
     icon: MapPin,
     label: "Endereço",
-    value: "Av. Paulista, 1000 – Bela Vista, São Paulo/SP",
+    value: "Av. Joaquim Tavora, sn – Baixa, Cruzeiro do Sul/AC",
   },
   {
     icon: Clock,

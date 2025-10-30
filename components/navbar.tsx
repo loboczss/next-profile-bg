@@ -600,7 +600,7 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
           href="/"
           className="flex shrink-0 items-center gap-3 rounded-full px-2 py-1.5 text-slate-800 transition-colors hover:text-blue-700 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500"
         >
-          <Image src="/evastur-logo.png" alt="Evastur" width={128} height={32} priority className="h-6 w-auto" />
+          <Image src="/evastur-logo.svg" alt="Evastur" width={128} height={32} priority className="h-6 w-auto" />
           
         </Link>
 

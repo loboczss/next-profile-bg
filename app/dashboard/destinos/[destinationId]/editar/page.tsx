@@ -12,12 +12,13 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 interface EditDestinationPageProps {
-  params: { destinationId: string };
+  params: Promise<{ destinationId: string }>;
 }
 
 export default async function EditDestinationPage({
   params,
 }: EditDestinationPageProps) {
+  const resolvedParams = await params;
   const session = await auth();
 
   if (!session?.user) {
@@ -59,7 +60,7 @@ export default async function EditDestinationPage({
     );
   }
 
-  const destinationId = Number(params.destinationId);
+  const destinationId = Number(resolvedParams.destinationId);
 
   if (!Number.isInteger(destinationId) || Number.isNaN(destinationId)) {
     notFound();

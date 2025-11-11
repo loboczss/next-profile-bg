@@ -11,7 +11,7 @@ type PageParams = {
 };
 
 type PageProps = {
-  params: PageParams;
+  params: Promise<PageParams>;
 };
 
 async function getDestination(destinationId: number) {
@@ -34,7 +34,8 @@ async function getDestination(destinationId: number) {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const destinationId = Number(params.destinationId);
+  const resolvedParams = await params;
+  const destinationId = Number(resolvedParams.destinationId);
 
   if (!Number.isFinite(destinationId) || !Number.isInteger(destinationId) || destinationId <= 0) {
     return {
@@ -57,7 +58,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function DestinationPurchasePage({ params }: PageProps) {
-  const destinationId = Number(params.destinationId);
+  const resolvedParams = await params;
+  const destinationId = Number(resolvedParams.destinationId);
 
   if (!Number.isFinite(destinationId) || !Number.isInteger(destinationId) || destinationId <= 0) {
     notFound();

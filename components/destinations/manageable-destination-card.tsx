@@ -18,7 +18,6 @@ interface ManageableDestinationCardProps {
   canFavorite?: boolean;
   className?: string;
   cardClassName?: string;
-  isActive?: boolean;
 }
 
 export function ManageableDestinationCard({
@@ -27,7 +26,6 @@ export function ManageableDestinationCard({
   canFavorite = true,
   className,
   cardClassName,
-  isActive = false,
 }: ManageableDestinationCardProps) {
   const [state, formAction, isPending] = useActionState(
     action,
@@ -38,10 +36,8 @@ export function ManageableDestinationCard({
     <div className={cn("flex h-full flex-col gap-4", className)}>
       <DestinationCard
         destination={destination}
-        fullHeight={false}
         canFavorite={canFavorite}
         className={cn("flex-1", cardClassName)}
-        isActive={isActive}
       />
       <form
         action={formAction}

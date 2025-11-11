@@ -45,20 +45,50 @@ export default async function DashboardDestinationsPage() {
     );
   }
 
-  const [destinationsCount, favoritesCount, recentDestinations] = await Promise.all([
-    prisma.destination.count(),
-    prisma.favorite.count(),
-    prisma.destination.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 4,
-      select: {
-        id: true,
-        name: true,
-        city: true,
-        createdAt: true,
-      },
-    }),
-  ]);
+  let destinationsCount = 0;
+  let favoritesCount = 0;
+  let recentDestinations: Array<{
+    id: number;
+    name: string;
+    city: string;
+    createdAt: Date;
+  }> = [];
+
+  try {
+    [destinationsCount, favoritesCount, recentDestinations] = await Promise.all([
+      prisma.destination.count(),
+      prisma.favorite.count(),
+      prisma.destination.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 4,
+        select: {
+          id: true,
+          name: true,
+          city: true,
+          createdAt: true,
+        },
+      }),
+    ]);
+  } catch (error) {
+    console.error("Não foi possível carregar os dados do dashboard de destinos", error);
+
+    return (
+      <DashboardAnimatedWrapper userName={session.user.name ?? "Administrador"}>
+        <DashboardShell navItems={navItems} user={dashboardUserInfo} activeItemId="destinations">
+          <section id="destinations" className="space-y-6">
+            <div className="rounded-3xl border border-rose-200/70 bg-rose-50/90 p-8 text-rose-900 shadow-sm">
+              <h1 className="text-2xl font-semibold">Cadastro de destinos indisponível</h1>
+              <p className="mt-3 text-sm text-rose-700">
+                Ocorreu um erro ao consultar o banco de dados. Verifique a configuração da variável <code>DATABASE_URL</code>
+                {" "}
+                e tente novamente em instantes.
+              </p>
+            </div>
+          </section>
+        </DashboardShell>
+      </DashboardAnimatedWrapper>
+    );
+  }
 
   const formattedRecentDestinations = recentDestinations.map((destination) => ({
     id: destination.id,

@@ -32,15 +32,15 @@ export function SiteHeader() {
   }, [rawName]);
 
   return (
-    <header className="w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="w-full border-b border-[color:var(--brand-secondary-soft)] bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/75">
       <div className="mx-auto max-w-5xl px-4 py-3 flex items-center justify-between">
-        <Link href="/" className="font-semibold text-lg">
+        <Link href="/" className="font-semibold text-lg text-[color:var(--brand-secondary)]">
           next-profile-bg
         </Link>
-        <nav className="flex items-center gap-3">
+        <nav className="flex items-center gap-3 text-[color:var(--brand-secondary)]">
           {user ? (
             <>
-              <div className="flex items-center gap-3 rounded-full border px-3 py-1.5">
+              <div className="flex items-center gap-3 rounded-full border border-[color:var(--brand-secondary-soft)] px-3 py-1.5">
                 <Avatar className="size-9">
                   {user.image ? (
                     <AvatarImage src={user.image} alt={displayName} />

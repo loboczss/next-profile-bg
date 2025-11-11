@@ -178,14 +178,14 @@ export default async function HomePage() {
   ];
 
   return (
-    <main className="flex min-h-dvh flex-col bg-background text-foreground">
+    <main className="flex min-h-dvh flex-col bg-gradient-to-b from-white via-[#f6f8ff] to-[#fff3f6] text-foreground">
       <Hero images={heroImages} userName={session?.user?.name ?? null} />
 
-      <section className="bg-background">
+      <section className="bg-transparent">
         <div className="mx-auto w-full max-w-6xl px-6 py-16 sm:px-8 lg:px-12">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-2xl space-y-3">
-              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">
+              <span className="inline-flex items-center gap-2 rounded-full bg-[color-mix(in_srgb,var(--brand-primary)_10%,transparent)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.28em] text-[color:var(--brand-primary)]">
                 <Sparkles className="size-4" /> Destinos recentes
               </span>
               <h2 className="text-balance text-2xl font-semibold leading-tight sm:text-3xl">
@@ -198,7 +198,7 @@ export default async function HomePage() {
 
             <Link
               href="/destinos"
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="inline-flex items-center justify-center gap-2 rounded-full border-[color:var(--brand-secondary)] px-5 py-2.5 text-sm font-semibold text-[color:var(--brand-secondary)] transition hover:bg-[color-mix(in_srgb,var(--brand-secondary)_12%,transparent)] hover:text-[color:var(--brand-secondary-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-secondary)]/40"
               aria-label="Ver todos os destinos"
             >
               Ver todos
@@ -215,15 +215,15 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="border-t border-border bg-muted/20 py-16">
+      <section className="border-t border-[color:var(--brand-secondary-soft)] bg-[color-mix(in_srgb,var(--brand-secondary)_6%,white)] py-16">
         <div className="mx-auto w-full max-w-6xl px-6 sm:px-8 lg:px-12">
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {featureCards.map(({ title, description, icon: Icon }) => (
               <article
                 key={title}
-                className="flex h-full flex-col gap-3 rounded-2xl border border-border bg-background/60 p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                className="flex h-full flex-col gap-3 rounded-2xl border border-[color:var(--brand-secondary-soft)] bg-white/80 p-6 shadow-[0_24px_60px_-30px_rgba(0,27,114,0.45)] transition hover:-translate-y-1 hover:shadow-[0_28px_70px_-35px_rgba(234,0,42,0.35)]"
               >
-                <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <span className="flex size-11 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--brand-primary)_15%,white)] text-[color:var(--brand-primary)]">
                   <Icon className="size-5" />
                 </span>
                 <h3 className="text-base font-semibold text-foreground">{title}</h3>

@@ -81,9 +81,11 @@ export async function createDestination(
   const parsed = destinationFormSchema.safeParse({
     name: formData.get("name"),
     city: formData.get("city"),
+    departureLocation: formData.get("departureLocation"),
     description: formData.get("description"),
     price: formData.get("price"),
     peopleCount: formData.get("peopleCount"),
+    totalSeats: formData.get("totalSeats"),
     startDate: formData.get("startDate"),
     endDate: formData.get("endDate"),
     rating: formData.get("rating"),
@@ -112,9 +114,11 @@ export async function createDestination(
       data: {
         name: parsed.data.name,
         city: parsed.data.city,
+        departureLocation: parsed.data.departureLocation,
         description: parsed.data.description,
         price: new Prisma.Decimal(parsed.data.price),
         peopleCount: parsed.data.peopleCount,
+        totalSeats: parsed.data.totalSeats,
         startDate: parsed.data.startDate,
         endDate: parsed.data.endDate,
         rating: parsed.data.rating,
@@ -139,5 +143,161 @@ export async function createDestination(
   return {
     status: "success",
     message: "Destino criado com sucesso!",
+  };
+}
+
+export async function updateDestination(
+  _prevState: DestinationFormState,
+  formData: FormData
+): Promise<DestinationFormState> {
+  const session = await auth();
+  const user = session?.user;
+
+  if (!user?.id) {
+    return {
+      status: "error",
+      message: "Você precisa estar autenticado para editar um destino.",
+    };
+  }
+
+  const destinationIdRaw = formData.get("destinationId");
+  const destinationId = Number(destinationIdRaw);
+
+  if (!destinationIdRaw || Number.isNaN(destinationId) || !Number.isInteger(destinationId)) {
+    return {
+      status: "error",
+      message: "Destino inválido informado para edição.",
+    };
+  }
+
+  const photosRaw = String(formData.get("photos") ?? "");
+  const manualPhotos = photosRaw
+    .split(/\r?\n|,/)
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  const photoFiles = formData
+    .getAll("photoFiles")
+    .filter((value): value is File => value instanceof File && value.size > 0);
+
+  const uploadedPhotos: string[] = [];
+  const uploadErrors: string[] = [];
+
+  for (const file of photoFiles) {
+    try {
+      assertImage(file);
+      const ext = sanitizeExt(file.type);
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const imageUrl = await storeDestinationPhoto(String(user.id), ext, buffer, {
+        originalName: file.name,
+      });
+      uploadedPhotos.push(imageUrl);
+    } catch (error) {
+      console.error("Erro ao enviar foto de destino", error);
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível enviar o arquivo.";
+      uploadErrors.push(`${file.name || "Arquivo"}: ${message}`);
+    }
+  }
+
+  if (uploadErrors.length > 0) {
+    return {
+      status: "error",
+      message: "Não foi possível enviar todas as imagens selecionadas.",
+      errors: { photoFiles: uploadErrors },
+    };
+  }
+
+  const photos = Array.from(new Set([...manualPhotos, ...uploadedPhotos]));
+
+  const parsed = destinationFormSchema.safeParse({
+    name: formData.get("name"),
+    city: formData.get("city"),
+    departureLocation: formData.get("departureLocation"),
+    description: formData.get("description"),
+    price: formData.get("price"),
+    peopleCount: formData.get("peopleCount"),
+    totalSeats: formData.get("totalSeats"),
+    startDate: formData.get("startDate"),
+    endDate: formData.get("endDate"),
+    rating: formData.get("rating"),
+    photos,
+  });
+
+  if (!parsed.success) {
+    const errors = parsed.error.flatten().fieldErrors;
+    return {
+      status: "error",
+      message: "Revise os campos destacados antes de salvar.",
+      errors,
+    };
+  }
+
+  if (!prisma) {
+    return {
+      status: "error",
+      message: "Banco de dados indisponível no momento. Tente novamente mais tarde.",
+    };
+  }
+
+  try {
+    const existingDestination = await prisma.destination.findUnique({
+      where: { id: destinationId },
+      select: { id: true, userId: true },
+    });
+
+    if (!existingDestination) {
+      return {
+        status: "error",
+        message: "Destino não encontrado.",
+      };
+    }
+
+    if (
+      existingDestination.userId !== Number(user.id) &&
+      user.role !== "admin"
+    ) {
+      return {
+        status: "error",
+        message: "Você não tem permissão para editar este destino.",
+      };
+    }
+
+    await prisma.destination.update({
+      where: { id: destinationId },
+      data: {
+        name: parsed.data.name,
+        city: parsed.data.city,
+        departureLocation: parsed.data.departureLocation,
+        description: parsed.data.description,
+        price: new Prisma.Decimal(parsed.data.price),
+        peopleCount: parsed.data.peopleCount,
+        totalSeats: parsed.data.totalSeats,
+        startDate: parsed.data.startDate,
+        endDate: parsed.data.endDate,
+        rating: parsed.data.rating,
+        photos: parsed.data.photos,
+      },
+    });
+  } catch (error) {
+    console.error("Erro ao atualizar destino", error);
+    return {
+      status: "error",
+      message: "Não foi possível atualizar o destino. Tente novamente mais tarde.",
+    };
+  }
+
+  revalidatePath("/destinos");
+  revalidatePath("/");
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/destinos");
+  revalidatePath(`/dashboard/destinos/${destinationId}/editar`);
+
+  return {
+    status: "success",
+    message: "Destino atualizado com sucesso!",
   };
 }

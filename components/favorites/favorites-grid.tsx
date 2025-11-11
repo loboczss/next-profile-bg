@@ -65,6 +65,7 @@ export function FavoritesGrid({ initialDestinations }: FavoritesGridProps) {
           >
             <DestinationCard
               destination={{ ...destination, isFavorite: true }}
+              canFavorite
               onFavoriteChange={handleFavoriteChange}
             />
           </motion.div>

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PURCHASE_STATUS_LABELS, serializePurchase, type SerializedPurchase } from "@/lib/purchases";
+import { PAYMENT_STATUS_LABELS, type PaymentStatusValue } from "@/lib/payments";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -42,6 +43,8 @@ export default async function MinhasComprasPage() {
           email: true,
         },
       },
+      passengers: true,
+      payment: true,
     },
     orderBy: { dataCompra: "desc" },
   });
@@ -56,6 +59,12 @@ export default async function MinhasComprasPage() {
   const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "long",
+    year: "numeric",
+  });
+
+  const birthDateFormatter = new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
     year: "numeric",
   });
 
@@ -102,13 +111,42 @@ export default async function MinhasComprasPage() {
                 purchase.status === "EMITIDA"
                   ? "bg-emerald-100 text-emerald-700"
                   : "bg-amber-100 text-amber-700";
+              const paymentStatus = (purchase.payment?.status ?? "PENDENTE") as PaymentStatusValue;
+              const paymentLabel = purchase.payment
+                ? PAYMENT_STATUS_LABELS[paymentStatus]
+                : PAYMENT_STATUS_LABELS.PENDENTE;
+              const paymentBadgeColor =
+                paymentStatus === "CONCLUIDO"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : paymentStatus === "FALHOU"
+                    ? "bg-rose-100 text-rose-700"
+                    : "bg-amber-100 text-amber-700";
               const observacao = purchase.observacao.trim();
+              const passengerCountLabel = `${purchase.seatCount} ${
+                purchase.seatCount === 1 ? "vaga" : "vagas"
+              }`;
+              const hasPassengers = purchase.passengers.length > 0;
 
               return (
                 <article
                   key={purchase.id}
                   className="rounded-3xl border border-slate-200/70 bg-white/90 p-6 shadow-lg transition hover:-translate-y-1 hover:shadow-xl"
                 >
+                  <div className="mb-4 flex items-center justify-between">
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold",
+                        paymentBadgeColor
+                      )}
+                    >
+                      {paymentLabel}
+                    </span>
+                    {purchase.payment?.externalReference ? (
+                      <span className="text-[11px] font-medium uppercase tracking-[0.2em] text-slate-400">
+                        Ref.: {purchase.payment.externalReference}
+                      </span>
+                    ) : null}
+                  </div>
                   <div className="flex flex-col gap-6 sm:flex-row">
                     <div className="relative h-40 w-full overflow-hidden rounded-2xl bg-slate-100 shadow-inner sm:h-32 sm:w-48">
                       <Image
@@ -144,6 +182,32 @@ export default async function MinhasComprasPage() {
                         <div className="flex flex-col">
                           <dt className="text-xs uppercase tracking-[0.25em] text-slate-400">Valor estimado</dt>
                           <dd className="font-semibold text-slate-800">{currencyFormatter.format(purchase.package.price)}</dd>
+                        </div>
+                        <div className="flex flex-col">
+                          <dt className="text-xs uppercase tracking-[0.25em] text-slate-400">Vagas adquiridas</dt>
+                          <dd className="font-semibold text-slate-800">{passengerCountLabel}</dd>
+                        </div>
+                        <div className="flex flex-col sm:col-span-2">
+                          <dt className="text-xs uppercase tracking-[0.25em] text-slate-400">Passageiros</dt>
+                          <dd className="mt-1 space-y-2">
+                            {hasPassengers ? (
+                              purchase.passengers.map((passenger) => (
+                                <div
+                                  key={passenger.id}
+                                  className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600"
+                                >
+                                  <p className="font-semibold text-slate-800">{passenger.fullName}</p>
+                                  <p className="text-xs text-slate-500">
+                                    CPF: {passenger.cpf} • Nascimento: {birthDateFormatter.format(new Date(passenger.birthDate))}
+                                  </p>
+                                  <p className="text-xs text-slate-500">Telefone: {passenger.phone}</p>
+                                  <p className="text-xs text-slate-500">E-mail: {passenger.email}</p>
+                                </div>
+                              ))
+                            ) : (
+                              <span className="text-xs text-slate-500">Dados dos passageiros indisponíveis.</span>
+                            )}
+                          </dd>
                         </div>
                         <div className="flex flex-col sm:col-span-2">
                           <dt className="text-xs uppercase tracking-[0.25em] text-slate-400">Observação do time</dt>

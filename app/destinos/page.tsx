@@ -22,6 +22,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 
+import { Prisma } from "@prisma/client";
+
 import { DestinationGrid } from "@/components/destinations/destination-grid";
 import {
   type DestinationDeleteState,
@@ -90,6 +92,18 @@ async function deleteDestination(
       where: { id: destinationId },
     });
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientInitializationError) {
+      console.warn(
+        "Não foi possível conectar ao banco de dados para excluir o destino.",
+        error.message
+      );
+      return {
+        status: "error",
+        message:
+          "Não foi possível conectar ao banco de dados. Tente novamente em alguns instantes.",
+      };
+    }
+
     console.error("Erro ao excluir destino", error);
     return {
       status: "error",
@@ -123,7 +137,14 @@ export default async function DestinationsPage() {
       });
       favorites.forEach((favorite) => favoriteDestinationIds.add(favorite.destinationId));
     } catch (error) {
-      console.error("Erro ao buscar favoritos do usuário", error);
+      if (error instanceof Prisma.PrismaClientInitializationError) {
+        console.warn(
+          "Não foi possível conectar ao banco de dados para carregar os favoritos. Eles serão exibidos vazios.",
+          error.message
+        );
+      } else {
+        console.error("Erro ao buscar favoritos do usuário", error);
+      }
     }
   } else if (!prismaClient) {
     console.error("Prisma Client não está disponível. Lista de favoritos carregada vazia.");
@@ -139,7 +160,14 @@ export default async function DestinationsPage() {
         isFavorite: favoriteDestinationIds.has(destination.id),
       }));
     } catch (error) {
-      console.error("Erro ao buscar destinos", error);
+      if (error instanceof Prisma.PrismaClientInitializationError) {
+        console.warn(
+          "Não foi possível conectar ao banco de dados para carregar os destinos. Exibindo a página sem dados dinâmicos.",
+          error.message
+        );
+      } else {
+        console.error("Erro ao buscar destinos", error);
+      }
       destinationsError = true;
     }
   } else {

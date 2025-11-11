@@ -8,18 +8,18 @@ datasource db {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  username     String   @unique
-  fullName     String
-  email        String   @unique
-  role         String   @default("user")
-  passwordHash String
-  imageUrl     String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  destinations Destination[]
-  favorites    Favorite[]
-  purchases    Purchase[]
+  id               Int                @id @default(autoincrement())
+  username         String             @unique
+  fullName         String
+  email            String             @unique
+  role             String             @default("user")
+  passwordHash     String
+  imageUrl         String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  destinations     Destination[]
+  favorites        Favorite[]
+  purchases        Purchase[]
   activityAuthored AdminActivityLog[] @relation("activity_actor")
   activityTarget   AdminActivityLog[] @relation("activity_target")
 }
@@ -39,9 +39,9 @@ enum AdminActivityAction {
 }
 
 model GlobalSetting {
-  id                Int                     @id
+  id                Int                   @id
   backgroundUrl     String?
-  backgroundMode    BackgroundDisplayMode   @default(ALL)
+  backgroundMode    BackgroundDisplayMode @default(ALL)
   backgroundGroup   String?
   backgroundImageId Int?
 
@@ -61,18 +61,20 @@ model BackgroundImage {
 }
 
 model Destination {
-  id           Int       @id @default(autoincrement())
-  name         String
-  city         String
-  description  String
-  price        Decimal
-  peopleCount  Int
-  startDate    DateTime
-  endDate      DateTime
-  rating       Float
-  photos       String[]
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id                 Int       @id @default(autoincrement())
+  name               String
+  city               String
+  departureLocation  String    @default("A definir") // evita erro ao migrar com dados existentes
+  description        String
+  price              Decimal   @db.Decimal(10, 2)
+  peopleCount        Int
+  totalSeats         Int       @default(0)           // idem
+  startDate          DateTime
+  endDate            DateTime
+  rating             Float
+  photos             String[]
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId Int
@@ -113,18 +115,61 @@ enum PurchaseStatus {
   EMITIDA
 }
 
+enum PaymentMethod {
+  CARTAO
+  PIX
+  BOLETO
+  CARNE
+}
+
+enum PaymentStatus {
+  PENDENTE
+  CONCLUIDO
+  FALHOU
+}
+
 model Purchase {
   id         Int            @id @default(autoincrement())
   userId     Int
   packageId  Int
+  seatCount  Int            @default(1) // evita erro ao migrar
   status     PurchaseStatus @default(AGUARDANDO_EMISSAO)
   observacao String         @default("")
   dataCompra DateTime       @default(now())
 
-  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  package Destination @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  package   Destination @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  passengers Passenger[]
+  payment    Payment?
 
   @@index([userId])
   @@index([packageId])
   @@index([status])
+}
+
+model Passenger {
+  id         Int      @id @default(autoincrement())
+  purchaseId Int
+  fullName   String
+  cpf        String
+  birthDate  DateTime
+  phone      String
+  email      String
+
+  purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+
+  @@index([purchaseId])
+}
+
+model Payment {
+  id                Int            @id @default(autoincrement())
+  purchaseId        Int            @unique
+  method            PaymentMethod
+  status            PaymentStatus  @default(PENDENTE)
+  amount            Decimal        @db.Decimal(10, 2)
+  externalReference String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
 }

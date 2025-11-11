@@ -95,10 +95,12 @@ async function main() {
       data: {
         name: destinationName,
         city: "Fortaleza - CE",
+        departureLocation: "Aeroporto Internacional de Fortaleza",
         description:
           "Uma experiência completa em um paraíso tropical com hospedagem premium, passeios guiados e gastronomia local.",
         price: new Prisma.Decimal(2499.9),
         peopleCount: 2,
+        totalSeats: 40,
         startDate: new Date("2025-01-15T12:00:00.000Z"),
         endDate: new Date("2025-01-22T12:00:00.000Z"),
         rating: 4.8,

@@ -27,6 +27,10 @@ export const destinationFormSchema = z
   .object({
     name: z.string().min(1, "O nome do destino é obrigatório.").trim(),
     city: z.string().min(1, "A cidade do destino é obrigatória.").trim(),
+    departureLocation: z
+      .string()
+      .min(1, "Informe o local de saída do destino.")
+      .trim(),
     description: z
       .string()
       .min(1, "A descrição do destino é obrigatória.")
@@ -40,6 +44,11 @@ export const destinationFormSchema = z
       .number({ invalid_type_error: "Informe a quantidade de pessoas." })
       .int("A quantidade de pessoas deve ser um número inteiro.")
       .min(1, "A quantidade mínima é 1."),
+    totalSeats: z
+      .coerce
+      .number({ invalid_type_error: "Informe a quantidade total de vagas." })
+      .int("A quantidade total de vagas deve ser um número inteiro.")
+      .min(1, "Informe pelo menos uma vaga disponível."),
     startDate: z.coerce.date({ invalid_type_error: "Data de ida inválida." }),
     endDate: z.coerce.date({ invalid_type_error: "Data de volta inválida." }),
     rating: z
@@ -90,9 +99,11 @@ export type SerializedDestination = {
   id: number;
   name: string;
   city: string;
+  departureLocation: string;
   description: string;
   price: number;
   peopleCount: number;
+  totalSeats: number;
   startDate: string;
   endDate: string;
   rating: number;
@@ -110,9 +121,11 @@ export function serializeDestination(
     id: destination.id,
     name: destination.name,
     city: destination.city,
+    departureLocation: destination.departureLocation,
     description: destination.description,
     price: Number(destination.price),
     peopleCount: destination.peopleCount,
+    totalSeats: destination.totalSeats,
     startDate: destination.startDate.toISOString(),
     endDate: destination.endDate.toISOString(),
     rating: destination.rating,

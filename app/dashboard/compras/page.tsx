@@ -57,6 +57,8 @@ export default async function DashboardPurchasesPage() {
           email: true,
         },
       },
+      passengers: true,
+      payment: true,
     },
     orderBy: { dataCompra: "desc" },
   });

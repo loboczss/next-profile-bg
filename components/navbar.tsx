@@ -96,7 +96,7 @@ function UserAvatar({
   return (
     <span
       className={cn(
-        "relative grid place-items-center overflow-hidden rounded-full border border-slate-200 bg-white text-slate-500",
+        "relative grid place-items-center overflow-hidden rounded-full border border-[color:var(--brand-secondary-soft)] bg-white text-[color:var(--brand-secondary)]/70",
         dimension,
       )}
       aria-hidden
@@ -160,15 +160,15 @@ function UserMenu({
         onClick={onToggle}
         aria-expanded={isOpen}
         aria-controls="user-menu-panel"
-        className="group inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md hover:text-slate-900 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500 active:translate-y-[1px]"
+        className="group inline-flex items-center gap-2 rounded-full border border-[color:var(--brand-secondary-soft)] bg-white px-3 py-1.5 text-sm font-medium text-[color:var(--brand-secondary)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[color:var(--brand-primary)]/60 hover:shadow-md hover:text-[color:var(--brand-secondary)] focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brand-primary)] active:translate-y-[1px]"
       >
         <UserAvatar image={user?.image} name={userDisplayName} size="sm" />
         <span className="hidden text-left leading-tight sm:block">
-          <span className="block text-[11px] uppercase tracking-wide text-slate-500">Olá</span>
-          <span className="block font-semibold text-slate-800">{userDisplayName.split(" ")[0]}</span>
+          <span className="block text-[11px] uppercase tracking-wide text-[color:var(--brand-secondary)]/60">Olá</span>
+          <span className="block font-semibold text-[color:var(--brand-secondary)]">{userDisplayName.split(" ")[0]}</span>
         </span>
         <ChevronDown
-          className={cn("h-4 w-4 text-slate-500 transition-transform", isOpen && "rotate-180")}
+          className={cn("h-4 w-4 text-[color:var(--brand-secondary)]/60 transition-transform", isOpen && "rotate-180")}
           aria-hidden
         />
       </button>
@@ -182,13 +182,13 @@ function UserMenu({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.16, ease: [0.4, 0, 0.2, 1] }}
-            className="absolute right-0 top-[calc(100%+12px)] z-50 w-64 rounded-2xl border border-slate-200 bg-white p-3 text-sm text-slate-700 shadow-lg"
+            className="absolute right-0 top-[calc(100%+12px)] z-50 w-64 rounded-2xl border border-[color:var(--brand-secondary-soft)] bg-white p-3 text-sm text-[color:var(--brand-secondary)]/80 shadow-lg shadow-[rgba(0,27,114,0.12)]"
           >
-            <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
+            <div className="flex items-center gap-3 rounded-xl bg-[color-mix(in_srgb,var(--brand-secondary)_8%,white)] p-3">
               <UserAvatar image={user?.image} name={userDisplayName} />
               <div className="space-y-0.5">
-                <p className="font-semibold text-slate-900">{userDisplayName}</p>
-                <p className="text-xs text-slate-500">{user?.email}</p>
+                <p className="font-semibold text-[color:var(--brand-secondary)]">{userDisplayName}</p>
+                <p className="text-xs text-[color:var(--brand-secondary)]/60">{user?.email}</p>
               </div>
             </div>
 
@@ -196,29 +196,29 @@ function UserMenu({
               <Link
                 href="/usuario"
                 onClick={onClose}
-                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-[color:var(--brand-secondary)] transition-colors hover:bg-[color-mix(in_srgb,var(--brand-secondary)_10%,white)] hover:text-[color:var(--brand-secondary)] focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brand-secondary)]"
               >
-                <User className="h-4 w-4 text-blue-600" aria-hidden />
+                <User className="h-4 w-4 text-[color:var(--brand-primary)]" aria-hidden />
                 Meu perfil
               </Link>
               <Link
                 href="/minhas-compras"
                 onClick={onClose}
-                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-[color:var(--brand-secondary)] transition-colors hover:bg-[color-mix(in_srgb,var(--brand-secondary)_10%,white)] hover:text-[color:var(--brand-secondary)] focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brand-secondary)]"
               >
-                <ShoppingBag className="h-4 w-4 text-emerald-500" aria-hidden />
+                <ShoppingBag className="h-4 w-4 text-[color:var(--brand-primary)]" aria-hidden />
                 Minhas compras
               </Link>
               <Link
                 href="/favoritos"
                 onClick={onClose}
-                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-[color:var(--brand-secondary)] transition-colors hover:bg-[color-mix(in_srgb,var(--brand-secondary)_10%,white)] hover:text-[color:var(--brand-secondary)] focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brand-secondary)]"
               >
-                <Heart className="h-4 w-4 text-rose-500" aria-hidden />
+                <Heart className="h-4 w-4 text-[color:var(--brand-primary)]" aria-hidden />
                 <span className="flex items-center gap-2">
                   Favoritos
                   {hasFavorites ? (
-                    <span className="inline-flex min-w-[1.5rem] items-center justify-center rounded-full bg-rose-100 px-2 text-xs font-semibold text-rose-600">
+                    <span className="inline-flex min-w-[1.5rem] items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--brand-primary)_25%,white)] px-2 text-xs font-semibold text-[color:var(--brand-primary)]">
                       {favoriteBadgeLabel}
                     </span>
                   ) : null}
@@ -232,7 +232,7 @@ function UserMenu({
                 onClose();
                 onSignOut();
               }}
-              className="mt-3 flex w-full items-center gap-2 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm font-semibold text-red-600 transition-colors hover:border-red-200 hover:bg-red-100 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-red-500 active:translate-y-[1px]"
+              className="mt-3 flex w-full items-center gap-2 rounded-lg border border-[color:var(--brand-primary)]/30 bg-[color-mix(in_srgb,var(--brand-primary)_18%,white)] px-3 py-2 text-sm font-semibold text-[color:var(--brand-primary)] transition-colors hover:border-[color:var(--brand-primary)]/40 hover:bg-[color-mix(in_srgb,var(--brand-primary)_25%,white)] focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brand-primary)] active:translate-y-[1px]"
             >
               <LogOut className="h-4 w-4" aria-hidden />
               Sair
@@ -259,19 +259,19 @@ function DesktopNavigation({ navigationLinks, pathname }: { navigationLinks: Nav
             aria-current={isActive ? "page" : undefined}
             className={cn(
               "group relative inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-medium transition-all duration-200",
-              "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500",
-              isActive && "bg-slate-100 text-slate-900 shadow-sm",
+              "text-[color:var(--brand-secondary)]/70 hover:text-[color:var(--brand-secondary)] hover:bg-[color-mix(in_srgb,var(--brand-secondary)_8%,white)] focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brand-secondary)]",
+              isActive && "bg-[color-mix(in_srgb,var(--brand-secondary)_12%,white)] text-[color:var(--brand-secondary)] shadow-sm",
             )}
           >
             <Icon
-              className="h-4 w-4 text-slate-400 transition-transform duration-200 group-hover:-translate-y-0.5"
+              className="h-4 w-4 text-[color:var(--brand-secondary)]/50 transition-transform duration-200 group-hover:-translate-y-0.5"
               aria-hidden
             />
             <span className="tracking-wide">{label}</span>
             {isActive ? (
               <motion.span
                 layoutId="desktop-active-indicator"
-                className="absolute inset-x-3 bottom-1 h-0.5 rounded-full bg-blue-600"
+                className="absolute inset-x-3 bottom-1 h-0.5 rounded-full bg-[color:var(--brand-primary)]"
                 transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
               />
             ) : null}
@@ -323,7 +323,7 @@ function MobileNavigation({
       {isOpen ? (
         <>
           <motion.div
-            className="fixed inset-0 z-40 bg-slate-900/20 backdrop-blur-sm"
+            className="fixed inset-0 z-40 bg-[rgba(0,16,58,0.55)] backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -340,14 +340,14 @@ function MobileNavigation({
             aria-modal="true"
             aria-label="Menu mobile"
             id={MOBILE_MENU_ID}
-            className="fixed inset-y-0 right-0 z-50 w-full max-w-xs overflow-y-auto border-l border-slate-200 bg-white px-4 pb-6 pt-4 shadow-xl focus:outline-none"
+            className="fixed inset-y-0 right-0 z-50 w-full max-w-xs overflow-y-auto border-l border-[color:var(--brand-secondary-soft)] bg-white px-4 pb-6 pt-4 shadow-xl focus:outline-none"
           >
             <div className="mb-4 flex items-center justify-between">
-              <span className="text-sm font-semibold uppercase tracking-wide text-slate-500">Menu</span>
+              <span className="text-sm font-semibold uppercase tracking-wide text-[color:var(--brand-secondary)]/60">Menu</span>
               <button
                 type="button"
                 onClick={onClose}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[color:var(--brand-secondary-soft)] text-[color:var(--brand-secondary)] transition-colors hover:border-[color:var(--brand-primary)]/50 hover:text-[color:var(--brand-secondary)] focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brand-secondary)]"
               >
                 <X className="h-5 w-5" aria-hidden />
                 <span className="sr-only">Fechar menu</span>
@@ -365,13 +365,13 @@ function MobileNavigation({
                     onClick={onClose}
                     aria-current={isActive ? "page" : undefined}
                     className={cn(
-                      "flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 text-base font-medium transition-colors",
-                      "text-slate-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500",
+                      "flex items-center gap-3 rounded-xl border border-[color:var(--brand-secondary-soft)] px-4 py-3 text-base font-medium transition-colors",
+                      "text-[color:var(--brand-secondary)] hover:border-[color:var(--brand-primary)]/50 hover:bg-[color-mix(in_srgb,var(--brand-secondary)_10%,white)] hover:text-[color:var(--brand-secondary)] focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brand-secondary)]",
                       "active:translate-y-[1px]",
-                      isActive && "border-blue-300 bg-blue-50 text-blue-700",
+                      isActive && "border-[color:var(--brand-primary)]/50 bg-[color-mix(in_srgb,var(--brand-secondary)_12%,white)] text-[color:var(--brand-secondary)]",
                     )}
                   >
-                    <Icon className="h-5 w-5 text-slate-500" aria-hidden />
+                    <Icon className="h-5 w-5 text-[color:var(--brand-secondary)]/60" aria-hidden />
                     <span className="flex items-center gap-2">{label}</span>
                   </Link>
                 );
@@ -379,42 +379,42 @@ function MobileNavigation({
             </nav>
 
             {isAuthenticated ? (
-              <div className="mt-6 space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="mt-6 space-y-3 rounded-2xl border border-[color:var(--brand-secondary-soft)] bg-[color-mix(in_srgb,var(--brand-secondary)_8%,white)] p-4">
                 <div className="flex items-center gap-3">
                   <UserAvatar image={user?.image} name={userDisplayName} />
                   <div className="space-y-0.5">
-                    <p className="font-semibold text-slate-900">{userDisplayName}</p>
-                    <p className="text-xs text-slate-500">{user?.email}</p>
+                    <p className="font-semibold text-[color:var(--brand-secondary)]">{userDisplayName}</p>
+                    <p className="text-xs text-[color:var(--brand-secondary)]/60">{user?.email}</p>
                   </div>
                 </div>
 
                 <div className="grid gap-2 text-sm">
-                <Link
-                  href="/usuario"
-                  onClick={onClose}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500"
-                >
-                  <User className="h-4 w-4 text-blue-600" aria-hidden />
-                  Meu perfil
-                </Link>
-                <Link
-                  href="/minhas-compras"
-                  onClick={onClose}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500"
-                >
-                  <ShoppingBag className="h-4 w-4 text-emerald-500" aria-hidden />
-                  Minhas compras
-                </Link>
-                <Link
-                  href="/favoritos"
-                  onClick={onClose}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500"
-                >
-                    <Heart className="h-4 w-4 text-rose-500" aria-hidden />
+                  <Link
+                    href="/usuario"
+                    onClick={onClose}
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-[color:var(--brand-secondary)] transition-colors hover:bg-[color-mix(in_srgb,var(--brand-secondary)_12%,white)] hover:text-[color:var(--brand-secondary)] focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brand-secondary)]"
+                  >
+                    <User className="h-4 w-4 text-[color:var(--brand-primary)]" aria-hidden />
+                    Meu perfil
+                  </Link>
+                  <Link
+                    href="/minhas-compras"
+                    onClick={onClose}
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-[color:var(--brand-secondary)] transition-colors hover:bg-[color-mix(in_srgb,var(--brand-secondary)_12%,white)] hover:text-[color:var(--brand-secondary)] focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brand-secondary)]"
+                  >
+                    <ShoppingBag className="h-4 w-4 text-[color:var(--brand-primary)]" aria-hidden />
+                    Minhas compras
+                  </Link>
+                  <Link
+                    href="/favoritos"
+                    onClick={onClose}
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-[color:var(--brand-secondary)] transition-colors hover:bg-[color-mix(in_srgb,var(--brand-secondary)_12%,white)] hover:text-[color:var(--brand-secondary)] focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brand-secondary)]"
+                  >
+                    <Heart className="h-4 w-4 text-[color:var(--brand-primary)]" aria-hidden />
                     <span className="flex items-center gap-2">
                       Favoritos
                       {hasFavorites ? (
-                        <span className="inline-flex min-w-[1.5rem] items-center justify-center rounded-full bg-rose-100 px-2 text-xs font-semibold text-rose-600">
+                        <span className="inline-flex min-w-[1.5rem] items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--brand-primary)_25%,white)] px-2 text-xs font-semibold text-[color:var(--brand-primary)]">
                           {favoriteBadgeLabel}
                         </span>
                       ) : null}
@@ -426,19 +426,19 @@ function MobileNavigation({
                   <Link
                     href={adminLink.href}
                     onClick={onClose}
-                    className="group flex items-center justify-between gap-2.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                    className="group flex items-center justify-between gap-2.5 rounded-lg border border-[color:var(--brand-secondary-soft)] bg-white px-2.5 py-1.5 text-sm font-medium text-[color:var(--brand-secondary)] transition-colors hover:border-[color:var(--brand-primary)]/50 hover:bg-[color-mix(in_srgb,var(--brand-secondary)_10%,white)] focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brand-secondary)]"
                   >
                     <span className="flex items-center gap-1.5">
-                      <span className="grid h-7 w-7 place-items-center rounded-lg bg-slate-100 text-slate-600 transition-colors group-hover:bg-slate-200">
+                      <span className="grid h-7 w-7 place-items-center rounded-lg bg-[color-mix(in_srgb,var(--brand-secondary)_12%,white)] text-[color:var(--brand-secondary)] transition-colors group-hover:bg-[color-mix(in_srgb,var(--brand-primary)_10%,white)]">
                         <AdminIcon className="h-4 w-4" aria-hidden />
                       </span>
                       <span className="flex flex-col text-left leading-tight">
                         <span className="font-semibold">{adminLink.label}</span>
-                        <span className="text-xs font-medium text-slate-500">Gerencie a plataforma</span>
+                        <span className="text-xs font-medium text-[color:var(--brand-secondary)]/60">Gerencie a plataforma</span>
                       </span>
                     </span>
                     <ArrowUpRight
-                      className="h-4 w-4 text-slate-500 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                      className="h-4 w-4 text-[color:var(--brand-secondary)]/60 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
                       aria-hidden
                     />
                   </Link>
@@ -450,7 +450,7 @@ function MobileNavigation({
                     onClose();
                     onSignOut();
                   }}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm font-semibold text-red-600 transition-colors hover:border-red-200 hover:bg-red-100 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-red-500"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-[color:var(--brand-primary)]/30 bg-[color-mix(in_srgb,var(--brand-primary)_18%,white)] px-3 py-2 text-sm font-semibold text-[color:var(--brand-primary)] transition-colors hover:border-[color:var(--brand-primary)]/45 hover:bg-[color-mix(in_srgb,var(--brand-primary)_25%,white)] focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brand-primary)]"
                 >
                   <LogOut className="h-4 w-4" aria-hidden />
                   Sair
@@ -461,7 +461,7 @@ function MobileNavigation({
                 <Link
                   href="/login"
                   onClick={onClose}
-                  className="flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-3 text-base font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-700 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                  className="flex items-center justify-center gap-2 rounded-lg border border-[color:var(--brand-secondary-soft)] bg-white px-3 py-3 text-base font-semibold text-[color:var(--brand-secondary)] transition-colors hover:border-[color:var(--brand-primary)]/50 hover:text-[color:var(--brand-secondary)] focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brand-secondary)]"
                 >
                   <LogIn className="h-5 w-5" aria-hidden />
                   Entrar
@@ -469,7 +469,7 @@ function MobileNavigation({
                 <Link
                   href="/signup"
                   onClick={onClose}
-                  className="flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-3 text-base font-semibold text-white transition-colors hover:bg-blue-700 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                  className="flex items-center justify-center gap-2 rounded-lg bg-[color:var(--brand-primary)] px-3 py-3 text-base font-semibold text-white transition-colors hover:bg-[var(--brand-primary-strong)] focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brand-primary)]"
                 >
                   Criar conta
                 </Link>
@@ -589,8 +589,8 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
   }, []);
 
   const headerClasses = cn(
-    "fixed inset-x-0 top-0 z-50 border-b border-slate-200 transition-[padding,background,box-shadow] duration-200",
-    isScrolled ? "bg-white/95 backdrop-blur-md shadow-[0_4px_18px_rgba(15,23,42,0.08)] py-2.5" : "bg-white py-4",
+    "fixed inset-x-0 top-0 z-50 border-b border-[color:var(--brand-secondary-soft)] transition-[padding,background,box-shadow] duration-200",
+    isScrolled ? "bg-white/95 backdrop-blur-md shadow-[0_6px_24px_rgba(0,16,58,0.12)] py-2.5" : "bg-white/98 py-4",
   );
 
   return (
@@ -598,7 +598,7 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <Link
           href="/"
-          className="flex shrink-0 items-center gap-3 rounded-full px-2 py-1.5 text-slate-800 transition-colors hover:text-blue-700 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+          className="flex shrink-0 items-center gap-3 rounded-full px-2 py-1.5 text-[color:var(--brand-secondary)] transition-colors hover:text-[color:var(--brand-primary)] focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brand-primary)]"
         >
           <Image src="/evastur-logo.svg" alt="Evastur" width={128} height={32} priority className="h-6 w-auto" />
           
@@ -613,8 +613,8 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
                 <Link
                   href={adminLink.href}
                   className={cn(
-                    "group relative hidden items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 via-blue-500 to-sky-500 px-3 py-1.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-blue-500/35 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500 lg:inline-flex",
-                    pathname.startsWith("/dashboard") && "ring-2 ring-offset-2 ring-offset-white ring-blue-400",
+                    "group relative hidden items-center gap-2 rounded-full bg-gradient-to-r from-[#001b72] via-[#2436ad] to-[#ea002a] px-3 py-1.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(0,27,114,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[rgba(234,0,42,0.4)] focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brand-secondary)] lg:inline-flex",
+                    pathname.startsWith("/dashboard") && "ring-2 ring-offset-2 ring-offset-white ring-[color:var(--brand-primary)]/70",
                   )}
                 >
                   <span className="flex size-6 items-center justify-center rounded-full bg-white/20 text-white transition-all group-hover:bg-white/25">
@@ -648,8 +648,8 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
               <Link
                 href="/login"
                 className={cn(
-                  "inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-sm hover:text-blue-700 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500",
-                  pathname.startsWith("/login") && "border-blue-300 text-blue-700",
+                  "inline-flex items-center gap-2 rounded-full border border-[color:var(--brand-secondary-soft)] bg-white px-4 py-2 text-sm font-semibold text-[color:var(--brand-secondary)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[color:var(--brand-primary)]/50 hover:shadow-sm hover:text-[color:var(--brand-secondary)] focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brand-secondary)]",
+                  pathname.startsWith("/login") && "border-[color:var(--brand-primary)]/60",
                 )}
               >
                 <LogIn className="h-4 w-4" aria-hidden />
@@ -657,7 +657,7 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
               </Link>
               <Link
                 href="/signup"
-                className="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-sm focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                className="inline-flex items-center justify-center rounded-full bg-[color:var(--brand-primary)] px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--brand-primary-strong)] hover:shadow-sm focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brand-primary)]"
               >
                 Criar conta
               </Link>
@@ -666,7 +666,7 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
 
           <button
             type="button"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:text-blue-700 focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-blue-500 lg:hidden"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[color:var(--brand-secondary-soft)] text-[color:var(--brand-secondary)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[color:var(--brand-primary)]/50 hover:text-[color:var(--brand-secondary)] focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brand-secondary)] lg:hidden"
             aria-label={mobileMenuOpen ? "Fechar menu" : "Abrir menu"}
             aria-expanded={mobileMenuOpen}
             aria-controls={MOBILE_MENU_ID}

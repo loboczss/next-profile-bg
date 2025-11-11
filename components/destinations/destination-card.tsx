@@ -1,402 +1,510 @@
 "use client";
 
+import Link from "next/link";
 import Image from "next/image";
-import { useMemo, useState } from "react";
-
+import type { KeyboardEvent, MouseEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import {
-  BadgeCheck,
-  CalendarRange,
-  Camera,
-  ChevronLeft,
-  ChevronRight,
+  CalendarDays,
+  Heart,
+  Loader2,
   MapPin,
-  Plane,
-  Sparkles,
+  PlaneTakeoff,
   Star,
+  Ticket,
+  Trash2,
   Users,
 } from "lucide-react";
+import { toast } from "sonner";
 
+import {
+  destinationDeleteInitialState,
+  type DestinationDeleteAction,
+  type SerializedDestination,
+} from "@/lib/destinations";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogClose,
 } from "@/components/ui/dialog";
-import type { SerializedDestination } from "@/lib/destinations";
-import { cn } from "@/lib/utils";
-
 import { PurchaseButton } from "@/components/purchases/purchase-button";
-import { FavoriteButton } from "./favorite-button";
+
+const currencyFormatter = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
+
+function formatCurrency(value: number) {
+  if (!Number.isFinite(value)) {
+    return "R$ 0";
+  }
+
+  return currencyFormatter.format(Math.max(0, Math.round(value)));
+}
 
 interface DestinationCardProps {
   destination: SerializedDestination;
   canFavorite?: boolean;
   onFavoriteChange?: (destinationId: number, isFavorite: boolean) => void;
+  onDelete?: DestinationDeleteAction;
   className?: string;
-  fullHeight?: boolean;
-  isActive?: boolean;
 }
 
 export function DestinationCard({
   destination,
-  canFavorite = true,
+  canFavorite = false,
   onFavoriteChange,
+  onDelete,
   className,
-  fullHeight = false,
-  isActive = false,
 }: DestinationCardProps) {
+  const [isFavorite, setIsFavorite] = useState(Boolean(destination.isFavorite));
+  const [isPending, startTransition] = useTransition();
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
-  const photos = destination.photos.length > 0 ? destination.photos : ["/placeholder.jpg"];
-  const initialFavorite = Boolean(destination.isFavorite);
+  useEffect(() => {
+    setIsFavorite(Boolean(destination.isFavorite));
+  }, [destination.isFavorite]);
 
-  const priceFormatter = useMemo(
-    () =>
-      new Intl.NumberFormat("pt-BR", {
-        style: "currency",
-        currency: "BRL",
-        minimumFractionDigits: 2,
-      }),
-    []
+  const imageUrl = useMemo(() => {
+    const validPhoto = destination.photos.find((photo) => photo.trim());
+
+    if (validPhoto) {
+      return validPhoto;
+    }
+
+    return "https://images.unsplash.com/photo-1511735643442-503bb3bd3482?q=80&w=1200&auto=format&fit=crop";
+  }, [destination.photos]);
+
+  const installmentValue = useMemo(() => {
+    const total = Number(destination.price);
+    const installments = 10;
+
+    if (!Number.isFinite(total) || total <= 0) {
+      return {
+        installments,
+        installmentLabel: `${installments}x de R$ 0`,
+        cashLabel: "ou à vista por R$ 0",
+      };
+    }
+
+    const installmentPrice = total / installments;
+    return {
+      installments,
+      installmentLabel: `${installments}x de ${formatCurrency(installmentPrice)}`,
+      cashLabel: `ou à vista por ${formatCurrency(total)}`,
+    };
+  }, [destination.price]);
+
+  const subtitle = useMemo(() => {
+    const fallback = "Passagem + hospedagem";
+    const trimmedDescription = destination.description.trim();
+
+    if (!trimmedDescription) {
+      return fallback;
+    }
+
+    const firstSentence = trimmedDescription.split(/\n|\.|!/)[0]?.trim();
+
+    if (!firstSentence) {
+      return fallback;
+    }
+
+    if (firstSentence.length > 48) {
+      return `${firstSentence.slice(0, 45)}…`;
+    }
+
+    return firstSentence;
+  }, [destination.description]);
+
+  const formattedPrice = useMemo(() => formatCurrency(destination.price), [
+    destination.price,
+  ]);
+
+  const startDate = useMemo(() => {
+    const parsed = new Date(destination.startDate);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }, [destination.startDate]);
+
+  const endDate = useMemo(() => {
+    const parsed = new Date(destination.endDate);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }, [destination.endDate]);
+
+  const formattedStartDate = useMemo(() => {
+    if (!startDate) {
+      return "Data indisponível";
+    }
+
+    return new Intl.DateTimeFormat("pt-BR", {
+      day: "2-digit",
+      month: "long",
+    }).format(startDate);
+  }, [startDate]);
+
+  const formattedEndDate = useMemo(() => {
+    if (!endDate) {
+      return "Data indisponível";
+    }
+
+    return new Intl.DateTimeFormat("pt-BR", {
+      day: "2-digit",
+      month: "long",
+    }).format(endDate);
+  }, [endDate]);
+
+  const tripDuration = useMemo(() => {
+    if (!startDate || !endDate) {
+      return null;
+    }
+
+    const diffInMs = endDate.getTime() - startDate.getTime();
+    if (diffInMs < 0) {
+      return null;
+    }
+
+    const dayInMs = 1000 * 60 * 60 * 24;
+    const diffInDays = Math.max(1, Math.round(diffInMs / dayInMs) + 1);
+
+    return `${diffInDays} ${diffInDays === 1 ? "noite" : "noites"}`;
+  }, [endDate, startDate]);
+
+  const galleryPhotos = useMemo(
+    () => destination.photos.filter((photo) => photo.trim()),
+    [destination.photos]
   );
 
-  const dateFormatter = useMemo(
-    () =>
-      new Intl.DateTimeFormat("pt-BR", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      }),
-    []
-  );
+  const handleToggleFavorite = useCallback(() => {
+    if (!canFavorite) {
+      toast.info("Entre na sua conta para salvar destinos nos favoritos.");
+      return;
+    }
 
-  const formattedPrice = priceFormatter.format(destination.price);
-  const formattedStartDate = dateFormatter.format(new Date(destination.startDate));
-  const formattedEndDate = dateFormatter.format(new Date(destination.endDate));
+    startTransition(async () => {
+      const previousValue = isFavorite;
+      setIsFavorite((current) => !current);
 
-  const stayLabel = `${formattedStartDate} • ${formattedEndDate}`;
+      try {
+        const response = await fetch("/api/favorites", {
+          method: previousValue ? "DELETE" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ destinationId: destination.id }),
+        });
 
-  const handleStep = (direction: -1 | 1) => {
-    setActiveImageIndex((current) => {
-      const nextIndex = (current + direction + photos.length) % photos.length;
-      return nextIndex;
+        const data = await response.json();
+
+        if (!response.ok || data?.status !== "success") {
+          throw new Error(data?.message ?? "Não foi possível atualizar o favorito.");
+        }
+
+        setIsFavorite(Boolean(data.destination?.isFavorite));
+        onFavoriteChange?.(destination.id, Boolean(data.destination?.isFavorite));
+
+        if (!previousValue) {
+          toast.success("Destino adicionado aos favoritos!");
+        } else {
+          toast.success("Destino removido dos favoritos.");
+        }
+      } catch (error) {
+        console.error(error);
+        setIsFavorite(previousValue);
+        toast.error(
+          previousValue
+            ? "Não foi possível remover dos favoritos. Tente novamente."
+            : "Não foi possível adicionar aos favoritos. Tente novamente."
+        );
+      }
     });
-  };
+  }, [canFavorite, destination.id, isFavorite, onFavoriteChange, startTransition]);
 
-  const handleSelectImage = (index: number) => {
-    setActiveImageIndex(index);
-  };
+  const handleDelete = useCallback(
+    async (formData: FormData) => {
+      if (!onDelete) {
+        return;
+      }
 
-  const activeImage = photos[activeImageIndex];
+      try {
+        setIsDeleting(true);
+        await onDelete(destinationDeleteInitialState, formData);
+        toast.success("Destino removido com sucesso.");
+      } catch (error) {
+        console.error(error);
+        toast.error("Não foi possível remover o destino.");
+      } finally {
+        setIsDeleting(false);
+      }
+    },
+    [onDelete]
+  );
+
+  const handleCardClick = useCallback(() => {
+    setIsDialogOpen(true);
+  }, []);
+
+  const handleCardKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLElement>) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        setIsDialogOpen(true);
+      }
+    },
+    []
+  );
+
+  const handleFavoriteButtonClick = useCallback(
+    (event: MouseEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      handleToggleFavorite();
+    },
+    [handleToggleFavorite]
+  );
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <DialogTrigger asChild>
+      <article
+        role="button"
+        tabIndex={0}
+        onClick={handleCardClick}
+        onKeyDown={handleCardKeyDown}
+        className={cn(
+          "group relative flex h-[320px] w-[240px] shrink-0 flex-col overflow-hidden rounded-[32px] bg-slate-900 shadow-[0_18px_50px_-30px_rgba(0,0,0,0.6)] transition-transform duration-300 hover:-translate-y-1 hover:shadow-[0_28px_60px_-28px_rgba(10,22,70,0.55)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 focus-visible:ring-white/70",
+          className
+        )}
+        aria-label={`Ver detalhes completos de ${destination.name}`}
+      >
+        <Image
+          src={imageUrl}
+          alt={`Foto de ${destination.name}`}
+          fill
+          sizes="(max-width: 768px) 80vw, 240px"
+          priority={false}
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/20 to-black/70" />
+
+        <div className="absolute left-4 top-4 flex items-center gap-2">
+          <span className="flex size-10 items-center justify-center rounded-[18px] bg-white/95 shadow-[0_10px_30px_rgba(4,58,167,0.25)]">
+            <Image src="/evastur-logo.svg" alt="Logo Evastur" width={32} height={32} className="object-contain" />
+          </span>
+        </div>
+
+        {onDelete ? (
+          <div className="absolute right-4 top-4 flex flex-col items-end gap-2">
+            <Link
+              href={`/dashboard/destinos/${destination.id}/editar`}
+              className="inline-flex items-center gap-1 rounded-[18px] bg-white/85 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-slate-900 shadow-[0_10px_30px_rgba(4,58,167,0.2)] transition hover:bg-white"
+              onClick={(event) => {
+                event.stopPropagation();
+              }}
+            >
+              Editar
+            </Link>
+
+            <form
+              className="flex"
+              action={async (formData) => {
+                formData.set("destinationId", String(destination.id));
+                await handleDelete(formData);
+              }}
+              onClick={(event) => {
+                event.stopPropagation();
+              }}
+            >
+              <input type="hidden" name="destinationId" value={destination.id} />
+              <button
+                type="submit"
+                className="flex size-10 items-center justify-center rounded-[18px] bg-white/80 text-slate-900 shadow-[0_10px_30px_rgba(4,58,167,0.25)] transition hover:bg-white"
+                aria-label={`Remover ${destination.name}`}
+                disabled={isDeleting}
+                onClick={(event) => {
+                  event.stopPropagation();
+                }}
+              >
+                {isDeleting ? <Loader2 className="size-5 animate-spin" /> : <Trash2 className="size-5" />}
+              </button>
+            </form>
+          </div>
+        ) : null}
+
         <button
           type="button"
-          className={cn(
-            "group relative isolate flex w-full cursor-pointer overflow-hidden rounded-[32px] bg-white text-left shadow-xl transition duration-500",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
-            "before:absolute before:inset-0 before:-z-10 before:rounded-[32px] before:bg-sky-200/50 before:opacity-0 before:blur-3xl before:transition-opacity before:duration-700",
-            "hover:before:opacity-100 hover:shadow-2xl",
-            fullHeight ? "h-full" : "min-h-[260px]",
-            isActive ? "scale-100 shadow-[0_40px_120px_-50px_rgba(125,211,252,0.8)]" : "scale-[0.92] sm:scale-[0.95]",
-            isActive ? "ring-1 ring-sky-300/70" : "hover:scale-[0.98] hover:ring-1 hover:ring-sky-200/70",
-            className
-          )}
+          onClick={handleFavoriteButtonClick}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              event.stopPropagation();
+              handleToggleFavorite();
+            }
+          }}
+          className="absolute bottom-[120px] right-5 flex size-11 items-center justify-center rounded-full bg-white/80 text-pink-600 shadow-[0_10px_30px_rgba(234,0,42,0.25)] transition hover:bg-white"
+          aria-pressed={isFavorite}
+          aria-label={isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+          disabled={isPending}
         >
-          <div className="absolute inset-0">
-            <Image
-              src={activeImage}
-              alt={destination.name}
-              fill
-              priority={false}
-              sizes="(min-width: 1280px) 420px, (min-width: 768px) 320px, 90vw"
-              className="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-105"
+          {isPending ? (
+            <Loader2 className="size-5 animate-spin" />
+          ) : (
+            <Heart
+              className={cn("size-5", isFavorite ? "fill-current" : "stroke-current")}
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-white/90 via-white/70 to-white/90" />
-            <div className="absolute inset-0 bg-gradient-to-r from-white/85 via-white/50 to-transparent opacity-0 transition duration-700 group-hover:opacity-100" />
-          </div>
-
-          <div className="relative z-10 flex h-full flex-col justify-between p-6 sm:p-7">
-            <div className="flex items-start justify-between gap-3 text-slate-900">
-              <div className="flex flex-col gap-2">
-                <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">
-                  <Sparkles className="size-4 text-sky-500" />
-                  Destaque
-                </span>
-                <div className="space-y-1">
-                  <p className="text-lg font-semibold leading-tight text-slate-900 sm:text-xl">
-                    {destination.name}
-                  </p>
-                  <span className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
-                    <MapPin className="size-4 text-sky-500" />
-                    {destination.city}
-                  </span>
-                </div>
-              </div>
-              <div onClick={(event) => event.stopPropagation()}>
-                <FavoriteButton
-                  destinationId={destination.id}
-                  initialIsFavorite={initialFavorite}
-                  canFavorite={canFavorite}
-                  onStatusChange={(isFavorite) =>
-                    onFavoriteChange?.(destination.id, isFavorite)
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="space-y-4 text-slate-700">
-              <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.32em] text-slate-500">
-                <span className="rounded-full bg-sky-50 px-3 py-1 text-slate-700">{stayLabel}</span>
-                <span className="rounded-full bg-sky-50 px-3 py-1 text-slate-700">
-                  Até {destination.peopleCount} {destination.peopleCount === 1 ? "viajante" : "viajantes"}
-                </span>
-              </div>
-
-              <p className="line-clamp-3 text-sm text-slate-600">
-                {destination.description}
-              </p>
-
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-500">
-                    A partir de
-                  </span>
-                  <span className="text-2xl font-bold text-slate-900">{formattedPrice}</span>
-                </div>
-                <span className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-700 shadow-[0_20px_40px_-20px_rgba(16,185,129,0.35)]">
-                  <Star className="size-4 text-emerald-600" />
-                  {destination.rating.toFixed(1)}
-                </span>
-              </div>
-            </div>
-          </div>
+          )}
         </button>
-      </DialogTrigger>
 
-      <DialogContent className="max-h-[90vh] w-full max-w-[min(95vw,1400px)] overflow-hidden rounded-[40px] border border-slate-200 bg-white p-0 text-slate-700 shadow-[0_50px_120px_-60px_rgba(14,165,233,0.35)]">
-        <div className="flex max-h-[90vh] flex-col">
-          <div className="relative h-[280px] w-full sm:h-[360px] lg:h-[420px]">
-            <Image
-              src={activeImage}
-              alt={destination.name}
-              fill
-              priority
-              sizes="(min-width: 1280px) 960px, 100vw"
-              className="object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/65 to-white" />
-            <div className="absolute inset-0 bg-gradient-to-r from-white/80 via-white/40 to-transparent" />
-
-            <div className="absolute bottom-0 left-0 right-0 p-8 sm:p-10">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div className="space-y-3">
-                  <DialogHeader className="p-0 text-left">
-                    <DialogTitle className="text-3xl font-semibold text-slate-900 sm:text-4xl">
-                      {destination.name}
-                    </DialogTitle>
-                    <DialogDescription className="text-sm text-slate-600">
-                      {destination.city} • {stayLabel} • {destination.peopleCount}{" "}
-                      {destination.peopleCount === 1 ? "pessoa" : "pessoas"}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="flex flex-wrap items-center gap-3 text-sm text-slate-700">
-                    <span className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1">
-                      <Star className="size-4 text-emerald-600" />
-                      {destination.rating.toFixed(1)} / 5
-                    </span>
-                    <span className="inline-flex items-center gap-2 rounded-full bg-sky-100 px-3 py-1">
-                      <Plane className="size-4 text-sky-500" />
-                      Pronto para embarcar
-                    </span>
-                    <span className="inline-flex items-center gap-2 rounded-full bg-sky-100 px-3 py-1">
-                      <BadgeCheck className="size-4 text-sky-500" />
-                      Curadoria Evastur
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex flex-col items-start gap-3 text-right text-slate-500 sm:items-end">
-                  <span className="text-xs font-semibold uppercase tracking-[0.32em]">
-                    Pacote a partir de
-                  </span>
-                  <span className="text-3xl font-bold text-slate-900 sm:text-4xl">{formattedPrice}</span>
-                  <span className="text-xs text-slate-500">Valores sujeitos a disponibilidade e personalização.</span>
-                </div>
-              </div>
-            </div>
-
-            {photos.length > 1 ? (
-              <div className="absolute left-0 right-0 top-1/2 flex -translate-y-1/2 items-center justify-between px-4">
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="size-10 rounded-full border border-sky-200 bg-white/70 text-slate-700 backdrop-blur hover:bg-white"
-                  onClick={() => handleStep(-1)}
-                  aria-label="Foto anterior"
-                >
-                  <ChevronLeft className="size-5" />
-                </Button>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="size-10 rounded-full border border-sky-200 bg-white/70 text-slate-700 backdrop-blur hover:bg-white"
-                  onClick={() => handleStep(1)}
-                  aria-label="Próxima foto"
-                >
-                  <ChevronRight className="size-5" />
-                </Button>
-              </div>
-            ) : null}
+        <div className="absolute bottom-4 left-4 right-4 rounded-[26px] bg-[rgba(5,19,60,0.88)] p-4 text-white shadow-[0_18px_40px_-22px_rgba(0,0,0,0.65)] backdrop-blur-sm">
+          <div className="space-y-1">
+            <h3 className="text-lg font-semibold leading-tight">{destination.name}</h3>
+            <p className="text-[13px] font-medium text-white/80">{subtitle}</p>
           </div>
+          <div className="mt-4 space-y-1 text-sm font-semibold text-white">
+            <p className="rounded-[14px] bg-[rgba(25,90,255,0.92)] px-3 py-1 text-center text-[15px] font-semibold tracking-wide">
+              {installmentValue.installmentLabel}
+            </p>
+            <p className="text-[13px] font-medium text-white/80">{installmentValue.cashLabel}</p>
+          </div>
+        </div>
+      </article>
 
-          <div className="flex-1 overflow-y-auto">
-            <div className="grid gap-8 p-8 sm:p-10 lg:grid-cols-[1.8fr_1fr]">
-              <div className="space-y-6">
-                <p className="text-base leading-relaxed text-slate-600">
-                  {destination.description}
+      <DialogContent className="max-h-[90vh] overflow-y-auto rounded-3xl border border-slate-200 bg-white/95 p-0 shadow-2xl backdrop-blur">
+        <div className="relative h-56 w-full sm:h-64">
+          <Image
+            src={imageUrl}
+            alt={`Paisagem do destino ${destination.name}`}
+            fill
+            className="object-cover"
+            sizes="(min-width: 768px) 640px, 100vw"
+            priority={false}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/40 to-transparent" />
+          <div className="absolute bottom-4 left-6 right-6 flex flex-col gap-3 text-white sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/70">
+                Destaque Evastur
+              </p>
+              <h2 className="text-2xl font-semibold leading-snug sm:text-3xl">
+                {destination.name}
+              </h2>
+              <p className="mt-1 inline-flex items-center gap-2 text-sm text-white/80">
+                <MapPin className="size-4" />
+                {destination.city}
+              </p>
+            </div>
+            <div className="flex flex-col items-start gap-2 sm:items-end">
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-1.5 text-sm font-semibold text-slate-900 shadow">
+                <Star className="size-4 text-amber-500" /> {destination.rating.toFixed(1)}
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-1.5 text-sm font-semibold text-slate-900 shadow">
+                {formattedPrice}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6 px-6 pb-8 pt-6">
+          <DialogHeader className="space-y-2 text-left">
+            <DialogTitle className="text-2xl font-semibold text-slate-900">
+              {destination.city}
+            </DialogTitle>
+            <DialogDescription className="text-sm text-slate-600">
+              {subtitle}
+            </DialogDescription>
+          </DialogHeader>
+
+          <p className="text-sm leading-relaxed text-slate-700">
+            {destination.description}
+          </p>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
+                Período
+              </p>
+              <div className="mt-3 space-y-2 text-sm text-slate-700">
+                <p className="flex items-center gap-2">
+                  <CalendarDays className="size-4 text-primary" /> Ida: {formattedStartDate}
                 </p>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="flex items-center gap-3">
-                      <MapPin className="size-5 text-sky-500" />
-                      <div className="space-y-1">
-                        <p className="text-xs font-semibold uppercase tracking-[0.32em] text-slate-500">
-                          Cidade
-                        </p>
-                        <p className="text-sm font-medium text-slate-800">{destination.city}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="flex items-center gap-3">
-                      <CalendarRange className="size-5 text-sky-500" />
-                      <div className="space-y-1">
-                        <p className="text-xs font-semibold uppercase tracking-[0.32em] text-slate-500">
-                          Ida
-                        </p>
-                        <p className="text-sm font-medium text-slate-800">{formattedStartDate}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="flex items-center gap-3">
-                      <CalendarRange className="size-5 text-sky-500" />
-                      <div className="space-y-1">
-                        <p className="text-xs font-semibold uppercase tracking-[0.32em] text-slate-500">
-                          Volta
-                        </p>
-                        <p className="text-sm font-medium text-slate-800">{formattedEndDate}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="flex items-center gap-3">
-                      <Users className="size-5 text-sky-500" />
-                      <div className="space-y-1">
-                        <p className="text-xs font-semibold uppercase tracking-[0.32em] text-slate-500">
-                          Ideal para
-                        </p>
-                        <p className="text-sm font-medium text-slate-800">
-                          Até {destination.peopleCount}{" "}
-                          {destination.peopleCount === 1 ? "viajante" : "viajantes"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-sm font-semibold uppercase tracking-[0.28em] text-slate-500">
-                    Galeria do destino
-                  </h3>
-                  <div className="flex gap-3 overflow-x-auto pb-2">
-                    {photos.map((photo, index) => (
-                      <button
-                        key={`${photo}-${index}`}
-                        type="button"
-                        onClick={() => handleSelectImage(index)}
-                        className={cn(
-                          "relative h-20 w-32 overflow-hidden rounded-2xl border border-slate-200 transition",
-                          index === activeImageIndex
-                            ? "ring-2 ring-sky-400"
-                            : "opacity-70 hover:opacity-100"
-                        )}
-                        aria-label={`Selecionar foto ${index + 1}`}
-                      >
-                        <Image src={photo} alt={destination.name} fill className="object-cover" sizes="128px" />
-                        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-white/60" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-5">
-                <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-white to-sky-50 p-6 shadow-inner">
-                  <div className="flex items-center gap-3 text-slate-700">
-                    <Sparkles className="size-6 text-sky-500" />
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.32em] text-slate-500">
-                        Experiência completa
-                      </p>
-                      <p className="text-lg font-semibold text-slate-900">Reserve com a Evastur</p>
-                    </div>
-                  </div>
-                  <p className="mt-4 text-sm text-slate-600">
-                    Personalize hospedagem, passeios e serviços exclusivos com nossa equipe de especialistas.
+                <p className="flex items-center gap-2">
+                  <CalendarDays className="size-4 text-primary" /> Volta: {formattedEndDate}
+                </p>
+                {tripDuration ? (
+                  <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">
+                    {tripDuration}
                   </p>
-                  <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.32em] text-slate-500">
-                      Investimento sugerido
-                    </p>
-                    <p className="mt-2 text-3xl font-bold text-slate-900">{formattedPrice}</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      Parcelamento e condições especiais sob consulta.
-                    </p>
-                  </div>
-                </div>
+                ) : null}
+              </div>
+            </div>
 
-                <PurchaseButton
-                  destination={destination}
-                  label="Solicitar proposta personalizada"
-                  className="w-full justify-center rounded-full bg-gradient-to-r from-sky-400 to-cyan-400 px-6 py-3 text-sm font-semibold text-white shadow-[0_20px_40px_-20px_rgba(56,189,248,0.6)] transition hover:from-sky-400/90 hover:to-cyan-400/90"
-                />
-
-                <div className="rounded-3xl border border-slate-200 bg-white p-6">
-                  <div className="flex items-center gap-3 text-slate-700">
-                    <Camera className="size-5 text-sky-500" />
-                    <p className="text-sm font-semibold uppercase tracking-[0.28em] text-slate-500">
-                      Informações rápidas
-                    </p>
-                  </div>
-                  <ul className="mt-4 space-y-3 text-sm text-slate-600">
-                    <li className="flex items-start gap-2">
-                      <span className="mt-1 size-1.5 rounded-full bg-sky-400" />
-                      <span>Datas flexíveis mediante disponibilidade.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-1 size-1.5 rounded-full bg-sky-400" />
-                      <span>Equipe pronta para personalizar passeios e experiências VIP.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-1 size-1.5 rounded-full bg-sky-400" />
-                      <span>Assistência 24/7 durante toda a viagem.</span>
-                    </li>
-                  </ul>
-                </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
+                Informações
+              </p>
+              <div className="mt-3 space-y-2 text-sm text-slate-700">
+                <p className="flex items-center gap-2">
+                  <PlaneTakeoff className="size-4 text-primary" /> Saída: {destination.departureLocation}
+                </p>
+                <p className="flex items-center gap-2">
+                  <Users className="size-4 text-primary" /> Até {destination.peopleCount} {destination.peopleCount === 1 ? "pessoa" : "pessoas"}
+                </p>
+                <p className="flex items-center gap-2">
+                  <Ticket className="size-4 text-primary" /> {destination.totalSeats} {destination.totalSeats === 1 ? "vaga" : "vagas"} totais
+                </p>
+                <p className="flex items-center gap-2">
+                  <Star className="size-4 text-amber-500" /> Avaliação {destination.rating.toFixed(1)}
+                </p>
+                <p className="flex items-center gap-2">
+                  <Heart className="size-4 text-pink-500" /> Pacote a partir de {formattedPrice}
+                </p>
               </div>
             </div>
           </div>
+
+          {galleryPhotos.length > 1 ? (
+            <div className="space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
+                Galeria
+              </p>
+              <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                {galleryPhotos.map((photo) => (
+                  <div key={photo} className="relative h-28 w-40 shrink-0 overflow-hidden rounded-2xl border border-slate-200">
+                    <Image
+                      src={photo}
+                      alt={`Foto de ${destination.name}`}
+                      fill
+                      className="object-cover"
+                      sizes="160px"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <DialogFooter className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <DialogClose asChild>
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-full"
+                onClick={() => setIsDialogOpen(false)}
+              >
+                Fechar
+              </Button>
+            </DialogClose>
+            <PurchaseButton
+              destination={destination}
+              label="Adquirir destino"
+              className="rounded-full"
+              size="lg"
+            />
+          </DialogFooter>
         </div>
       </DialogContent>
     </Dialog>

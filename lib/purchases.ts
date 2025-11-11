@@ -1,4 +1,5 @@
 import type { Prisma, PurchaseStatus } from "@prisma/client";
+import type { PaymentMethodValue, PaymentStatusValue } from "@/lib/payments";
 import { z } from "zod";
 
 export const purchaseStatusValues = [
@@ -26,6 +27,8 @@ export type PurchaseWithRelations = Prisma.PurchaseGetPayload<{
         email: true;
       };
     };
+    passengers: true;
+    payment: true;
   };
 }>;
 
@@ -33,6 +36,7 @@ export type SerializedPurchase = {
   id: number;
   userId: number;
   packageId: number;
+  seatCount: number;
   status: PurchaseStatusValue;
   observacao: string;
   dataCompra: string;
@@ -49,6 +53,21 @@ export type SerializedPurchase = {
     username: string;
     email: string | null;
   } | null;
+  passengers: {
+    id: number;
+    fullName: string;
+    cpf: string;
+    birthDate: string;
+    phone: string;
+    email: string;
+  }[];
+  payment: {
+    id: number;
+    method: PaymentMethodValue;
+    status: PaymentStatusValue;
+    amount: number;
+    externalReference: string | null;
+  } | null;
 };
 
 export function serializePurchase(purchase: PurchaseWithRelations): SerializedPurchase {
@@ -56,6 +75,7 @@ export function serializePurchase(purchase: PurchaseWithRelations): SerializedPu
     id: purchase.id,
     userId: purchase.userId,
     packageId: purchase.packageId,
+    seatCount: purchase.seatCount,
     status: purchase.status as PurchaseStatusValue,
     observacao: purchase.observacao,
     dataCompra: purchase.dataCompra.toISOString(),
@@ -72,6 +92,23 @@ export function serializePurchase(purchase: PurchaseWithRelations): SerializedPu
           fullName: purchase.user.fullName,
           username: purchase.user.username,
           email: purchase.user.email,
+        }
+      : null,
+    passengers: purchase.passengers.map((passenger) => ({
+      id: passenger.id,
+      fullName: passenger.fullName,
+      cpf: passenger.cpf,
+      birthDate: passenger.birthDate.toISOString(),
+      phone: passenger.phone,
+      email: passenger.email,
+    })),
+    payment: purchase.payment
+      ? {
+          id: purchase.payment.id,
+          method: purchase.payment.method as PaymentMethodValue,
+          status: purchase.payment.status as PaymentStatusValue,
+          amount: Number(purchase.payment.amount),
+          externalReference: purchase.payment.externalReference,
         }
       : null,
   };

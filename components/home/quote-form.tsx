@@ -126,14 +126,14 @@ export function QuoteForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex w-full flex-col gap-6 rounded-3xl bg-white/90 p-6 text-slate-900 shadow-xl ring-1 ring-white/60 backdrop-blur-sm dark:bg-slate-900/90 dark:text-slate-100 dark:ring-white/10 sm:p-8"
+      className="flex w-full flex-col gap-6 rounded-3xl bg-white/90 p-6 text-[color:var(--brand-secondary)] shadow-xl shadow-[rgba(0,27,114,0.08)] ring-1 ring-[color:var(--brand-secondary-soft)]/60 backdrop-blur-sm dark:bg-slate-900/90 dark:text-slate-100 dark:ring-white/10 sm:bg-white/95 sm:p-8"
     >
       <div className="space-y-1">
-        <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+        <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.32em] text-[color:var(--brand-secondary)]/60 dark:text-slate-300">
           <Send className="size-4" /> Solicite agora
         </span>
         <h2 className="text-xl font-semibold sm:text-2xl">Monte seu orçamento</h2>
-        <p className="text-sm text-slate-600 dark:text-slate-300">
+        <p className="text-sm text-[color:var(--brand-secondary)]/70 dark:text-slate-300">
           Informe os detalhes da viagem e nossa equipe retorna com sugestões personalizadas.
         </p>
       </div>
@@ -151,7 +151,7 @@ export function QuoteForm() {
             onChange={handleChange("name")}
             placeholder="Como devemos te chamar?"
             autoComplete="name"
-            className="h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-sky-400 dark:focus:ring-sky-500/30"
+            className="h-11 w-full rounded-xl border border-[color:var(--brand-secondary-soft)] bg-white/85 px-3 text-sm font-medium text-[color:var(--brand-secondary)] placeholder:text-[color:var(--brand-secondary)]/40 focus:border-[color:var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--brand-primary)]/20 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-sky-400 dark:focus:ring-sky-500/30"
             type="text"
           />
         </Field>
@@ -168,7 +168,7 @@ export function QuoteForm() {
             onChange={handleChange("phone")}
             placeholder="(68) 99255-2607"
             autoComplete="tel"
-            className="h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-sky-400 dark:focus:ring-sky-500/30"
+            className="h-11 w-full rounded-xl border border-[color:var(--brand-secondary-soft)] bg-white/85 px-3 text-sm font-medium text-[color:var(--brand-secondary)] placeholder:text-[color:var(--brand-secondary)]/40 focus:border-[color:var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--brand-primary)]/20 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-sky-400 dark:focus:ring-sky-500/30"
             type="tel"
           />
         </Field>
@@ -185,7 +185,7 @@ export function QuoteForm() {
             onChange={handleChange("origin")}
             placeholder="Cidade de saída"
             autoComplete="address-level2"
-            className="h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-sky-400 dark:focus:ring-sky-500/30"
+            className="h-11 w-full rounded-xl border border-[color:var(--brand-secondary-soft)] bg-white/85 px-3 text-sm font-medium text-[color:var(--brand-secondary)] placeholder:text-[color:var(--brand-secondary)]/40 focus:border-[color:var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--brand-primary)]/20 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-sky-400 dark:focus:ring-sky-500/30"
             type="text"
           />
         </Field>
@@ -201,7 +201,7 @@ export function QuoteForm() {
             value={form.destination}
             onChange={handleChange("destination")}
             placeholder="Para onde deseja ir?"
-            className="h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-sky-400 dark:focus:ring-sky-500/30"
+            className="h-11 w-full rounded-xl border border-[color:var(--brand-secondary-soft)] bg-white/85 px-3 text-sm font-medium text-[color:var(--brand-secondary)] placeholder:text-[color:var(--brand-secondary)]/40 focus:border-[color:var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--brand-primary)]/20 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-sky-400 dark:focus:ring-sky-500/30"
             type="text"
           />
         </Field>
@@ -216,7 +216,7 @@ export function QuoteForm() {
             name="departureDate"
             value={form.departureDate}
             onChange={handleChange("departureDate")}
-            className="h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-sky-400 dark:focus:ring-sky-500/30"
+            className="h-11 w-full rounded-xl border border-[color:var(--brand-secondary-soft)] bg-white/85 px-3 text-sm font-medium text-[color:var(--brand-secondary)] placeholder:text-[color:var(--brand-secondary)]/40 focus:border-[color:var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--brand-primary)]/20 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-sky-400 dark:focus:ring-sky-500/30"
             type="date"
           />
         </Field>
@@ -231,7 +231,7 @@ export function QuoteForm() {
             name="returnDate"
             value={form.returnDate}
             onChange={handleChange("returnDate")}
-            className="h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-sky-400 dark:focus:ring-sky-500/30"
+            className="h-11 w-full rounded-xl border border-[color:var(--brand-secondary-soft)] bg-white/85 px-3 text-sm font-medium text-[color:var(--brand-secondary)] placeholder:text-[color:var(--brand-secondary)]/40 focus:border-[color:var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--brand-primary)]/20 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-sky-400 dark:focus:ring-sky-500/30"
             type="date"
             min={form.departureDate || undefined}
           />
@@ -247,13 +247,13 @@ export function QuoteForm() {
             name="people"
             value={form.people}
             onChange={handleChange("people")}
-            className="h-11 w-full rounded-xl border border-slate-200 bg-white/80 px-3 text-sm font-medium text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:focus:border-sky-400 dark:focus:ring-sky-500/30"
+            className="h-11 w-full rounded-xl border border-[color:var(--brand-secondary-soft)] bg-white/85 px-3 text-sm font-medium text-[color:var(--brand-secondary)] focus:border-[color:var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--brand-primary)]/20 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:focus:border-sky-400 dark:focus:ring-sky-500/30"
           >
             <option value="" disabled>
               Selecionar
             </option>
             {peopleOptions.map((option) => (
-              <option key={option} value={option} className="text-slate-900">
+              <option key={option} value={option} className="text-[color:var(--brand-secondary)]">
                 {option} pessoa{option === "1" ? "" : "s"}
               </option>
             ))}
@@ -263,7 +263,7 @@ export function QuoteForm() {
 
       <button
         type="submit"
-        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-500 px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#ea002a] via-[#c4002d] to-[#001b72] px-6 py-3 text-sm font-semibold text-white shadow-md shadow-[rgba(0,27,114,0.25)] transition hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]/20 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900"
         disabled={isSubmitting}
       >
         <Send className="size-4" />
@@ -292,12 +292,12 @@ type FieldProps = {
 
 function Field({ children, icon, label, error }: FieldProps) {
   return (
-    <label className="flex flex-col gap-1 text-sm font-medium text-slate-700 dark:text-slate-200">
-      <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+    <label className="flex flex-col gap-1 text-sm font-medium text-[color:var(--brand-secondary)] dark:text-slate-200">
+      <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[color:var(--brand-secondary)]/60 dark:text-slate-300">
         {icon}
         {label}
       </span>
-      <div className={`flex w-full flex-col gap-1 ${error ? "text-red-600 dark:text-rose-300" : "text-slate-700 dark:text-slate-100"}`}>
+      <div className={`flex w-full flex-col gap-1 ${error ? "text-red-600 dark:text-rose-300" : "text-[color:var(--brand-secondary)] dark:text-slate-100"}`}>
         {children}
         {error && <span className="text-xs font-medium">{error}</span>}
       </div>

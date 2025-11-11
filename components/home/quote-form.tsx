@@ -16,7 +16,7 @@ import {
   Users,
 } from "lucide-react";
 
-const WHATSAPP_NUMBER = "5568992552607";
+const WHATSAPP_NUMBER = "5568999872973";
 
 const initialFormState = {
   name: "",

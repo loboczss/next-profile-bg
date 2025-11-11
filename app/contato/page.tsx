@@ -24,8 +24,8 @@ const contactChannels = [
   {
     icon: Phone,
     label: "Telefone",
-    value: "+55 (68) 9 1234-5678",
-    href: "tel:+5568912345678",
+    value: "+55 (68) 9 99987-2973",
+    href: "tel:+5568999872973",
   },
   {
     icon: Mail,
@@ -36,8 +36,8 @@ const contactChannels = [
   {
     icon: MessageCircle,
     label: "WhatsApp Concierge",
-    value: "+55 (68) 12345-6789",
-    href: "https://wa.me/5568912345678",
+    value: "+55 (68) 99987-2973",
+    href: "https://wa.me/5568999872973",
   },
   {
     icon: MapPin,
@@ -47,7 +47,7 @@ const contactChannels = [
   {
     icon: Clock,
     label: "Horário de atendimento",
-    value: "Segunda a sexta, das 9h às 19h (BRT)",
+    value: "Segunda a sexta, das 8h às 18h (ACRE)",
   },
 ];
 
@@ -112,7 +112,7 @@ export default function ContactPage() {
                     id="phone"
                     type="tel"
                     name="phone"
-                    placeholder="(11) 98765-4321"
+                    placeholder="(68) 98765-4321"
                     autoComplete="tel"
                   />
                 </div>

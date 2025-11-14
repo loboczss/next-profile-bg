@@ -173,3 +173,12 @@ model Payment {
 
   purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
 }
+
+model PixTestPayment {
+  id                Int           @id @default(autoincrement())
+  status            PaymentStatus @default(PENDENTE)
+  amount            Decimal       @db.Decimal(10, 2)
+  externalReference String
+  rawResponse       Json?
+  createdAt         DateTime      @default(now())
+}

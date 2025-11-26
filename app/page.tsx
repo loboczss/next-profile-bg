@@ -135,24 +135,6 @@ export default async function HomePage() {
     heroImages.push(backgroundUrl);
   }
 
-  for (const destination of destinations) {
-    const rec = destination as Record<string, unknown>;
-    const coverUrl = rec.coverUrl;
-    if (typeof coverUrl === "string" && coverUrl.trim()) {
-      heroImages.push(coverUrl);
-      continue;
-    }
-    const imageUrl = rec.imageUrl;
-    if (typeof imageUrl === "string" && imageUrl.trim()) {
-      heroImages.push(imageUrl);
-      continue;
-    }
-    const firstPhoto = destination.photos.find((p) => p.trim());
-    if (typeof firstPhoto === "string" && firstPhoto.trim()) {
-      heroImages.push(firstPhoto);
-    }
-  }
-
   if (!heroImages.length) {
     // Fallback (inalterado conceitualmente)
     heroImages.push(

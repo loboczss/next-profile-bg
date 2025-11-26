@@ -144,7 +144,6 @@ function BaseDestinationForm({
       ref={formRef}
       action={formAction}
       className="space-y-6 rounded-3xl border border-slate-200/80 bg-white/90 p-8 shadow-xl backdrop-blur"
-      encType="multipart/form-data"
     >
       {mode === "edit" && destination ? (
         <input type="hidden" name="destinationId" value={destination.id} />

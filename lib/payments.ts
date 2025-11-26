@@ -20,8 +20,8 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethodValue, string> = {
 };
 
 export const PAYMENT_STATUS_LABELS: Record<PaymentStatusValue, string> = {
-  PENDENTE: "Aguardando pagamento",
-  CONCLUIDO: "Pagamento concluído",
+  PENDENTE: "Pagamento combinado pela agência",
+  CONCLUIDO: "Pagamento registrado",
   FALHOU: "Pagamento com falha",
 };
 
@@ -63,20 +63,18 @@ function generatePaymentReference(method: PaymentMethodValue): string {
   return `${prefix}${randomSuffix}`;
 }
 
-/**
- * Simula a criação de uma cobrança no Banco Cora. Em um cenário real,
- * esta função realizaria uma chamada HTTP autenticada para a API do banco.
- */
+// Mantemos a função por compatibilidade, mas ela agora gera apenas uma
+// referência local para registrar a intenção de pagamento sem acionar
+// qualquer provedor externo.
 export async function createCoraPayment(
   params: CreateCoraPaymentParams
 ): Promise<CreateCoraPaymentResult> {
   const { method } = params;
 
-  const status: PaymentStatusValue = method === "PIX" || method === "CARTAO" ? "CONCLUIDO" : "PENDENTE";
+  const status: PaymentStatusValue = "PENDENTE";
   const externalReference = generatePaymentReference(method);
 
-  // Pequeno atraso artificial para simular comunicação com o provedor.
-  await new Promise((resolve) => setTimeout(resolve, 150));
+  await new Promise((resolve) => setTimeout(resolve, 50));
 
   return { status, externalReference };
 }

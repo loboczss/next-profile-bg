@@ -11,6 +11,7 @@ import {
   ChevronDown,
   Heart,
   Home,
+  Image as ImageIcon,
   Info,
   LayoutDashboard,
   LogIn,
@@ -24,6 +25,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
+import { dashboardNavItems } from "@/app/dashboard/nav-items";
 import { cn } from "@/lib/utils";
 
 interface NavbarProps {
@@ -36,6 +38,34 @@ type NavLink = {
   label: string;
   icon: LucideIcon;
 };
+
+type AdminMenuLink = {
+  href: string;
+  label: string;
+  description: string;
+  icon: LucideIcon;
+};
+
+const adminSubmenuIconMap: Record<string, LucideIcon> = {
+  overview: LayoutDashboard,
+  destinations: MapPin,
+  purchases: ShoppingBag,
+  backgrounds: ImageIcon,
+};
+
+const adminMenuDescriptions: Record<string, string> = {
+  overview: "Panorama geral de métricas e atividade",
+  destinations: "Curadoria e criação de novos destinos",
+  purchases: "Pedidos e registros financeiros",
+  backgrounds: "Personalização visual da vitrine",
+};
+
+const adminMenuLinks: AdminMenuLink[] = dashboardNavItems.map((item) => ({
+  href: item.href ?? `/dashboard#${item.id}`,
+  label: item.label,
+  description: adminMenuDescriptions[item.id] ?? "Ir para a área", 
+  icon: adminSubmenuIconMap[item.icon] ?? LayoutDashboard,
+}));
 
 type UserMenuProps = {
   isOpen: boolean;
@@ -282,6 +312,131 @@ function DesktopNavigation({ navigationLinks, pathname }: { navigationLinks: Nav
   );
 }
 
+function AdminMenu({
+  isOpen,
+  onToggle,
+  onClose,
+  adminLink,
+  links,
+  isActive,
+}: {
+  isOpen: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+  adminLink: NavLink;
+  links: AdminMenuLink[];
+  isActive: boolean;
+}) {
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const AdminIcon = adminLink.icon;
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        !menuRef.current?.contains(event.target as Node) &&
+        !buttonRef.current?.contains(event.target as Node)
+      ) {
+        onClose();
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isOpen, onClose]);
+
+  return (
+    <div className="relative hidden lg:block">
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={onToggle}
+        className={cn(
+          "group relative inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#001b72] via-[#2436ad] to-[#ea002a] px-3 py-1.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(0,27,114,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[rgba(234,0,42,0.4)] focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brand-secondary)]",
+          isActive && "ring-2 ring-[color:var(--brand-primary)]/70 ring-offset-2 ring-offset-white",
+          isOpen && "translate-y-[1px] shadow-md",
+        )}
+        aria-haspopup="true"
+        aria-expanded={isOpen}
+      >
+        <span className="flex size-6 items-center justify-center rounded-full bg-white/20 text-white transition-all group-hover:bg-white/25">
+          <AdminIcon className="h-3.5 w-3.5" aria-hidden />
+        </span>
+        <span className="flex items-center gap-1">
+          {adminLink.label}
+          <ChevronDown
+            className={cn("h-4 w-4 transition-transform", isOpen ? "rotate-180" : "rotate-0")}
+            aria-hidden
+          />
+        </span>
+      </button>
+
+      <AnimatePresence>
+        {isOpen ? (
+          <motion.div
+            ref={menuRef}
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.16, ease: [0.4, 0, 0.2, 1] }}
+            className="absolute right-0 mt-3 w-72 rounded-2xl border border-[color:var(--brand-secondary-soft)] bg-white/95 p-3 text-sm text-[color:var(--brand-secondary)] shadow-xl shadow-[rgba(0,27,114,0.15)] backdrop-blur"
+          >
+            <Link
+              href={adminLink.href}
+              onClick={onClose}
+              className="flex items-center justify-between rounded-xl bg-[color-mix(in_srgb,var(--brand-secondary)_8%,white)] px-3 py-2 font-semibold text-[color:var(--brand-secondary)] transition-colors hover:bg-[color-mix(in_srgb,var(--brand-primary)_12%,white)]"
+            >
+              <span className="flex items-center gap-2">
+                <AdminIcon className="h-4 w-4 text-[color:var(--brand-primary)]" aria-hidden />
+                Ir para o painel
+              </span>
+              <ArrowUpRight className="h-4 w-4 text-[color:var(--brand-secondary)]/60" aria-hidden />
+            </Link>
+
+            <div className="mt-3 space-y-1">
+              {links.map((item) => {
+                const ItemIcon = item.icon;
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onClose}
+                    className="flex items-center justify-between gap-2 rounded-xl px-3 py-2 transition-colors hover:bg-[color-mix(in_srgb,var(--brand-secondary)_10%,white)]"
+                  >
+                    <span className="flex items-center gap-2 text-[color:var(--brand-secondary)]">
+                      <span className="grid h-9 w-9 place-items-center rounded-xl bg-[color-mix(in_srgb,var(--brand-secondary)_8%,white)] text-[color:var(--brand-secondary)]">
+                        <ItemIcon className="h-4 w-4" aria-hidden />
+                      </span>
+                      <span className="flex flex-col leading-tight">
+                        <span className="font-semibold">{item.label}</span>
+                        <span className="text-xs text-[color:var(--brand-secondary)]/70">{item.description}</span>
+                      </span>
+                    </span>
+                    <ArrowUpRight className="h-4 w-4 text-[color:var(--brand-secondary)]/50" aria-hidden />
+                  </Link>
+                );
+              })}
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 function MobileNavigation({
   isOpen,
   onClose,
@@ -293,8 +448,6 @@ function MobileNavigation({
   userDisplayName,
   hasFavorites,
   favoriteBadgeLabel,
-  adminLink,
-  isAdmin,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -306,11 +459,8 @@ function MobileNavigation({
   userDisplayName: string;
   hasFavorites: boolean;
   favoriteBadgeLabel: string;
-  adminLink: NavLink;
-  isAdmin: boolean;
 }) {
   const firstItemRef = useRef<HTMLAnchorElement | null>(null);
-  const AdminIcon = adminLink.icon;
 
   useEffect(() => {
     if (isOpen) {
@@ -422,28 +572,6 @@ function MobileNavigation({
                   </Link>
                 </div>
 
-                {isAdmin ? (
-                  <Link
-                    href={adminLink.href}
-                    onClick={onClose}
-                    className="group flex items-center justify-between gap-2.5 rounded-lg border border-[color:var(--brand-secondary-soft)] bg-white px-2.5 py-1.5 text-sm font-medium text-[color:var(--brand-secondary)] transition-colors hover:border-[color:var(--brand-primary)]/50 hover:bg-[color-mix(in_srgb,var(--brand-secondary)_10%,white)] focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brand-secondary)]"
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <span className="grid h-7 w-7 place-items-center rounded-lg bg-[color-mix(in_srgb,var(--brand-secondary)_12%,white)] text-[color:var(--brand-secondary)] transition-colors group-hover:bg-[color-mix(in_srgb,var(--brand-primary)_10%,white)]">
-                        <AdminIcon className="h-4 w-4" aria-hidden />
-                      </span>
-                      <span className="flex flex-col text-left leading-tight">
-                        <span className="font-semibold">{adminLink.label}</span>
-                        <span className="text-xs font-medium text-[color:var(--brand-secondary)]/60">Gerencie a plataforma</span>
-                      </span>
-                    </span>
-                    <ArrowUpRight
-                      className="h-4 w-4 text-[color:var(--brand-secondary)]/60 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-                      aria-hidden
-                    />
-                  </Link>
-                ) : null}
-
                 <button
                   type="button"
                   onClick={() => {
@@ -486,6 +614,7 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const isScrolled = useScrollState();
   const headerRef = useRef<HTMLElement>(null);
 
@@ -511,10 +640,11 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
     label: "Painel Admin",
     icon: LayoutDashboard,
   };
-  const AdminIcon = adminLink.icon;
 
   const toggleUserMenu = useCallback(() => setUserMenuOpen((previous) => !previous), []);
   const closeUserMenu = useCallback(() => setUserMenuOpen(false), []);
+  const toggleAdminMenu = useCallback(() => setAdminMenuOpen((previous) => !previous), []);
+  const closeAdminMenu = useCallback(() => setAdminMenuOpen(false), []);
   const toggleMobileMenu = useCallback(() => setMobileMenuOpen((previous) => !previous), []);
   const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
 
@@ -561,7 +691,8 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
   useEffect(() => {
     closeMobileMenu();
     closeUserMenu();
-  }, [pathname, closeMobileMenu, closeUserMenu]);
+    closeAdminMenu();
+  }, [pathname, closeMobileMenu, closeUserMenu, closeAdminMenu]);
 
   useEffect(() => {
     updateNavbarHeight();
@@ -606,29 +737,19 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
 
         <DesktopNavigation navigationLinks={navigationLinks} pathname={pathname} />
 
-        <div className="flex items-center gap-3">
-          {isAuthenticated ? (
-            <>
-              {isAdmin ? (
-                <Link
-                  href={adminLink.href}
-                  className={cn(
-                    "group relative hidden items-center gap-2 rounded-full bg-gradient-to-r from-[#001b72] via-[#2436ad] to-[#ea002a] px-3 py-1.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(0,27,114,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[rgba(234,0,42,0.4)] focus-visible:outline focus-visible:[outline-width:2px] focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brand-secondary)] lg:inline-flex",
-                    pathname.startsWith("/dashboard") && "ring-2 ring-offset-2 ring-offset-white ring-[color:var(--brand-primary)]/70",
-                  )}
-                >
-                  <span className="flex size-6 items-center justify-center rounded-full bg-white/20 text-white transition-all group-hover:bg-white/25">
-                    <AdminIcon className="h-3.5 w-3.5" aria-hidden />
-                  </span>
-                  <span className="flex items-center gap-1">
-                    {adminLink.label}
-                    <ArrowUpRight
-                      className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-                      aria-hidden
-                    />
-                  </span>
-                </Link>
-              ) : null}
+          <div className="flex items-center gap-3">
+            {isAuthenticated ? (
+              <>
+                {isAdmin ? (
+                  <AdminMenu
+                    isOpen={adminMenuOpen}
+                    onToggle={toggleAdminMenu}
+                    onClose={closeAdminMenu}
+                    adminLink={adminLink}
+                    links={adminMenuLinks}
+                    isActive={pathname.startsWith("/dashboard")}
+                  />
+                ) : null}
 
               <div className="hidden lg:block">
                 <UserMenu
@@ -690,8 +811,6 @@ export function Navbar({ user, favoriteCount: favoriteCountProp = 0 }: NavbarPro
           userDisplayName={userDisplayName}
           hasFavorites={hasFavorites}
           favoriteBadgeLabel={favoriteBadgeLabel}
-          adminLink={adminLink}
-          isAdmin={isAdmin}
         />
       </div>
     </header>

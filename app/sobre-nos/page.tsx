@@ -95,6 +95,10 @@ function Badge({ children }: { children: React.ReactNode }) {
 export default function AboutPage() {
   const [heroImages, setHeroImages] = useState<string[]>(FALLBACK_HERO_IMAGES);
 
+  const validHeroImages = heroImages.filter((url) => url.trim().length);
+
+  const imagesToShow = validHeroImages.length ? validHeroImages : FALLBACK_HERO_IMAGES;
+
   useEffect(() => {
     let isMounted = true;
 
@@ -161,7 +165,7 @@ export default function AboutPage() {
       <section className="relative isolate overflow-clip rounded-b-[2.5rem] border-b border-white/20 bg-black/70 md:rounded-b-[3rem]">
         {/* BG images em camadas */}
         <div className="absolute inset-0 -z-10">
-          {heroImages.map((src, i) => (
+          {imagesToShow.map((src, i) => (
             <div
               key={i}
               className={cn(
@@ -169,7 +173,13 @@ export default function AboutPage() {
                 i === 0 && "opacity-100"
               )}
             >
-              <Image src={src} alt="" fill priority={i === 0} className="object-cover" />
+              <Image
+                src={src}
+                alt="Paisagem de fundo destacando destinos da Evastur"
+                fill
+                priority={i === 0}
+                className="object-cover"
+              />
               <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/80" />
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.16),transparent_50%)] mix-blend-overlay" />
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(168,85,247,0.12),transparent_50%)] mix-blend-overlay" />
@@ -179,7 +189,7 @@ export default function AboutPage() {
 
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 md:py-28 lg:px-8">
           <div className="flex flex-col items-center text-center text-white">
-            <Badge>Evastur • desde 1999</Badge>
+            <Badge>Evastur • desde 1996</Badge>
             <div className="mt-6 inline-flex items-center gap-3">
               <div className="relative">
                 <Plane className="size-10 text-blue-300 animate-bounce" />
@@ -193,9 +203,7 @@ export default function AboutPage() {
               </h1>
             </div>
             <p className="mt-4 max-w-2xl text-sm text-white/90 sm:text-base">
-              Desde 1999, conectamos pessoas a roteiros com curadoria, hotéis
-              selecionados e suporte ponta a ponta. Experiências autênticas,
-              seguras e memoráveis — do primeiro clique ao último pôr do sol.
+              Desde 1996, Mais do que viagens, entregamos tranquilidade. Compra segura, suporte real e experiências que marcam.
             </p>
 
             <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row">
@@ -303,7 +311,7 @@ export default function AboutPage() {
           {[
             { Icon: MapPinned, label: "Destinos mapeados", to: 280 },
             { Icon: Users, label: "Viajantes atendidos", to: 15000 },
-            { Icon: Clock8, label: "Anos de história", to: new Date().getFullYear() - 1999 },
+            { Icon: Clock8, label: "Anos de história", to: new Date().getFullYear() - 1996 },
             { Icon: CheckCircle2, label: "Avaliações 5★", to: 4200 },
           ].map(({ Icon, label, to }, i) => (
             <div key={i} className="flex items-center gap-4 rounded-2xl border border-white/20 bg-white/50 p-5">
@@ -322,11 +330,11 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Linha do Tempo (1999 → hoje) */}
+      {/* Linha do Tempo (1996 → hoje) */}
       <section className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/70 to-white/50 p-6 backdrop-blur-xl">
           <h2 className="text-center text-2xl font-bold md:text-3xl">
-            Nossa jornada desde <span className="text-blue-700">1999</span>
+            Nossa jornada desde <span className="text-blue-700">1996</span>
           </h2>
           <p className="mx-auto mt-2 max-w-2xl text-center text-sm text-slate-600">
             Crescemos com você: do atendimento de balcão ao planejamento digital com curadoria premium.
@@ -334,7 +342,7 @@ export default function AboutPage() {
 
           <ol className="relative mx-auto mt-8 grid max-w-4xl gap-8 border-l border-slate-200 pl-6">
             {[
-              { year: 1999, title: "Nasce a Evastur", desc: "Agência de bairro com atendimento próximo e foco em viagens nacionais.", Icon: Handshake },
+              { year: 1996, title: "Nasce a Evastur", desc: "Agência de bairro com atendimento próximo e foco em viagens nacionais.", Icon: Handshake },
               { year: 2008, title: "Parcerias globais", desc: "Acordos internacionais e melhores tarifas com hotéis e operadoras.", Icon: Hotel },
               { year: 2015, title: "Roteiros autorais", desc: "Curadoria própria: experiências locais, gastronômicas e culturais.", Icon: Stars },
               { year: 2020, title: "Suporte total 24/7", desc: "Acompanhamento ponta a ponta — pré, durante e pós viagem.", Icon: ShieldCheck },
@@ -424,7 +432,7 @@ export default function AboutPage() {
           {[
             {
               q: "A Evastur é uma agência de verdade?",
-              a: "Sim. Atuamos desde 1999 com CNPJ, certificações do trade e parcerias oficiais com operadoras, hotéis e cias aéreas.",
+              a: "Sim. Atuamos desde 1996 com CNPJ, certificações do trade e parcerias oficiais com operadoras, hotéis e cias aéreas.",
             },
             {
               q: "Vocês dão suporte durante a viagem?",
@@ -491,7 +499,7 @@ export default function AboutPage() {
 
       {/* Rodapézinho institucional */}
       <footer className="mx-auto w-full max-w-7xl px-4 pb-10 text-center text-xs text-slate-500 sm:px-6 lg:px-8">
-        © {new Date().getFullYear()} Evastur — desde 1999. Todos os direitos reservados.
+        © {new Date().getFullYear()} Evastur — desde 1996. Todos os direitos reservados.
       </footer>
     </main>
   );

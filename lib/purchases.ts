@@ -16,6 +16,20 @@ export const PURCHASE_STATUS_LABELS: Record<PurchaseStatusValue, string> = {
   EMITIDA: "Emitida",
 };
 
+export type TicketDetails = {
+  locator: string;
+  departureDate: string;
+  returnDate: string;
+  outboundDepartureTime: string;
+  outboundArrivalTime: string;
+  returnDepartureTime: string;
+  returnArrivalTime: string;
+  fareType: string;
+  airline: string;
+  flightNumber: string;
+  passengerNames: string[];
+};
+
 export type PurchaseWithRelations = Prisma.PurchaseGetPayload<{
   include: {
     package: true;
@@ -39,6 +53,7 @@ export type SerializedPurchase = {
   seatCount: number;
   status: PurchaseStatusValue;
   observacao: string;
+  ticketDetails: TicketDetails | null;
   dataCompra: string;
   package: {
     id: number;
@@ -46,6 +61,10 @@ export type SerializedPurchase = {
     city: string;
     price: number;
     coverPhoto: string | null;
+    description: string;
+    departureLocation: string | null;
+    startDate: string;
+    endDate: string;
   };
   user: {
     id: number;
@@ -78,6 +97,7 @@ export function serializePurchase(purchase: PurchaseWithRelations): SerializedPu
     seatCount: purchase.seatCount,
     status: purchase.status as PurchaseStatusValue,
     observacao: purchase.observacao,
+    ticketDetails: (purchase.ticketDetails as TicketDetails | null) ?? null,
     dataCompra: purchase.dataCompra.toISOString(),
     package: {
       id: purchase.package.id,
@@ -85,6 +105,10 @@ export function serializePurchase(purchase: PurchaseWithRelations): SerializedPu
       city: purchase.package.city,
       price: Number(purchase.package.price),
       coverPhoto: purchase.package.photos[0] ?? null,
+      description: purchase.package.description,
+      departureLocation: purchase.package.departureLocation,
+      startDate: purchase.package.startDate.toISOString(),
+      endDate: purchase.package.endDate.toISOString(),
     },
     user: purchase.user
       ? {

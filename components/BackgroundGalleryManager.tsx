@@ -49,6 +49,71 @@ export function BackgroundGalleryManager() {
   const [isClearing, setIsClearing] = useState(false);
   const [isModePending, startModeTransition] = useTransition();
 
+  const setItemState = (
+    id: number,
+    changes: Partial<BackgroundWithDraft>,
+  ) => {
+    setBackgrounds((current) =>
+      current.map((item) => (item.id === id ? { ...item, ...changes } : item)),
+    );
+  };
+
+  const mutateBackground = async (
+    id: number,
+    {
+      request,
+      pendingAction,
+      successMessage,
+      errorMessage,
+      onSuccess,
+    }: {
+      request: () => Promise<Response>;
+      pendingAction: BackgroundWithDraft["pendingAction"];
+      successMessage: string;
+      errorMessage: string;
+      onSuccess?: (image: BackgroundImageItem | undefined) => void;
+    },
+  ) => {
+    setItemState(id, {
+      isSaving: true,
+      pendingAction,
+      error: null,
+      success: null,
+    });
+
+    try {
+      const response = await request();
+      const data = (await response.json().catch(() => ({}))) as {
+        image?: BackgroundImageItem;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? errorMessage);
+      }
+
+      const image = data.image;
+      const applySuccess =
+        onSuccess ??
+        ((img?: BackgroundImageItem) => {
+          if (!img) {
+            throw new Error("Resposta inválida do servidor");
+          }
+          syncBackground(img);
+        });
+
+      applySuccess(image);
+      setFeedback(successMessage);
+      await refreshSettings();
+    } catch (err) {
+      setItemState(id, {
+        isSaving: false,
+        pendingAction: undefined,
+        error: err instanceof Error ? err.message : "Erro inesperado",
+      });
+    }
+  };
+
   const applySettings = (settings: BackgroundApiResponse | null) => {
     if (!settings) {
       setMode("ALL");
@@ -134,9 +199,11 @@ export function BackgroundGalleryManager() {
   }, [activeBackgrounds]);
 
   const displayedBackgrounds = useMemo<DisplayedBackground[]>(() => {
-    const mapped = activeBackgrounds.map((item) => ({ ...item, isFallback: false }));
+    const mapped = activeBackgrounds
+      .filter((item) => typeof item.url === "string" && item.url.trim().length > 0)
+      .map((item) => ({ ...item, isFallback: false }));
 
-    if (!mapped.length && fallbackBackgroundUrl) {
+    if (!mapped.length && fallbackBackgroundUrl?.trim()) {
       mapped.push({
         id: -1,
         url: fallbackBackgroundUrl,
@@ -222,122 +289,46 @@ export function BackgroundGalleryManager() {
       return;
     }
 
-    setBackgrounds((current) =>
-      current.map((item) =>
-        item.id === id
-          ? { ...item, isSaving: true, pendingAction: "save", error: null, success: null }
-          : item,
-      ),
-    );
-
-    try {
-      const response = await fetch(`/api/background/gallery/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = (await response.json().catch(() => ({}))) as { image?: BackgroundImageItem; error?: string };
-
-      if (!response.ok || !data.image) {
-        throw new Error(data.error ?? "Não foi possível atualizar a imagem");
-      }
-
-      syncBackground(data.image);
-      setFeedback("Imagem atualizada!");
-      await refreshSettings();
-    } catch (err) {
-      setBackgrounds((current) =>
-        current.map((item) =>
-          item.id === id
-            ? {
-                ...item,
-                isSaving: false,
-                pendingAction: undefined,
-                error: err instanceof Error ? err.message : "Erro inesperado",
-              }
-            : item,
-        ),
-      );
-    }
+    await mutateBackground(id, {
+      pendingAction: "save",
+      request: () =>
+        fetch(`/api/background/gallery/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }),
+      successMessage: "Imagem atualizada!",
+      errorMessage: "Não foi possível atualizar a imagem",
+    });
   };
 
   const handleToggleVisibility = async (id: number, nextVisible: boolean) => {
-    setBackgrounds((current) =>
-      current.map((item) =>
-        item.id === id
-          ? { ...item, isSaving: true, pendingAction: "visibility", error: null, success: null }
-          : item,
-      ),
-    );
-
-    try {
-      const response = await fetch(`/api/background/gallery/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isVisible: nextVisible }),
-      });
-      const data = (await response.json().catch(() => ({}))) as { image?: BackgroundImageItem; error?: string };
-
-      if (!response.ok || !data.image) {
-        throw new Error(data.error ?? "Não foi possível atualizar a visibilidade");
-      }
-
-      syncBackground(data.image);
-      setFeedback(nextVisible ? "Imagem exibida" : "Imagem ocultada");
-      await refreshSettings();
-    } catch (err) {
-      setBackgrounds((current) =>
-        current.map((item) =>
-          item.id === id
-            ? {
-                ...item,
-                isSaving: false,
-                pendingAction: undefined,
-                error: err instanceof Error ? err.message : "Erro inesperado",
-              }
-            : item,
-        ),
-      );
-    }
+    await mutateBackground(id, {
+      pendingAction: "visibility",
+      request: () =>
+        fetch(`/api/background/gallery/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isVisible: nextVisible }),
+        }),
+      successMessage: nextVisible ? "Imagem exibida" : "Imagem ocultada",
+      errorMessage: "Não foi possível atualizar a visibilidade",
+    });
   };
 
   const handleDelete = async (id: number) => {
-    setBackgrounds((current) =>
-      current.map((item) =>
-        item.id === id
-          ? { ...item, isSaving: true, pendingAction: "delete", error: null, success: null }
-          : item,
-      ),
-    );
-
-    try {
-      const response = await fetch(`/api/background/gallery/${id}`, {
-        method: "DELETE",
-      });
-      const data = (await response.json().catch(() => ({}))) as { image?: BackgroundImageItem; error?: string };
-
-      if (!response.ok || !data.image) {
-        throw new Error(data.error ?? "Não foi possível excluir a imagem");
-      }
-
-      setBackgrounds((current) => current.filter((item) => item.id !== id));
-      setFeedback("Imagem removida");
-      await refreshSettings();
-    } catch (err) {
-      setBackgrounds((current) =>
-        current.map((item) =>
-          item.id === id
-            ? {
-                ...item,
-                isSaving: false,
-                pendingAction: undefined,
-                error: err instanceof Error ? err.message : "Erro inesperado",
-              }
-            : item,
-        ),
-      );
-    }
+    await mutateBackground(id, {
+      pendingAction: "delete",
+      request: () =>
+        fetch(`/api/background/gallery/${id}`, {
+          method: "DELETE",
+        }),
+      successMessage: "Imagem removida",
+      errorMessage: "Não foi possível excluir a imagem",
+      onSuccess: () => {
+        setBackgrounds((current) => current.filter((item) => item.id !== id));
+      },
+    });
   };
 
   const handleAddBackground = async (event: React.FormEvent<HTMLFormElement>) => {

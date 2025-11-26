@@ -8,18 +8,6 @@ export const dashboardNavItems: DashboardNavItem[] = [
     href: "/dashboard#overview",
   },
   {
-    id: "users",
-    label: "Usuários",
-    icon: "users",
-    href: "/dashboard#users",
-  },
-  {
-    id: "settings",
-    label: "Configurações",
-    icon: "settings",
-    href: "/dashboard#settings",
-  },
-  {
     id: "destinations",
     label: "Cadastro de destinos",
     icon: "destinations",

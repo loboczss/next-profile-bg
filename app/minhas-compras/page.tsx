@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { DigitalTicketPreview } from "@/components/purchases/digital-ticket-preview";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PURCHASE_STATUS_LABELS, serializePurchase, type SerializedPurchase } from "@/lib/purchases";
@@ -121,7 +122,7 @@ export default async function MinhasComprasPage() {
                   : paymentStatus === "FALHOU"
                     ? "bg-rose-100 text-rose-700"
                     : "bg-amber-100 text-amber-700";
-              const observacao = purchase.observacao.trim();
+              const ticketDetails = purchase.ticketDetails;
               const passengerCountLabel = `${purchase.seatCount} ${
                 purchase.seatCount === 1 ? "vaga" : "vagas"
               }`;
@@ -132,19 +133,26 @@ export default async function MinhasComprasPage() {
                   key={purchase.id}
                   className="rounded-3xl border border-slate-200/70 bg-white/90 p-6 shadow-lg transition hover:-translate-y-1 hover:shadow-xl"
                 >
-                  <div className="mb-4 flex items-center justify-between">
-                    <span
-                      className={cn(
-                        "inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold",
-                        paymentBadgeColor
-                      )}
-                    >
-                      {paymentLabel}
-                    </span>
-                    {purchase.payment?.externalReference ? (
-                      <span className="text-[11px] font-medium uppercase tracking-[0.2em] text-slate-400">
-                        Ref.: {purchase.payment.externalReference}
+                  <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold",
+                          paymentBadgeColor
+                        )}
+                      >
+                        {paymentLabel}
                       </span>
+                      {purchase.payment?.externalReference ? (
+                        <span className="text-[11px] font-medium uppercase tracking-[0.2em] text-slate-400">
+                          Ref.: {purchase.payment.externalReference}
+                        </span>
+                      ) : null}
+                    </div>
+                    {purchase.status === "EMITIDA" ? (
+                      <div className="w-full sm:w-auto">
+                        <DigitalTicketPreview purchase={purchase} />
+                      </div>
                     ) : null}
                   </div>
                   <div className="flex flex-col gap-6 sm:flex-row">
@@ -210,9 +218,54 @@ export default async function MinhasComprasPage() {
                           </dd>
                         </div>
                         <div className="flex flex-col sm:col-span-2">
-                          <dt className="text-xs uppercase tracking-[0.25em] text-slate-400">Observação do time</dt>
+                          <dt className="text-xs uppercase tracking-[0.25em] text-slate-400">Detalhes da passagem</dt>
                           <dd className="mt-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                            {observacao ? observacao : "Sem observações até o momento."}
+                            {ticketDetails ? (
+                              <div className="grid gap-3 md:grid-cols-2">
+                                <div className="space-y-1">
+                                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Localizador</p>
+                                  <p className="font-semibold text-slate-800">{ticketDetails.locator || "—"}</p>
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Companhia e voo</p>
+                                  <p className="font-semibold text-slate-800">{ticketDetails.airline || "—"}</p>
+                                  <p className="text-xs text-slate-500">{ticketDetails.flightNumber || "Número não informado"}</p>
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Ida</p>
+                                  <p className="text-sm text-slate-700">
+                                    {ticketDetails.departureDate || "Data não informada"}
+                                    {ticketDetails.outboundDepartureTime ? ` • Embarque ${ticketDetails.outboundDepartureTime}` : ""}
+                                    {ticketDetails.outboundArrivalTime ? ` • Chegada ${ticketDetails.outboundArrivalTime}` : ""}
+                                  </p>
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Volta</p>
+                                  <p className="text-sm text-slate-700">
+                                    {ticketDetails.returnDate || "Data não informada"}
+                                    {ticketDetails.returnDepartureTime ? ` • Embarque ${ticketDetails.returnDepartureTime}` : ""}
+                                    {ticketDetails.returnArrivalTime ? ` • Chegada ${ticketDetails.returnArrivalTime}` : ""}
+                                  </p>
+                                </div>
+                                <div className="space-y-1 md:col-span-2">
+                                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Passageiros</p>
+                                  <div className="flex flex-wrap gap-2">
+                                    {ticketDetails.passengerNames.map((name, index) => (
+                                      <span
+                                        key={`${purchase.id}-ticket-passenger-${index}`}
+                                        className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-inner"
+                                      >
+                                        {name}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-slate-500">
+                                Detalhes da passagem ainda não foram compartilhados.
+                              </span>
+                            )}
                           </dd>
                         </div>
                       </dl>

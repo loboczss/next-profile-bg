@@ -76,10 +76,10 @@ export function PurchaseForm({ destination }: PurchaseFormProps) {
   }, [destination.description]);
 
   const paymentMethodDescriptions: Record<PaymentMethodValue, string> = {
-    CARTAO: "Pague com cartão de crédito via Banco Cora.",
-    PIX: "Pagamento instantâneo via Pix.",
-    BOLETO: "Geramos um boleto para pagamento em até 2 dias úteis.",
-    CARNE: "Parcelamos a viagem em carnê digital pelo Banco Cora.",
+    CARTAO: "Combine o pagamento no cartão diretamente com nossa equipe.",
+    PIX: "Receba os dados do Pix para pagar com rapidez e segurança.",
+    BOLETO: "Geramos um boleto digital para você pagar como preferir.",
+    CARNE: "Parcelamos a viagem em carnê digital combinado pela agência.",
   };
 
   const buildLoginRedirect = () => {
@@ -446,7 +446,8 @@ export function PurchaseForm({ destination }: PurchaseFormProps) {
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Pagamento</p>
             <h3 className="text-base font-semibold text-slate-900">Como deseja pagar?</h3>
             <p className="text-sm text-slate-600">
-              Aceitamos cartão, Pix, boleto ou carnê via Banco Cora. Escolha a opção que preferir para finalizar sua reserva.
+              Escolha a opção que preferir para registrar sua reserva. Nossa equipe combinará o pagamento diretamente com você,
+              sem redirecionamentos ou integrações bancárias.
             </p>
           </header>
           <div className="grid gap-3 sm:grid-cols-2">

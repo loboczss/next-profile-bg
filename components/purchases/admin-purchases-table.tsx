@@ -8,9 +8,13 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { PURCHASE_STATUS_LABELS, type PurchaseStatusValue, type SerializedPurchase } from "@/lib/purchases";
-import { PAYMENT_STATUS_LABELS, isPaymentCompleted, type PaymentStatusValue } from "@/lib/payments";
+import {
+  PURCHASE_STATUS_LABELS,
+  type PurchaseStatusValue,
+  type SerializedPurchase,
+  type TicketDetails,
+} from "@/lib/purchases";
+import { PAYMENT_STATUS_LABELS, type PaymentStatusValue } from "@/lib/payments";
 import { cn } from "@/lib/utils";
 
 interface AdminPurchasesTableProps {
@@ -29,8 +33,8 @@ type PassengerDraft = {
 type PurchaseRowState = {
   purchase: SerializedPurchase;
   draftStatus: PurchaseStatusValue;
-  draftObservacao: string;
   draftPassengers: PassengerDraft[];
+  draftTicketDetails: TicketDetails;
 };
 
 type PassengerField = Exclude<keyof PassengerDraft, "id">;
@@ -47,8 +51,82 @@ type PassengerUpdatePayload = {
 type PurchaseUpdatePayload = {
   status?: PurchaseStatusValue;
   observacao?: string;
+  ticketDetails?: TicketDetails;
   passengers?: PassengerUpdatePayload[];
 };
+
+const ticketDetailFields: (keyof TicketDetails)[] = [
+  "locator",
+  "departureDate",
+  "returnDate",
+  "outboundDepartureTime",
+  "outboundArrivalTime",
+  "returnDepartureTime",
+  "returnArrivalTime",
+  "fareType",
+  "airline",
+  "flightNumber",
+  "passengerNames",
+];
+
+function createTicketDetailsFromPurchase(purchase: SerializedPurchase): TicketDetails {
+  return (
+    purchase.ticketDetails ?? {
+      locator: "",
+      departureDate: "",
+      returnDate: "",
+      outboundDepartureTime: "",
+      outboundArrivalTime: "",
+      returnDepartureTime: "",
+      returnArrivalTime: "",
+      fareType: "",
+      airline: "",
+      flightNumber: "",
+      passengerNames: purchase.passengers.map((passenger) => passenger.fullName),
+    }
+  );
+}
+
+function sanitizeTicketDetails(details: TicketDetails): TicketDetails {
+  return {
+    locator: details.locator.trim(),
+    departureDate: details.departureDate.trim(),
+    returnDate: details.returnDate.trim(),
+    outboundDepartureTime: details.outboundDepartureTime.trim(),
+    outboundArrivalTime: details.outboundArrivalTime.trim(),
+    returnDepartureTime: details.returnDepartureTime.trim(),
+    returnArrivalTime: details.returnArrivalTime.trim(),
+    fareType: details.fareType.trim(),
+    airline: details.airline.trim(),
+    flightNumber: details.flightNumber.trim(),
+    passengerNames: details.passengerNames.map((name) => name.trim()).filter(Boolean),
+  };
+}
+
+function areTicketDetailsEqual(first: TicketDetails, second: TicketDetails): boolean {
+  const a = sanitizeTicketDetails(first);
+  const b = sanitizeTicketDetails(second);
+
+  return ticketDetailFields.every((field) => {
+    if (field === "passengerNames") {
+      return a.passengerNames.join("|") === b.passengerNames.join("|");
+    }
+
+    return a[field] === b[field];
+  });
+}
+
+function isTicketDetailsComplete(details: TicketDetails): boolean {
+  const sanitized = sanitizeTicketDetails(details);
+
+  return ticketDetailFields.every((field) => {
+    if (field === "passengerNames") {
+      return sanitized.passengerNames.length > 0;
+    }
+
+    return Boolean(sanitized[field]);
+  });
+}
 
 function formatDateToInputValue(dateString: string): string {
   const date = new Date(dateString);
@@ -81,8 +159,8 @@ export function AdminPurchasesTable({ purchases }: AdminPurchasesTableProps) {
     purchases.map((purchase) => ({
       purchase,
       draftStatus: purchase.status,
-      draftObservacao: purchase.observacao,
       draftPassengers: createPassengerDraftsFromPurchase(purchase),
+      draftTicketDetails: createTicketDetailsFromPurchase(purchase),
     }))
   );
   const [savingId, setSavingId] = useState<number | null>(null);
@@ -94,8 +172,8 @@ export function AdminPurchasesTable({ purchases }: AdminPurchasesTableProps) {
       purchases.map((purchase) => ({
         purchase,
         draftStatus: purchase.status,
-        draftObservacao: purchase.observacao,
         draftPassengers: createPassengerDraftsFromPurchase(purchase),
+        draftTicketDetails: createTicketDetailsFromPurchase(purchase),
       }))
     );
     setExpandedRowIds((previous) => {
@@ -159,16 +237,45 @@ export function AdminPurchasesTable({ purchases }: AdminPurchasesTableProps) {
     );
   };
 
-  const handleObservationChange = (purchaseId: number, observacao: string) => {
+  const handleTicketDetailChange = (
+    purchaseId: number,
+    field: Exclude<keyof TicketDetails, "passengerNames">,
+    value: string
+  ) => {
     setRows((previous) =>
       previous.map((row) =>
         row.purchase.id === purchaseId
           ? {
               ...row,
-              draftObservacao: observacao,
+              draftTicketDetails: {
+                ...row.draftTicketDetails,
+                [field]: value,
+              },
             }
           : row
       )
+    );
+  };
+
+  const handleTicketPassengerNameChange = (purchaseId: number, index: number, value: string) => {
+    setRows((previous) =>
+      previous.map((row) => {
+        if (row.purchase.id !== purchaseId) {
+          return row;
+        }
+
+        const updatedPassengerNames = [...row.draftTicketDetails.passengerNames];
+
+        updatedPassengerNames[index] = value;
+
+        return {
+          ...row,
+          draftTicketDetails: {
+            ...row.draftTicketDetails,
+            passengerNames: updatedPassengerNames,
+          },
+        };
+      })
     );
   };
 
@@ -204,8 +311,8 @@ export function AdminPurchasesTable({ purchases }: AdminPurchasesTableProps) {
       return;
     }
 
-    if (row.draftStatus === "EMITIDA" && row.purchase.payment?.status !== "CONCLUIDO") {
-      toast.error("Não é possível emitir a compra sem o pagamento confirmado.");
+    if (row.draftStatus === "EMITIDA" && !isTicketDetailsComplete(row.draftTicketDetails)) {
+      toast.error("Preencha todos os campos obrigatórios dos detalhes da passagem para emitir.");
       return;
     }
 
@@ -215,8 +322,13 @@ export function AdminPurchasesTable({ purchases }: AdminPurchasesTableProps) {
       payload.status = row.draftStatus;
     }
 
-    if (row.draftObservacao !== row.purchase.observacao) {
-      payload.observacao = row.draftObservacao;
+    const ticketDetailsChanged = !areTicketDetailsEqual(
+      row.draftTicketDetails,
+      row.purchase.ticketDetails ?? createTicketDetailsFromPurchase(row.purchase)
+    );
+
+    if (ticketDetailsChanged) {
+      payload.ticketDetails = sanitizeTicketDetails(row.draftTicketDetails);
     }
 
     const passengerUpdates = row.draftPassengers.filter((passengerDraft) => {
@@ -287,8 +399,8 @@ export function AdminPurchasesTable({ purchases }: AdminPurchasesTableProps) {
             ? {
                 purchase: updatedPurchase,
                 draftStatus: updatedPurchase.status,
-                draftObservacao: updatedPurchase.observacao,
                 draftPassengers: createPassengerDraftsFromPurchase(updatedPurchase),
+                draftTicketDetails: createTicketDetailsFromPurchase(updatedPurchase),
               }
             : current
         )
@@ -343,8 +455,11 @@ export function AdminPurchasesTable({ purchases }: AdminPurchasesTableProps) {
               const buyerName = purchase.user?.fullName ?? purchase.user?.username ?? "Cliente";
               const buyerEmail = purchase.user?.email ?? "—";
               const purchaseDate = dateFormatter.format(new Date(purchase.dataCompra));
-              const hasChanges =
-                row.draftStatus !== purchase.status || row.draftObservacao !== purchase.observacao;
+              const hasChanges = row.draftStatus !== purchase.status;
+              const ticketDetailsChanged = !areTicketDetailsEqual(
+                row.draftTicketDetails,
+                purchase.ticketDetails ?? createTicketDetailsFromPurchase(purchase)
+              );
               const isSaving = savingId === purchase.id;
               const passengerCountLabel = `${purchase.seatCount} ${
                 purchase.seatCount === 1 ? "vaga" : "vagas"
@@ -353,8 +468,8 @@ export function AdminPurchasesTable({ purchases }: AdminPurchasesTableProps) {
               const paymentLabel = purchase.payment
                 ? PAYMENT_STATUS_LABELS[paymentStatus]
                 : PAYMENT_STATUS_LABELS.PENDENTE;
-              const canEmitPurchase = isPaymentCompleted(paymentStatus);
               const passengerDrafts = row.draftPassengers;
+              const ticketDetails = sanitizeTicketDetails(row.draftTicketDetails);
               const passengersChanged = passengerDrafts.some((passengerDraft) => {
                 const originalPassenger = purchase.passengers.find(
                   (current) => current.id === passengerDraft.id
@@ -373,7 +488,7 @@ export function AdminPurchasesTable({ purchases }: AdminPurchasesTableProps) {
                 );
               });
 
-              const rowHasChanges = hasChanges || passengersChanged;
+              const rowHasChanges = hasChanges || passengersChanged || ticketDetailsChanged;
               const isExpanded = expandedRowIds.has(purchase.id);
 
               return (
@@ -421,13 +536,16 @@ export function AdminPurchasesTable({ purchases }: AdminPurchasesTableProps) {
                           handleStatusChange(purchase.id, event.target.value as PurchaseStatusValue)
                         }
                         disabled={isSaving}
-                        title={!canEmitPurchase ? "O pagamento precisa ser confirmado para emitir a compra." : undefined}
+                        title={
+                          row.draftStatus === "EMITIDA"
+                            ? "Ao emitir, os dados serão salvos e o cliente visualizará o bilhete."
+                            : undefined
+                        }
                       >
                         {STATUS_OPTIONS.map((option) => (
                           <option
                             key={option.value}
                             value={option.value}
-                            disabled={!canEmitPurchase && option.value === "EMITIDA"}
                           >
                             {option.label}
                           </option>
@@ -486,17 +604,218 @@ export function AdminPurchasesTable({ purchases }: AdminPurchasesTableProps) {
                         <div className="rounded-3xl border border-blue-100/70 bg-white/90 p-6 shadow-inner">
                           <div className="grid gap-6 lg:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)]">
                             <div className="space-y-6">
-                              <div className="space-y-3">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-blue-500">
-                                  Observações do atendimento
-                                </p>
-                                <Textarea
-                                  className="min-h-[140px] rounded-2xl border border-blue-100 bg-blue-50/60 px-4 py-3 text-sm text-slate-700 shadow-sm focus-visible:border-blue-300 focus-visible:ring-2 focus-visible:ring-blue-200"
-                                  value={row.draftObservacao}
-                                  onChange={(event) => handleObservationChange(purchase.id, event.target.value)}
-                                  placeholder="Adicione uma observação para o cliente"
-                                  disabled={isSaving}
-                                />
+                              <div className="space-y-4 rounded-2xl border border-blue-100 bg-blue-50/60 p-4 shadow-sm">
+                                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                                  <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-blue-500">
+                                    Detalhes da passagem
+                                  </p>
+                                  <span className="text-[11px] font-semibold uppercase tracking-[0.25em] text-amber-500">
+                                    Obrigatório para emissão
+                                  </span>
+                                </div>
+
+                                <div className="grid gap-4 lg:grid-cols-2">
+                                  <div className="space-y-1">
+                                    <label className="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-500">
+                                      Localizador (PNR)
+                                    </label>
+                                    <Input
+                                      value={row.draftTicketDetails.locator}
+                                      onChange={(event) =>
+                                        handleTicketDetailChange(purchase.id, "locator", event.target.value)
+                                      }
+                                      placeholder="Ex.: ABC123"
+                                      disabled={isSaving}
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-500">
+                                      Tipo de tarifa
+                                    </label>
+                                    <Input
+                                      value={row.draftTicketDetails.fareType}
+                                      onChange={(event) =>
+                                        handleTicketDetailChange(purchase.id, "fareType", event.target.value)
+                                      }
+                                      placeholder="Light, Plus, Premium..."
+                                      disabled={isSaving}
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-500">
+                                      Companhia aérea
+                                    </label>
+                                    <Input
+                                      value={row.draftTicketDetails.airline}
+                                      onChange={(event) =>
+                                        handleTicketDetailChange(purchase.id, "airline", event.target.value)
+                                      }
+                                      placeholder="Informe a companhia aérea"
+                                      disabled={isSaving}
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-500">
+                                      Número do voo
+                                    </label>
+                                    <Input
+                                      value={row.draftTicketDetails.flightNumber}
+                                      onChange={(event) =>
+                                        handleTicketDetailChange(purchase.id, "flightNumber", event.target.value)
+                                      }
+                                      placeholder="Ex.: LA1234"
+                                      disabled={isSaving}
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="grid gap-4 md:grid-cols-2">
+                                  <div className="space-y-2 rounded-2xl border border-blue-100 bg-white/70 p-4 shadow-inner">
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-500">
+                                      Ida
+                                    </p>
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                      <div className="space-y-1">
+                                        <label className="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-500">
+                                          Data de embarque
+                                        </label>
+                                        <Input
+                                          type="date"
+                                          value={row.draftTicketDetails.departureDate}
+                                          onChange={(event) =>
+                                            handleTicketDetailChange(
+                                              purchase.id,
+                                              "departureDate",
+                                              event.target.value
+                                            )
+                                          }
+                                          disabled={isSaving}
+                                        />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <label className="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-500">
+                                          Hora de embarque
+                                        </label>
+                                        <Input
+                                          type="time"
+                                          value={row.draftTicketDetails.outboundDepartureTime}
+                                          onChange={(event) =>
+                                            handleTicketDetailChange(
+                                              purchase.id,
+                                              "outboundDepartureTime",
+                                              event.target.value
+                                            )
+                                          }
+                                          disabled={isSaving}
+                                        />
+                                      </div>
+                                      <div className="space-y-1 sm:col-span-2">
+                                        <label className="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-500">
+                                          Hora de chegada
+                                        </label>
+                                        <Input
+                                          type="time"
+                                          value={row.draftTicketDetails.outboundArrivalTime}
+                                          onChange={(event) =>
+                                            handleTicketDetailChange(
+                                              purchase.id,
+                                              "outboundArrivalTime",
+                                              event.target.value
+                                            )
+                                          }
+                                          disabled={isSaving}
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="space-y-2 rounded-2xl border border-blue-100 bg-white/70 p-4 shadow-inner">
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-500">
+                                      Volta
+                                    </p>
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                      <div className="space-y-1">
+                                        <label className="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-500">
+                                          Data de retorno
+                                        </label>
+                                        <Input
+                                          type="date"
+                                          value={row.draftTicketDetails.returnDate}
+                                          onChange={(event) =>
+                                            handleTicketDetailChange(purchase.id, "returnDate", event.target.value)
+                                          }
+                                          disabled={isSaving}
+                                        />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <label className="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-500">
+                                          Hora de embarque
+                                        </label>
+                                        <Input
+                                          type="time"
+                                          value={row.draftTicketDetails.returnDepartureTime}
+                                          onChange={(event) =>
+                                            handleTicketDetailChange(
+                                              purchase.id,
+                                              "returnDepartureTime",
+                                              event.target.value
+                                            )
+                                          }
+                                          disabled={isSaving}
+                                        />
+                                      </div>
+                                      <div className="space-y-1 sm:col-span-2">
+                                        <label className="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-500">
+                                          Hora de chegada
+                                        </label>
+                                        <Input
+                                          type="time"
+                                          value={row.draftTicketDetails.returnArrivalTime}
+                                          onChange={(event) =>
+                                            handleTicketDetailChange(
+                                              purchase.id,
+                                              "returnArrivalTime",
+                                              event.target.value
+                                            )
+                                          }
+                                          disabled={isSaving}
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-500">
+                                    Nome completo dos passageiros
+                                  </p>
+                                  <div className="grid gap-3 lg:grid-cols-2">
+                                    {row.draftTicketDetails.passengerNames.map((name, index) => (
+                                      <div key={`${purchase.id}-ticket-passenger-${index}`} className="space-y-1">
+                                        <label className="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-500">
+                                          Passageiro {index + 1}
+                                        </label>
+                                        <Input
+                                          value={name}
+                                          onChange={(event) =>
+                                            handleTicketPassengerNameChange(
+                                              purchase.id,
+                                              index,
+                                              event.target.value
+                                            )
+                                          }
+                                          placeholder="Nome completo"
+                                          disabled={isSaving}
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                  {row.draftTicketDetails.passengerNames.length === 0 ? (
+                                    <p className="text-xs text-amber-600">
+                                      Adicione ao menos um passageiro para registrar os detalhes da passagem.
+                                    </p>
+                                  ) : null}
+                                </div>
                               </div>
                               <div className="space-y-2 rounded-2xl border border-blue-100 bg-blue-50/60 p-4 text-sm text-slate-600 shadow-sm">
                                 <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-blue-500">
@@ -657,14 +976,40 @@ export function AdminPurchasesTable({ purchases }: AdminPurchasesTableProps) {
                                   </dd>
                                 </div>
                                 <div className="flex items-start justify-between gap-4">
-                                  <dt className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">Observação</dt>
-                                  <dd className="max-w-[220px] text-right text-sm text-slate-500">
-                                    {row.draftObservacao?.trim() ? row.draftObservacao : "Nenhuma"}
+                                  <dt className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+                                    Localizador
+                                  </dt>
+                                  <dd className="max-w-[220px] text-right text-sm font-semibold text-slate-900">
+                                    {ticketDetails.locator || "—"}
                                   </dd>
                                 </div>
                                 <div className="flex items-center justify-between gap-4">
                                   <dt className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">Criada em</dt>
                                   <dd className="text-sm font-medium text-slate-700">{purchaseDate}</dd>
+                                </div>
+                                <div className="flex items-start justify-between gap-4">
+                                  <dt className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">Trechos</dt>
+                                  <dd className="max-w-[260px] text-right text-sm text-slate-600">
+                                    <div>
+                                      <span className="font-semibold text-slate-900">Ida:</span> {ticketDetails.departureDate || "—"}
+                                      {ticketDetails.outboundDepartureTime ? ` • Embarque às ${ticketDetails.outboundDepartureTime}` : ""}
+                                      {ticketDetails.outboundArrivalTime ? ` • Chegada às ${ticketDetails.outboundArrivalTime}` : ""}
+                                    </div>
+                                    <div className="mt-1">
+                                      <span className="font-semibold text-slate-900">Volta:</span> {ticketDetails.returnDate || "—"}
+                                      {ticketDetails.returnDepartureTime ? ` • Embarque às ${ticketDetails.returnDepartureTime}` : ""}
+                                      {ticketDetails.returnArrivalTime ? ` • Chegada às ${ticketDetails.returnArrivalTime}` : ""}
+                                    </div>
+                                  </dd>
+                                </div>
+                                <div className="flex items-start justify-between gap-4">
+                                  <dt className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+                                    Companhia e voo
+                                  </dt>
+                                  <dd className="max-w-[220px] text-right text-sm text-slate-600">
+                                    <p className="font-semibold text-slate-900">{ticketDetails.airline || "—"}</p>
+                                    <p className="text-xs text-slate-500">{ticketDetails.flightNumber || "Número não informado"}</p>
+                                  </dd>
                                 </div>
                               </dl>
                             </div>

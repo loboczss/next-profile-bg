@@ -5,7 +5,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { serializePurchase } from "@/lib/purchases";
-import { createCoraPayment, paymentMethodSchema } from "@/lib/payments";
+import { paymentMethodSchema } from "@/lib/payments";
 
 const passengerSchema = z.object({
   fullName: z
@@ -125,15 +125,6 @@ export async function POST(request: Request) {
 
     const unitPrice = new Prisma.Decimal(destination.price);
     const totalAmountDecimal = unitPrice.mul(quantity);
-    const amountInCents = Number(totalAmountDecimal.mul(100).toFixed(0));
-
-    const coraPayment = await createCoraPayment({
-      amountInCents,
-      method: paymentMethod,
-      description: `Compra do pacote ${destination.name}`,
-      customerName: session.user.fullName ?? session.user.username ?? "Cliente",
-      customerEmail: session.user.email ?? "",
-    });
 
     const purchase = await prisma.$transaction(async (tx) => {
       const purchaseRecord = await tx.purchase.create({
@@ -159,9 +150,9 @@ export async function POST(request: Request) {
         data: {
           purchaseId: purchaseRecord.id,
           method: paymentMethod,
-          status: coraPayment.status,
+          status: "PENDENTE",
           amount: totalAmountDecimal,
-          externalReference: coraPayment.externalReference,
+          externalReference: null,
         },
       });
 
@@ -184,9 +175,7 @@ export async function POST(request: Request) {
     });
 
     const message =
-      coraPayment.status === "CONCLUIDO"
-        ? "Compra registrada e pagamento confirmado com sucesso!"
-        : "Compra registrada! Estamos aguardando a confirmação do pagamento.";
+      "Reserva registrada! Ela já aparece em Minhas Compras e será emitida pela administração em breve.";
 
     return NextResponse.json(
       {

@@ -77,10 +77,45 @@ export function DashboardShell({
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
   };
 
+  const renderNavItems = (variant: "desktop" | "mobile") =>
+    navItems.map((item) => {
+      const Icon = navIconComponents[item.icon] ?? LayoutDashboard;
+      const href = item.href ?? `#${item.id}`;
+      const isActive = item.id === activeItemId;
+
+      const baseClasses =
+        variant === "desktop"
+          ? "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all"
+          : "flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-semibold shadow-sm transition";
+
+      const stateClasses =
+        variant === "desktop"
+          ? isActive
+            ? "bg-white/80 text-slate-900 shadow-sm dark:bg-slate-900/70 dark:text-white"
+            : "bg-white/30 text-slate-600 backdrop-blur-xl hover:bg-white/80 hover:text-slate-900 dark:bg-slate-900/30 dark:text-slate-300 dark:hover:bg-slate-900/70 dark:hover:text-white"
+          : isActive
+            ? "border-blue-300/70 bg-white/90 text-blue-700 dark:border-indigo-500/40 dark:bg-slate-900/90 dark:text-indigo-100"
+            : "border-white/50 bg-white/80 text-slate-600 dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-200";
+
+      return (
+        <Link
+          key={item.id}
+          href={href}
+          onClick={() => variant === "mobile" && setIsSidebarOpen(false)}
+          className="group/nav block"
+        >
+          <span className={cn(baseClasses, stateClasses)} aria-current={isActive ? "page" : undefined}>
+            <Icon className="h-4 w-4" />
+            {item.label}
+          </span>
+        </Link>
+      );
+    });
+
   return (
     <div
       className={cn(
-        "relative flex min-h-screen w-full overflow-hidden bg-slate-100 transition-colors dark:bg-slate-950",
+        "relative min-h-screen w-full bg-slate-100 transition-colors dark:bg-slate-950",
       )}
     >
       {/* Plano de fundo com imagem configurável e gradiente para manter o contraste. */}
@@ -95,136 +130,117 @@ export function DashboardShell({
         <div className="absolute inset-0 bg-white/70 backdrop-blur-xl dark:bg-slate-950/70" />
       </div>
 
-      {/* Sidebar fixa em telas grandes e colapsável no mobile. */}
-      <motion.aside
-        initial={{ x: -40, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        className={cn(
-          "group sticky top-0 hidden h-screen w-72 flex-col border-r border-white/10 bg-white/60 px-6 py-10 backdrop-blur-2xl dark:border-slate-800 dark:bg-slate-900/70 lg:flex",
-        )}
-      >
-        <div className="flex items-center gap-3 pb-8">
-          <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-xl">
-            <span className="text-lg font-semibold">EV</span>
+      <div className="mx-auto flex w-full max-w-7xl gap-6 px-2 sm:px-4 lg:px-8">
+        {/* Sidebar fixa em telas grandes e drawer no mobile. */}
+        {isSidebarOpen ? (
+          <div
+            className="fixed inset-0 z-30 bg-slate-950/40 backdrop-blur-sm lg:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        ) : null}
+
+        <motion.aside
+          initial={{ x: -40, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="relative hidden w-72 flex-col px-4 py-8 lg:sticky lg:top-6 lg:flex lg:h-[calc(100vh-3rem)]"
+        >
+          <div className="rounded-3xl border border-white/50 bg-white/80 p-6 shadow-xl backdrop-blur dark:border-slate-800/60 dark:bg-slate-900/70">
+            <div className="flex items-center gap-3 pb-6">
+              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-xl">
+                <span className="text-lg font-semibold">EV</span>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-500">Painel</p>
+                <h1 className="text-xl font-bold text-slate-900 dark:text-white">Administração</h1>
+              </div>
+            </div>
+
+            <nav className="space-y-2">{renderNavItems("desktop")}</nav>
+
+            <div className="mt-8 rounded-2xl bg-gradient-to-br from-blue-500/90 via-indigo-500/90 to-purple-500/90 p-4 text-white shadow-2xl">
+              <p className="text-xs uppercase tracking-wide opacity-70">Usuário ativo</p>
+              <p className="mt-1 text-base font-semibold">{user.name}</p>
+              <p className="text-sm opacity-80">Perfil: {user.role}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-medium text-slate-500">Painel</p>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Administração</h1>
-          </div>
-        </div>
+        </motion.aside>
 
-        <nav className="space-y-2">
-          {navItems.map((item) => {
-            const Icon = navIconComponents[item.icon] ?? LayoutDashboard;
-            const href = item.href ?? `#${item.id}`;
-            const isActive = item.id === activeItemId;
-            return (
-              <Link
-                key={item.id}
-                href={href}
-                className="group/nav block"
-              >
-                <span
-                  className={cn(
-                    "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all",
-                    isActive
-                      ? "bg-white/80 text-slate-900 shadow-sm dark:bg-slate-900/70 dark:text-white"
-                      : "bg-white/30 text-slate-600 backdrop-blur-xl hover:bg-white/80 hover:text-slate-900 dark:bg-slate-900/30 dark:text-slate-300 dark:hover:bg-slate-900/70 dark:hover:text-white",
-                  )}
-                  aria-current={isActive ? "page" : undefined}
-                >
-                  <Icon className="h-4 w-4" />
-                  {item.label}
-                </span>
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="mt-auto rounded-2xl bg-gradient-to-br from-blue-500/90 via-indigo-500/90 to-purple-500/90 p-4 text-white shadow-2xl">
-          <p className="text-xs uppercase tracking-wide opacity-70">Usuário ativo</p>
-          <p className="mt-1 text-base font-semibold">{user.name}</p>
-          <p className="text-sm opacity-80">Perfil: {user.role}</p>
-        </div>
-      </motion.aside>
-
-      {/* Conteúdo principal */}
-      <div className="flex min-h-screen flex-1 flex-col">
-        <header className="sticky top-0 z-20 border-b border-white/40 bg-white/80 px-4 py-4 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/80 sm:px-6 lg:px-10">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
+        {isSidebarOpen ? (
+          <motion.nav
+            initial={{ x: -320 }}
+            animate={{ x: 0 }}
+            exit={{ x: -320 }}
+            transition={{ duration: 0.25 }}
+            className="fixed inset-y-0 left-0 z-40 w-72 border-r border-white/60 bg-white/95 px-5 py-8 shadow-2xl backdrop-blur lg:hidden dark:border-slate-800 dark:bg-slate-900/95"
+          >
+            <div className="flex items-center justify-between pb-6">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-blue-500">Painel</p>
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Administração</h2>
+              </div>
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-xl lg:hidden"
-                onClick={() => setIsSidebarOpen((state) => !state)}
-                aria-label={isSidebarOpen ? "Fechar menu" : "Abrir menu"}
+                className="rounded-xl"
+                onClick={() => setIsSidebarOpen(false)}
+                aria-label="Fechar menu lateral"
               >
                 <Menu className="h-5 w-5" />
               </Button>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-widest text-blue-500">Painel administrativo</p>
-                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Bem-vindo(a), {user.name.split(" ")[0] ?? user.name}</h2>
-              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="icon"
-                className="rounded-xl border-slate-200/70 bg-white/60 backdrop-blur dark:border-slate-700 dark:bg-slate-900/60"
-                onClick={toggleTheme}
-                aria-label="Alternar tema"
-              >
-                {resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </Button>
-              <div className="flex items-center gap-3 rounded-2xl border border-white/50 bg-white/70 px-3 py-2 shadow-lg backdrop-blur dark:border-slate-800 dark:bg-slate-900/70">
-                <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">{user.name}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">{user.role}</p>
-                </div>
-                <Avatar className="h-10 w-10 border border-white/40">
-                  <AvatarImage src={user.imageUrl ?? undefined} alt={user.name} />
-                  <AvatarFallback>{initials || "EV"}</AvatarFallback>
-                </Avatar>
-              </div>
-            </div>
-          </div>
-        </header>
 
-        {/* Menu lateral convertido em drawer no mobile */}
-        {isSidebarOpen ? (
-          <div className="border-b border-white/40 bg-white/90 px-4 py-4 shadow-sm backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/90 lg:hidden">
-            <nav className="grid gap-2">
-              {navItems.map((item) => {
-                const Icon = navIconComponents[item.icon] ?? LayoutDashboard;
-                const href = item.href ?? `#${item.id}`;
-                const isActive = item.id === activeItemId;
-                return (
-                  <Link
-                    key={item.id}
-                    href={href}
-                    onClick={() => setIsSidebarOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 rounded-xl border border-white/50 bg-white/80 px-4 py-3 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-white dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-200",
-                      isActive
-                        ? "border-blue-300/70 text-blue-600 dark:border-indigo-500/40 dark:text-indigo-200"
-                        : null,
-                    )}
-                    aria-current={isActive ? "page" : undefined}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </nav>
-          </div>
+            <nav className="grid gap-2">{renderNavItems("mobile")}</nav>
+          </motion.nav>
         ) : null}
 
-        <main className="relative flex-1 overflow-y-auto px-4 py-10 sm:px-6 lg:px-12">
-          <div className="mx-auto flex w-full max-w-7xl flex-col gap-10">{children}</div>
-        </main>
+        {/* Conteúdo principal */}
+        <div className="flex min-h-screen flex-1 flex-col">
+          <header className="sticky top-0 z-20 border-b border-white/40 bg-white/80 px-4 py-4 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/80 sm:px-6 lg:px-10">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-xl lg:hidden"
+                  onClick={() => setIsSidebarOpen((state) => !state)}
+                  aria-label={isSidebarOpen ? "Fechar menu" : "Abrir menu"}
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-blue-500">Painel administrativo</p>
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">Bem-vindo(a), {user.name.split(" ")[0] ?? user.name}</h2>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="rounded-xl border-slate-200/70 bg-white/60 backdrop-blur dark:border-slate-700 dark:bg-slate-900/60"
+                  onClick={toggleTheme}
+                  aria-label="Alternar tema"
+                >
+                  {resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </Button>
+                <div className="flex items-center gap-3 rounded-2xl border border-white/50 bg-white/70 px-3 py-2 shadow-lg backdrop-blur dark:border-slate-800 dark:bg-slate-900/70">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{user.name}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{user.role}</p>
+                  </div>
+                  <Avatar className="h-10 w-10 border border-white/40">
+                    <AvatarImage src={user.imageUrl ?? undefined} alt={user.name} />
+                    <AvatarFallback>{initials || "EV"}</AvatarFallback>
+                  </Avatar>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <main className="relative flex-1 overflow-y-auto px-4 py-10 sm:px-6 lg:px-12">
+            <div className="mx-auto flex w-full max-w-7xl flex-col gap-10">{children}</div>
+          </main>
+        </div>
       </div>
     </div>
   );

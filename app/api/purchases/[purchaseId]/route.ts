@@ -3,7 +3,56 @@ import { z } from "zod";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { purchaseStatusSchema, serializePurchase } from "@/lib/purchases";
+import { purchaseStatusSchema, serializePurchase, type TicketDetails } from "@/lib/purchases";
+
+const ticketDetailsSchema = z.object({
+  locator: z.string({ required_error: "Informe o localizador (PNR)." }).trim().min(1, "Informe o localizador."),
+  departureDate: z
+    .string({ required_error: "Informe a data de embarque." })
+    .trim()
+    .min(1, "Informe a data de embarque."),
+  returnDate: z
+    .string({ required_error: "Informe a data de retorno." })
+    .trim()
+    .min(1, "Informe a data de retorno."),
+  outboundDepartureTime: z
+    .string({ required_error: "Informe a hora de embarque do trecho de ida." })
+    .trim()
+    .min(1, "Informe a hora de embarque do trecho de ida."),
+  outboundArrivalTime: z
+    .string({ required_error: "Informe a hora de chegada do trecho de ida." })
+    .trim()
+    .min(1, "Informe a hora de chegada do trecho de ida."),
+  returnDepartureTime: z
+    .string({ required_error: "Informe a hora de embarque do trecho de volta." })
+    .trim()
+    .min(1, "Informe a hora de embarque do trecho de volta."),
+  returnArrivalTime: z
+    .string({ required_error: "Informe a hora de chegada do trecho de volta." })
+    .trim()
+    .min(1, "Informe a hora de chegada do trecho de volta."),
+  fareType: z
+    .string({ required_error: "Informe o tipo de tarifa." })
+    .trim()
+    .min(1, "Informe o tipo de tarifa."),
+  airline: z
+    .string({ required_error: "Informe a companhia aérea." })
+    .trim()
+    .min(1, "Informe a companhia aérea."),
+  flightNumber: z
+    .string({ required_error: "Informe o número do voo." })
+    .trim()
+    .min(1, "Informe o número do voo."),
+  passengerNames: z
+    .array(
+      z
+        .string({ required_error: "Informe o nome do passageiro." })
+        .trim()
+        .min(1, "Informe o nome do passageiro."),
+      { invalid_type_error: "Informe os nomes dos passageiros." }
+    )
+    .min(1, "Informe ao menos um passageiro."),
+});
 
 const passengerUpdateSchema = z.object({
   id: z.coerce.number({ invalid_type_error: "Passageiro inválido." }).int().positive(),
@@ -39,12 +88,14 @@ const updatePurchaseSchema = z
       })
       .min(1, "Informe ao menos um passageiro para atualizar.")
       .optional(),
+    ticketDetails: ticketDetailsSchema.optional(),
   })
   .refine(
     (data) =>
       data.status !== undefined ||
       data.observacao !== undefined ||
-      data.passengers !== undefined,
+      data.passengers !== undefined ||
+      data.ticketDetails !== undefined,
     {
       message: "Informe pelo menos um campo para atualizar.",
     }
@@ -62,9 +113,9 @@ class PurchaseNotFoundError extends Error {
   }
 }
 
-class PaymentNotConfirmedError extends Error {
+class TicketDetailsRequiredError extends Error {
   constructor() {
-    super("PAYMENT_NOT_CONFIRMED");
+    super("TICKET_DETAILS_REQUIRED");
   }
 }
 
@@ -125,7 +176,33 @@ export async function PATCH(
     );
   }
 
-  const { status, observacao, passengers } = parsed.data;
+  const { status, observacao, passengers, ticketDetails } = parsed.data;
+
+  const sanitizedTicketDetails: TicketDetails | undefined = ticketDetails
+    ? {
+        locator: ticketDetails.locator.trim(),
+        departureDate: ticketDetails.departureDate.trim(),
+        returnDate: ticketDetails.returnDate.trim(),
+        outboundDepartureTime: ticketDetails.outboundDepartureTime.trim(),
+        outboundArrivalTime: ticketDetails.outboundArrivalTime.trim(),
+        returnDepartureTime: ticketDetails.returnDepartureTime.trim(),
+        returnArrivalTime: ticketDetails.returnArrivalTime.trim(),
+        fareType: ticketDetails.fareType.trim(),
+        airline: ticketDetails.airline.trim(),
+        flightNumber: ticketDetails.flightNumber.trim(),
+        passengerNames: ticketDetails.passengerNames.map((name) => name.trim()).filter(Boolean),
+      }
+    : undefined;
+
+  if (sanitizedTicketDetails && sanitizedTicketDetails.passengerNames.length === 0) {
+    return NextResponse.json(
+      {
+        status: "error",
+        message: "Informe os nomes completos dos passageiros.",
+      },
+      { status: 400 }
+    );
+  }
 
   try {
     const purchase = await prisma.$transaction(async (tx) => {
@@ -154,17 +231,20 @@ export async function PATCH(
 
       if (status) {
         if (status === "EMITIDA") {
-          const purchaseWithPayment = await tx.purchase.findUnique({
+          const purchaseWithDetails = await tx.purchase.findUnique({
             where: { id: purchaseId },
             include: { payment: true },
           });
 
-          if (!purchaseWithPayment) {
+          if (!purchaseWithDetails) {
             throw new PurchaseNotFoundError();
           }
 
-          if (purchaseWithPayment.payment?.status !== "CONCLUIDO") {
-            throw new PaymentNotConfirmedError();
+          const existingDetails =
+            sanitizedTicketDetails ?? (purchaseWithDetails.ticketDetails as TicketDetails | null);
+
+          if (!existingDetails || existingDetails.passengerNames.length === 0) {
+            throw new TicketDetailsRequiredError();
           }
         }
 
@@ -173,6 +253,10 @@ export async function PATCH(
 
       if (observacao !== undefined) {
         dataToUpdate.observacao = observacao;
+      }
+
+      if (sanitizedTicketDetails) {
+        dataToUpdate.ticketDetails = sanitizedTicketDetails;
       }
 
       if (Object.keys(dataToUpdate).length > 0) {
@@ -245,11 +329,11 @@ export async function PATCH(
       );
     }
 
-    if (error instanceof PaymentNotConfirmedError) {
+    if (error instanceof TicketDetailsRequiredError) {
       return NextResponse.json(
         {
           status: "error",
-          message: "O pagamento ainda não foi concluído. Conclua o pagamento para emitir a compra.",
+          message: "Preencha os detalhes obrigatórios da passagem para concluir a emissão.",
         },
         { status: 400 }
       );

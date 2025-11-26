@@ -18,6 +18,7 @@ type BackgroundWithDraft = BackgroundImageItem & {
 };
 
 type DisplayedBackground = BackgroundImageItem & { isFallback?: boolean };
+type AddMode = "url" | "upload";
 
 const toBackgroundWithDraft = (item: BackgroundImageItem): BackgroundWithDraft => ({
   ...item,
@@ -41,9 +42,12 @@ export function BackgroundGalleryManager() {
   const [statusError, setStatusError] = useState<string | null>(null);
   const [modeError, setModeError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [addMode, setAddMode] = useState<AddMode>("url");
   const [newBackgroundUrl, setNewBackgroundUrl] = useState("");
   const [newBackgroundTitle, setNewBackgroundTitle] = useState("");
   const [newBackgroundGroup, setNewBackgroundGroup] = useState("");
+  const [newBackgroundFile, setNewBackgroundFile] = useState<File | null>(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
   const [addError, setAddError] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
@@ -340,32 +344,64 @@ export function BackgroundGalleryManager() {
     const trimmedTitle = newBackgroundTitle.trim();
     const trimmedGroup = newBackgroundGroup.trim();
 
-    if (!trimmedUrl) {
-      setAddError("Informe a URL da imagem");
-      return;
+    if (addMode === "url") {
+      if (!trimmedUrl) {
+        setAddError("Informe a URL da imagem");
+        return;
+      }
+
+      if (!trimmedUrl.startsWith("https://")) {
+        setAddError("Use uma URL com HTTPS");
+        return;
+      }
     }
 
-    if (!trimmedUrl.startsWith("https://")) {
-      setAddError("Use uma URL com HTTPS");
+    if (addMode === "upload" && !newBackgroundFile) {
+      setAddError("Selecione um arquivo para enviar");
       return;
-    }
-
-    const payload: Record<string, unknown> = { url: trimmedUrl };
-    if (trimmedTitle.length) {
-      payload.title = trimmedTitle;
-    }
-    if (trimmedGroup.length) {
-      payload.groupKey = trimmedGroup;
     }
 
     setIsAdding(true);
 
     try {
-      const response = await fetch("/api/background/gallery", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      let response: Response;
+
+      if (addMode === "upload") {
+        const formData = new FormData();
+        const fileToUpload = newBackgroundFile;
+
+        if (fileToUpload) {
+          formData.append("file", fileToUpload);
+        }
+
+        if (trimmedTitle.length) {
+          formData.append("title", trimmedTitle);
+        }
+
+        if (trimmedGroup.length) {
+          formData.append("groupKey", trimmedGroup);
+        }
+
+        response = await fetch("/api/background/gallery", {
+          method: "POST",
+          body: formData,
+        });
+      } else {
+        const payload: Record<string, unknown> = { url: trimmedUrl };
+
+        if (trimmedTitle.length) {
+          payload.title = trimmedTitle;
+        }
+        if (trimmedGroup.length) {
+          payload.groupKey = trimmedGroup;
+        }
+
+        response = await fetch("/api/background/gallery", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      }
 
       const data = (await response.json().catch(() => ({}))) as {
         image?: BackgroundImageItem;
@@ -382,6 +418,8 @@ export function BackgroundGalleryManager() {
       setNewBackgroundUrl("");
       setNewBackgroundTitle("");
       setNewBackgroundGroup("");
+      setNewBackgroundFile(null);
+      setFileInputKey((key) => key + 1);
       setFeedback("Imagem adicionada!");
       await refreshSettings();
     } catch (err) {
@@ -682,20 +720,82 @@ export function BackgroundGalleryManager() {
             </p>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-600" htmlFor="new-background-url">
-              URL da imagem (HTTPS)
-            </label>
-            <input
-              id="new-background-url"
-              type="url"
-              value={newBackgroundUrl}
-              onChange={(event) => setNewBackgroundUrl(event.currentTarget.value)}
-              placeholder="https://exemplo.com/imagem.webp"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-              required
-            />
+          <div className="flex gap-2">
+            {(
+              [
+                { value: "url", label: "Usar URL" },
+                { value: "upload", label: "Enviar do computador" },
+              ] satisfies { value: AddMode; label: string }[]
+            ).map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => {
+                  setAddMode(option.value);
+                  setAddError(null);
+                  setNewBackgroundFile(null);
+                  setFileInputKey((key) => key + 1);
+                  if (option.value === "upload") {
+                    setNewBackgroundUrl("");
+                  }
+                }}
+                className={cn(
+                  "flex-1 rounded-lg border px-3 py-2 text-sm font-semibold transition",
+                  addMode === option.value
+                    ? "border-blue-500 bg-blue-50 text-blue-700"
+                    : "border-slate-200 bg-white text-slate-700 hover:border-blue-300",
+                )}
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
+
+          {addMode === "url" ? (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-slate-600" htmlFor="new-background-url">
+                URL da imagem (HTTPS)
+              </label>
+              <input
+                id="new-background-url"
+                type="url"
+                value={newBackgroundUrl}
+                onChange={(event) => setNewBackgroundUrl(event.currentTarget.value)}
+                placeholder="https://exemplo.com/imagem.webp"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                required={addMode === "url"}
+              />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-slate-600" htmlFor="new-background-file">
+                Arquivo do computador
+              </label>
+              <input
+                key={fileInputKey}
+                id="new-background-file"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(event) => setNewBackgroundFile(event.target.files?.[0] ?? null)}
+                className="sr-only"
+              />
+              <label
+                htmlFor="new-background-file"
+                className="group relative inline-flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-blue-400 hover:bg-blue-50"
+              >
+                <span className="flex items-center gap-2">
+                  <UploadCloud className="h-4 w-4" />
+                  Selecione uma imagem do computador
+                </span>
+              </label>
+              {newBackgroundFile && (
+                <p className="text-xs font-medium text-slate-700">
+                  Arquivo selecionado: <span className="font-semibold">{newBackgroundFile.name}</span>
+                </p>
+              )}
+              <p className="text-xs text-slate-600">JPEG, PNG ou WebP até 10MB.</p>
+            </div>
+          )}
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">

@@ -10,6 +10,7 @@ import { StatCard } from "./_components/stat-card";
 import { UserManagementPanel, DashboardUser } from "./_components/user-management-panel";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getActiveBackgroundSelection } from "@/lib/backgrounds";
 import { dashboardNavItems } from "./nav-items";
 
 const PAGE_SIZE = 8;
@@ -158,12 +159,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         createdAt: { gte: startOfMonth },
       },
     }),
-    prisma.globalSetting.findUnique({
-      where: { id: 1 },
-      select: {
-        backgroundUrl: true,
-      },
-    }),
+    getActiveBackgroundSelection(),
     prisma.destination.count(),
     prisma.favorite.count(),
     prisma.user.findMany({
@@ -253,7 +249,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     updatedAt: user.updatedAt.toISOString(),
   }));
 
-    const backgroundUrl = backgroundSettings?.backgroundUrl ?? null;
+    const backgroundUrl =
+      backgroundSettings.selectedBackgrounds[0]?.url ??
+      backgroundSettings.backgroundUrl ??
+      null;
     const catalogTotal = destinationsCount + favoritesCount;
     const activeUsersPercentage = totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100) : 0;
     const monthlyGrowthRate = totalUsers > 0 ? Math.round((newUsersThisMonth / totalUsers) * 100) : 0;

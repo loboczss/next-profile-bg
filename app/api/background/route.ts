@@ -7,6 +7,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { DropboxUploadError, storeBackgroundImage } from "@/lib/storage";
 import { assertImage, sanitizeExt } from "@/lib/file";
+import { getActiveBackgroundSelection } from "@/lib/backgrounds";
 
 export const runtime = "nodejs";
 
@@ -88,47 +89,6 @@ const modeSchema = z.object({
 
 type BackgroundMode = "ALL" | "GROUP" | "SINGLE";
 
-async function resolveSelectedBackgrounds({
-  backgroundMode,
-  backgroundGroup,
-  backgroundImageId,
-}: {
-  backgroundMode: BackgroundMode;
-  backgroundGroup: string | null;
-  backgroundImageId: number | null;
-}) {
-  if (!prismaClient) {
-    return [];
-  }
-
-  if (backgroundMode === "SINGLE" && backgroundImageId) {
-    const image = await prismaClient.backgroundImage.findUnique({
-      where: { id: backgroundImageId },
-    });
-    return image ? [image] : [];
-  }
-
-  if (backgroundMode === "GROUP") {
-    if (!backgroundGroup) {
-      return [];
-    }
-
-    return prismaClient.backgroundImage.findMany({
-      where: {
-        isVisible: true,
-        groupKey: backgroundGroup,
-      },
-      orderBy: { createdAt: "desc" },
-    });
-  }
-
-  return prismaClient.backgroundImage.findMany({
-    where: { isVisible: true },
-    orderBy: { createdAt: "desc" },
-    take: 20,
-  });
-}
-
 export async function GET() {
   if (!prismaClient) {
     return NextResponse.json(
@@ -138,29 +98,14 @@ export async function GET() {
   }
 
   try {
-    const settings = await prismaClient.globalSetting.findUnique({
-      where: { id: 1 },
-      select: {
-        backgroundUrl: true,
-        backgroundMode: true,
-        backgroundGroup: true,
-        backgroundImageId: true,
-      },
-    });
-
-    const mode = settings?.backgroundMode ?? "ALL";
-    const selectedBackgrounds = await resolveSelectedBackgrounds({
-      backgroundMode: mode,
-      backgroundGroup: settings?.backgroundGroup ?? null,
-      backgroundImageId: settings?.backgroundImageId ?? null,
-    });
+    const selection = await getActiveBackgroundSelection();
 
     return NextResponse.json({
-      backgroundUrl: settings?.backgroundUrl ?? null,
-      mode,
-      group: settings?.backgroundGroup ?? null,
-      imageId: settings?.backgroundImageId ?? null,
-      selectedBackgrounds,
+      backgroundUrl: selection.backgroundUrl,
+      mode: selection.mode,
+      group: selection.group,
+      imageId: selection.imageId,
+      selectedBackgrounds: selection.selectedBackgrounds,
     });
   } catch (error) {
     console.error("Erro ao obter background", error);
@@ -262,8 +207,19 @@ export async function PUT(request: NextRequest) {
 
     await prismaClient.globalSetting.upsert({
       where: { id: 1 },
-      update: { backgroundUrl, backgroundImageId: background.id },
-      create: { id: 1, backgroundUrl, backgroundImageId: background.id },
+      update: {
+        backgroundUrl,
+        backgroundImageId: background.id,
+        backgroundMode: "SINGLE",
+        backgroundGroup: null,
+      },
+      create: {
+        id: 1,
+        backgroundUrl,
+        backgroundImageId: background.id,
+        backgroundMode: "SINGLE",
+        backgroundGroup: null,
+      },
     });
 
     revalidatePath("/");

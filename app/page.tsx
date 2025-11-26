@@ -3,6 +3,7 @@ import Hero from "components/hero";
 import { DestinationGrid } from "@/components/destinations/destination-grid";
 import { PixTestButton } from "@/components/payments/pix-test-button";
 import { auth } from "@/lib/auth";
+import { getActiveBackgroundSelection } from "@/lib/backgrounds";
 import {
   serializeDestination,
   type SerializedDestination,
@@ -20,39 +21,7 @@ export default async function HomePage() {
     );
   }
 
-  // 1) Background "global" (igual, sem mexer no backend)
-  let backgroundUrl: string | null = null;
-  let backgroundMode: "ALL" | "GROUP" | "SINGLE" = "ALL";
-  let backgroundGroup: string | null = null;
-  let backgroundImageId: number | null = null;
-  if (prismaClient) {
-    try {
-      const settings = await prismaClient.globalSetting.findUnique({
-        where: { id: 1 },
-        select: {
-          backgroundUrl: true,
-          backgroundMode: true,
-          backgroundGroup: true,
-          backgroundImageId: true,
-          backgroundImage: { select: { url: true, isVisible: true } },
-        },
-      });
-      backgroundUrl = settings?.backgroundUrl ?? null;
-      backgroundMode = settings?.backgroundMode ?? "ALL";
-      backgroundGroup = settings?.backgroundGroup ?? null;
-      backgroundImageId = settings?.backgroundImageId ?? null;
-
-      if (
-        backgroundMode === "SINGLE" &&
-        settings?.backgroundImage &&
-        settings.backgroundImage.isVisible
-      ) {
-        backgroundUrl = settings.backgroundImage.url;
-      }
-    } catch {
-      backgroundUrl = null;
-    }
-  }
+  const backgroundSelection = await getActiveBackgroundSelection();
 
   // 2) Destinos (igual, sem mexer no backend)
   let destinations: SerializedDestination[] = [];
@@ -85,54 +54,13 @@ export default async function HomePage() {
     }
   }
 
-  // 3) Slides do hero (igual, só organizei a leitura)
-  const heroImages: string[] = [];
+  // 3) Slides do hero (iguais para todas as páginas)
+  const heroImages: string[] = backgroundSelection.selectedBackgrounds
+    .map((item) => item.url)
+    .filter((url) => typeof url === "string" && url.trim().length > 0);
 
-  if (prismaClient) {
-    try {
-      if (backgroundMode === "SINGLE" && backgroundImageId) {
-        const image = await prismaClient.backgroundImage.findUnique({
-          where: { id: backgroundImageId },
-          select: { url: true, isVisible: true },
-        });
-
-        if (image?.isVisible && image.url) {
-          heroImages.push(image.url);
-        } else if (backgroundUrl) {
-          heroImages.push(backgroundUrl);
-        }
-      } else if (backgroundMode === "GROUP" && backgroundGroup) {
-        const images = await prismaClient.backgroundImage.findMany({
-          where: { isVisible: true, groupKey: backgroundGroup },
-          orderBy: { createdAt: "desc" },
-          take: 10,
-        });
-
-        if (images.length) {
-          heroImages.push(...images.map((image) => image.url));
-        } else if (backgroundUrl) {
-          heroImages.push(backgroundUrl);
-        }
-      } else {
-        const images = await prismaClient.backgroundImage.findMany({
-          where: { isVisible: true },
-          orderBy: { createdAt: "desc" },
-          take: 10,
-        });
-
-        if (images.length) {
-          heroImages.push(...images.map((image) => image.url));
-        }
-      }
-    } catch {
-      if (backgroundUrl) {
-        heroImages.push(backgroundUrl);
-      }
-    }
-  }
-
-  if (!heroImages.length && backgroundUrl) {
-    heroImages.push(backgroundUrl);
+  if (!heroImages.length && backgroundSelection.backgroundUrl) {
+    heroImages.push(backgroundSelection.backgroundUrl);
   }
 
   if (!heroImages.length) {

@@ -7,6 +7,7 @@ import { DashboardShell } from "../_components/dashboard-shell";
 import { dashboardNavItems } from "../nav-items";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getActiveBackgroundSelection } from "@/lib/backgrounds";
 
 export default async function DashboardBackgroundsPage() {
   const session = await auth();
@@ -44,18 +45,13 @@ export default async function DashboardBackgroundsPage() {
     );
   }
 
-  const [backgroundSettings, visibleBackgrounds, totalBackgrounds] = await Promise.all([
-    prisma.globalSetting.findUnique({
-      where: { id: 1 },
-      select: {
-        backgroundUrl: true,
-      },
-    }),
+  const [selection, visibleBackgrounds, totalBackgrounds] = await Promise.all([
+    getActiveBackgroundSelection(),
     prisma.backgroundImage.count({ where: { isVisible: true } }),
     prisma.backgroundImage.count(),
   ]);
 
-  const backgroundUrl = backgroundSettings?.backgroundUrl ?? null;
+  const backgroundUrl = selection.selectedBackgrounds[0]?.url ?? selection.backgroundUrl ?? null;
 
   return (
     <DashboardAnimatedWrapper userName={session.user.name ?? "Administrador"}>

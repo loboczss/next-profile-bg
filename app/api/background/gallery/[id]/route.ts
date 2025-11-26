@@ -76,8 +76,15 @@ export async function PATCH(request: NextRequest) {
 
     if (data.isVisible === false) {
       await prisma.globalSetting.updateMany({
-        where: { backgroundImageId: id },
-        data: { backgroundImageId: null, backgroundMode: "ALL" },
+        where: {
+          OR: [{ backgroundImageId: id }, { backgroundUrl: updated.url }],
+        },
+        data: {
+          backgroundImageId: null,
+          backgroundMode: "ALL",
+          backgroundGroup: null,
+          backgroundUrl: null,
+        },
       });
     }
 
@@ -110,8 +117,13 @@ export async function DELETE(request: NextRequest) {
     });
 
     await prisma.globalSetting.updateMany({
-      where: { backgroundImageId: id },
-      data: { backgroundImageId: null, backgroundMode: "ALL" },
+      where: { OR: [{ backgroundImageId: id }, { backgroundUrl: deleted.url }] },
+      data: {
+        backgroundImageId: null,
+        backgroundMode: "ALL",
+        backgroundGroup: null,
+        backgroundUrl: null,
+      },
     });
 
     return NextResponse.json({ image: deleted });

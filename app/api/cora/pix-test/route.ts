@@ -78,12 +78,17 @@ export async function POST() {
       customerEmail: "pagamentos@evastur.com",
     });
 
+    const rawResponse: Prisma.InputJsonValue = {
+      status: payment.status,
+      externalReference: payment.externalReference,
+    };
+
     await prisma.pixTestPayment.create({
       data: {
         amount: PIX_TEST_AMOUNT_DECIMAL,
         status: payment.status,
         externalReference: payment.externalReference,
-        rawResponse: payment,
+        rawResponse,
       },
     });
 

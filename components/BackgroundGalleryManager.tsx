@@ -41,9 +41,11 @@ export function BackgroundGalleryManager() {
   const [statusError, setStatusError] = useState<string | null>(null);
   const [modeError, setModeError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [newBackgroundMode, setNewBackgroundMode] = useState<"url" | "upload">("url");
   const [newBackgroundUrl, setNewBackgroundUrl] = useState("");
   const [newBackgroundTitle, setNewBackgroundTitle] = useState("");
   const [newBackgroundGroup, setNewBackgroundGroup] = useState("");
+  const [newBackgroundFile, setNewBackgroundFile] = useState<File | null>(null);
   const [addError, setAddError] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
@@ -336,36 +338,79 @@ export function BackgroundGalleryManager() {
     setAddError(null);
     setFeedback(null);
 
-    const trimmedUrl = newBackgroundUrl.trim();
     const trimmedTitle = newBackgroundTitle.trim();
     const trimmedGroup = newBackgroundGroup.trim();
-
-    if (!trimmedUrl) {
-      setAddError("Informe a URL da imagem");
-      return;
-    }
-
-    if (!trimmedUrl.startsWith("https://")) {
-      setAddError("Use uma URL com HTTPS");
-      return;
-    }
-
-    const payload: Record<string, unknown> = { url: trimmedUrl };
-    if (trimmedTitle.length) {
-      payload.title = trimmedTitle;
-    }
-    if (trimmedGroup.length) {
-      payload.groupKey = trimmedGroup;
-    }
-
     setIsAdding(true);
 
+    const handleSuccess = (newImage: BackgroundImageItem) => {
+      setBackgrounds((current) => [toBackgroundWithDraft(newImage), ...current]);
+      setNewBackgroundUrl("");
+      setNewBackgroundTitle("");
+      setNewBackgroundGroup("");
+      setNewBackgroundFile(null);
+      setFeedback("Imagem adicionada!");
+    };
+
     try {
-      const response = await fetch("/api/background/gallery", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      let response: Response;
+
+      if (newBackgroundMode === "upload") {
+        if (!newBackgroundFile) {
+          setAddError("Selecione um arquivo de imagem para enviar");
+          setIsAdding(false);
+          return;
+        }
+
+        if (!newBackgroundFile.type.startsWith("image/")) {
+          setAddError("Envie apenas arquivos de imagem (JPG, PNG ou WebP)");
+          setIsAdding(false);
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", newBackgroundFile);
+
+        if (trimmedTitle.length) {
+          formData.append("title", trimmedTitle);
+        }
+
+        if (trimmedGroup.length) {
+          formData.append("groupKey", trimmedGroup);
+        }
+
+        response = await fetch("/api/background/gallery", {
+          method: "POST",
+          body: formData,
+        });
+      } else {
+        const trimmedUrl = newBackgroundUrl.trim();
+
+        if (!trimmedUrl) {
+          setAddError("Informe a URL da imagem");
+          setIsAdding(false);
+          return;
+        }
+
+        if (!trimmedUrl.startsWith("https://")) {
+          setAddError("Use uma URL com HTTPS");
+          setIsAdding(false);
+          return;
+        }
+
+        const payload: Record<string, unknown> = { url: trimmedUrl };
+        if (trimmedTitle.length) {
+          payload.title = trimmedTitle;
+        }
+        if (trimmedGroup.length) {
+          payload.groupKey = trimmedGroup;
+        }
+
+        response = await fetch("/api/background/gallery", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      }
 
       const data = (await response.json().catch(() => ({}))) as {
         image?: BackgroundImageItem;
@@ -378,11 +423,7 @@ export function BackgroundGalleryManager() {
         throw new Error(data.error ?? "Não foi possível adicionar a imagem");
       }
 
-      setBackgrounds((current) => [toBackgroundWithDraft(newImage), ...current]);
-      setNewBackgroundUrl("");
-      setNewBackgroundTitle("");
-      setNewBackgroundGroup("");
-      setFeedback("Imagem adicionada!");
+      handleSuccess(newImage);
       await refreshSettings();
     } catch (err) {
       setAddError(err instanceof Error ? err.message : "Erro inesperado");
@@ -682,20 +723,82 @@ export function BackgroundGalleryManager() {
             </p>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-600" htmlFor="new-background-url">
-              URL da imagem (HTTPS)
-            </label>
-            <input
-              id="new-background-url"
-              type="url"
-              value={newBackgroundUrl}
-              onChange={(event) => setNewBackgroundUrl(event.currentTarget.value)}
-              placeholder="https://exemplo.com/imagem.webp"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-              required
-            />
+          <div className="flex flex-wrap gap-2 rounded-xl bg-slate-100/70 p-2 text-xs font-semibold text-slate-700">
+            <button
+              type="button"
+              onClick={() => {
+                setNewBackgroundMode("url");
+                setAddError(null);
+              }}
+              className={cn(
+                "flex-1 rounded-lg px-3 py-2 transition",
+                newBackgroundMode === "url"
+                  ? "bg-blue-600 text-white shadow"
+                  : "bg-white text-slate-700 hover:bg-white/80",
+              )}
+            >
+              Usar URL
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setNewBackgroundMode("upload");
+                setAddError(null);
+              }}
+              className={cn(
+                "flex-1 rounded-lg px-3 py-2 transition",
+                newBackgroundMode === "upload"
+                  ? "bg-blue-600 text-white shadow"
+                  : "bg-white text-slate-700 hover:bg-white/80",
+              )}
+            >
+              Enviar arquivo
+            </button>
           </div>
+
+          {newBackgroundMode === "url" ? (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-slate-600" htmlFor="new-background-url">
+                URL da imagem (HTTPS)
+              </label>
+              <input
+                id="new-background-url"
+                type="url"
+                value={newBackgroundUrl}
+                onChange={(event) => setNewBackgroundUrl(event.currentTarget.value)}
+                placeholder="https://exemplo.com/imagem.webp"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                required
+              />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-slate-600" htmlFor="new-background-file">
+                Selecione um arquivo de imagem (JPG, PNG ou WebP)
+              </label>
+              <input
+                id="new-background-file"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(event) => setNewBackgroundFile(event.currentTarget.files?.[0] ?? null)}
+                className="sr-only"
+              />
+              <label
+                htmlFor="new-background-file"
+                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-blue-300 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+              >
+                <UploadCloud className="h-4 w-4" />
+                {newBackgroundFile ? "Trocar arquivo" : "Selecionar arquivo"}
+              </label>
+              {newBackgroundFile ? (
+                <p className="text-xs font-medium text-slate-700">
+                  Arquivo selecionado: <span className="font-semibold">{newBackgroundFile.name}</span>
+                </p>
+              ) : (
+                <p className="text-xs text-slate-600">Nenhum arquivo selecionado ainda.</p>
+              )}
+            </div>
+          )}
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">

@@ -104,7 +104,21 @@ async function resolveSelectedBackgrounds({
   if (backgroundMode === "SINGLE" && backgroundImageId) {
     const image = await prismaClient.backgroundImage.findUnique({
       where: { id: backgroundImageId },
+      select: {
+        id: true,
+        url: true,
+        title: true,
+        groupKey: true,
+        isVisible: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
+
+    if (!image?.isVisible) {
+      return [];
+    }
+
     return image ? [image] : [];
   }
 

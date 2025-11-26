@@ -1,7 +1,10 @@
+import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
+import { assertImage, sanitizeExt } from "@/lib/file";
+import { DropboxUploadError, storeBackgroundImage } from "@/lib/storage";
 
 export const runtime = "nodejs";
 
@@ -45,11 +48,62 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json().catch(() => null);
-  const parsed = createSchema.safeParse(body);
+  const contentType = request.headers.get("content-type") ?? "";
+  const createWithUrl = async () => {
+    const body = await request.json().catch(() => null);
+    const parsed = createSchema.safeParse(body);
 
-  if (!parsed.success) {
-    const message = parsed.error.issues.at(0)?.message ?? "Dados inválidos";
+    if (!parsed.success) {
+      const message = parsed.error.issues.at(0)?.message ?? "Dados inválidos";
+      return { error: message } as const;
+    }
+
+    return {
+      url: parsed.data.url,
+      title: parsed.data.title,
+      groupKey: parsed.data.groupKey,
+    };
+  };
+
+  const createWithFile = async () => {
+    if (!contentType.includes("multipart/form-data")) {
+      return null;
+    }
+
+    const formData = await request.formData();
+    const file = formData.get("file");
+
+    if (!(file instanceof File)) {
+      return { error: "Arquivo não enviado" } as const;
+    }
+
+    try {
+      assertImage(file);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Arquivo inválido";
+      return { error: message } as const;
+    }
+
+    const ext = sanitizeExt(file.type);
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    const backgroundUrl = await storeBackgroundImage(ext, buffer);
+    const rawTitle = formData.get("title");
+    const rawGroup = formData.get("groupKey");
+
+    const title = typeof rawTitle === "string" && rawTitle.trim().length ? rawTitle.trim() : undefined;
+    const groupKey = typeof rawGroup === "string" && rawGroup.trim().length ? rawGroup.trim() : undefined;
+
+    return { url: backgroundUrl, title, groupKey };
+  };
+
+  const payload = contentType.includes("application/json")
+    ? await createWithUrl()
+    : await createWithFile();
+
+  if (!payload || "error" in payload) {
+    const message = payload?.error ?? "Dados inválidos";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
@@ -63,14 +117,24 @@ export async function POST(request: NextRequest) {
   try {
     const created = await prisma.backgroundImage.create({
       data: {
-        url: parsed.data.url,
-        title: parsed.data.title,
-        groupKey: parsed.data.groupKey,
+        url: payload.url,
+        title: payload.title,
+        groupKey: payload.groupKey,
       },
     });
 
+    revalidatePath("/");
+    revalidatePath("/sobre-nos");
+
     return NextResponse.json({ image: created }, { status: 201 });
   } catch (error) {
+    if (error instanceof DropboxUploadError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 },
+      );
+    }
+
     console.error("Erro ao criar imagem de background", error);
     return NextResponse.json({ error: "Erro ao criar imagem" }, { status: 500 });
   }

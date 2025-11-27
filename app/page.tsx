@@ -228,26 +228,6 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
-
-      <footer className="border-t border-[color:var(--brand-secondary-soft)] bg-white/90 py-16">
-        <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-6 px-6 text-center sm:px-8">
-          <span className="inline-flex items-center gap-2 rounded-full bg-[color-mix(in_srgb,var(--brand-primary)_10%,transparent)] px-4 py-1 text-xs font-semibold uppercase tracking-[0.28em] text-[color:var(--brand-primary)]">
-            <Sparkles className="size-4" /> Pix Banco Cora
-          </span>
-          <div className="space-y-3">
-            <h2 className="text-balance text-2xl font-semibold leading-tight sm:text-3xl">
-              Faça um Pix de teste de R$ 5,00 diretamente pela nossa integração com o Banco Cora
-            </h2>
-            <p className="text-sm text-muted-foreground sm:text-base">
-              Use o botão abaixo para gerar um pagamento simbólico e validar a chave Pix configurada no seu ambiente.
-            </p>
-          </div>
-          <PixTestButton initialCount={pixTestSuccessCount} />
-          <p className="text-xs text-muted-foreground">
-            Certifique-se de manter a variável <code className="rounded bg-slate-100 px-1 py-0.5 text-[0.85em] text-slate-600">CORA_PIX_API_KEY</code> preenchida para que o gateway possa autorizar os testes.
-          </p>
-        </div>
-      </footer>
     </main>
   );
 }

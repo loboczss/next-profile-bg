@@ -6,14 +6,6 @@ import { CheckCircle2, Clock3, Filter, Loader2, Search, XCircle } from "lucide-r
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   PURCHASE_STATUS_LABELS,
@@ -124,7 +116,7 @@ export function AdminPurchasesTable({ purchases }: AdminPurchasesTableProps) {
   const [filters, setFilters] = useState<FiltersState>(FILTER_PRESET);
   const [draftFilters, setDraftFilters] = useState<FiltersState>(FILTER_PRESET);
   const [selectedPurchase, setSelectedPurchase] = useState<SerializedPurchase | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [expandedPurchaseId, setExpandedPurchaseId] = useState<number | null>(null);
   const [emissionDraft, setEmissionDraft] = useState<EmissionDraft>(emptyEmission);
   const [passengerDrafts, setPassengerDrafts] = useState<PassengerDraft[]>([]);
   const [statusDraft, setStatusDraft] = useState<PurchaseStatusValue | "CANCELADA">("AGUARDANDO_EMISSAO");
@@ -183,6 +175,15 @@ export function AdminPurchasesTable({ purchases }: AdminPurchasesTableProps) {
   }, [purchases]);
 
   useEffect(() => {
+    if (!expandedPurchaseId) return;
+
+    const updated = purchaseList.find((purchase) => purchase.id === expandedPurchaseId);
+    if (updated) {
+      setSelectedPurchase(updated);
+    }
+  }, [expandedPurchaseId, purchaseList]);
+
+  useEffect(() => {
     if (!selectedPurchase) return;
 
     setEmissionDraft(createEmissionDraftFromTicket(selectedPurchase.ticketDetails));
@@ -220,15 +221,18 @@ export function AdminPurchasesTable({ purchases }: AdminPurchasesTableProps) {
     setFilters(FILTER_PRESET);
   };
 
-  const handleOpenDrawer = (purchase: SerializedPurchase) => {
+  const handleToggleExpand = (purchase: SerializedPurchase) => {
+    const isSamePurchase = expandedPurchaseId === purchase.id;
+
+    if (isSamePurchase) {
+      setExpandedPurchaseId(null);
+      setSelectedPurchase(null);
+      return;
+    }
+
+    setExpandedPurchaseId(purchase.id);
     setSelectedPurchase(purchase);
     setStatusPreset(null);
-    setDrawerOpen(true);
-  };
-
-  const handleCloseDrawer = () => {
-    setDrawerOpen(false);
-    setSelectedPurchase(null);
   };
 
   const updatePurchaseLocally = (updated: SerializedPurchase) => {
@@ -419,7 +423,6 @@ export function AdminPurchasesTable({ purchases }: AdminPurchasesTableProps) {
   };
 
   const activeEmpty = filteredPurchases.length === 0;
-  const paymentStatus = (selectedPurchase?.payment?.status ?? "PENDENTE") as PaymentStatusValue;
 
   return (
     <div className="space-y-6">
@@ -527,9 +530,17 @@ export function AdminPurchasesTable({ purchases }: AdminPurchasesTableProps) {
                 const createdAt = dateFormatter.format(new Date(purchase.dataCompra));
                 const paymentStatus = (purchase.payment?.status ?? "PENDENTE") as PaymentStatusValue;
                 const canIssue = purchase.status !== "EMITIDA";
+                const isExpanded = expandedPurchaseId === purchase.id;
+                const isCurrentSelection = selectedPurchase?.id === purchase.id;
 
                 return (
-                  <li key={purchase.id} className="flex flex-col gap-3 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
+                  <li
+                    key={purchase.id}
+                    className={cn(
+                      "flex flex-col gap-3 px-6 py-5 transition-colors lg:flex-row lg:items-center lg:justify-between",
+                      isExpanded ? "bg-slate-50/80" : ""
+                    )}
+                  >
                     <div className="flex items-start gap-4">
                       <div className="relative h-16 w-24 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
                         <Image
@@ -560,16 +571,17 @@ export function AdminPurchasesTable({ purchases }: AdminPurchasesTableProps) {
                     <div className="flex flex-col items-start gap-3 lg:items-end">
                       {renderStatusBadge(purchase.status)}
                       <div className="flex flex-wrap gap-2">
-                        <Button variant="outline" onClick={() => handleOpenDrawer(purchase)}>
-                          Detalhes
+                        <Button variant="outline" onClick={() => handleToggleExpand(purchase)}>
+                          {isExpanded ? "Recolher" : "Detalhes"}
                         </Button>
                         {canIssue && (
                           <Button
                             variant="default"
                             onClick={() => {
-                              setSelectedPurchase(purchase);
-                              setDrawerOpen(true);
                               setStatusPreset("EMITIDA");
+                              if (!isExpanded) {
+                                handleToggleExpand(purchase);
+                              }
                               toast.message("Prepare os dados de emissão antes de confirmar.");
                             }}
                           >
@@ -578,6 +590,282 @@ export function AdminPurchasesTable({ purchases }: AdminPurchasesTableProps) {
                         )}
                       </div>
                     </div>
+
+                    {isExpanded && isCurrentSelection && selectedPurchase && (
+                      <div className="mt-4 w-full space-y-6 rounded-2xl border border-slate-200 bg-white/80 p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Detalhes da compra</p>
+                            <h3 className="text-lg font-semibold text-slate-900">{selectedPurchase.package.name}</h3>
+                          </div>
+                          <Button variant="ghost" size="sm" onClick={() => handleToggleExpand(purchase)}>
+                            Fechar painel
+                          </Button>
+                        </div>
+
+                        <section className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+                          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Dados da compra</p>
+                          <div className="mt-3 grid gap-4 md:grid-cols-2">
+                            <div>
+                              <p className="text-xs text-slate-500">Código</p>
+                              <p className="font-semibold text-slate-900">#{selectedPurchase.id}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-slate-500">Status atual</p>
+                              <div className="mt-1">{renderStatusBadge(selectedPurchase.status)}</div>
+                            </div>
+                            <div>
+                              <p className="text-xs text-slate-500">Criada em</p>
+                              <p className="font-semibold text-slate-900">{dateFormatter.format(new Date(selectedPurchase.dataCompra))}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-slate-500">Trechos</p>
+                              <p className="font-semibold text-slate-900">Ida e volta</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-slate-500">Companhia / Voo</p>
+                              <p className="font-semibold text-slate-900">
+                                {selectedPurchase.ticketDetails?.airline ?? "—"} {selectedPurchase.ticketDetails?.flightNumber ?? ""}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-slate-500">Observações</p>
+                              <p className="text-sm text-slate-700">{selectedPurchase.observacao || "Nenhuma observação registrada."}</p>
+                            </div>
+                          </div>
+                        </section>
+
+                        <section className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-blue-600">Dados para emissão *</p>
+                              <h3 className="text-lg font-semibold text-slate-900">Informações obrigatórias</h3>
+                            </div>
+                            <Button onClick={handleSaveEmission} disabled={saving}>
+                              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar dados para emissão"}
+                            </Button>
+                          </div>
+                          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                            <div className="space-y-2">
+                              <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">Localizador (PNR)</label>
+                              <Input
+                                value={emissionDraft.locator}
+                                onChange={(event) => setEmissionDraft((prev) => ({ ...prev, locator: event.target.value }))}
+                                placeholder="AB1234"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">Companhia aérea</label>
+                              <Input
+                                value={emissionDraft.airline}
+                                onChange={(event) => setEmissionDraft((prev) => ({ ...prev, airline: event.target.value }))}
+                                placeholder="Azul, Gol, Latam..."
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">Tipo de tarifa</label>
+                              <Input
+                                value={emissionDraft.fareType}
+                                onChange={(event) => setEmissionDraft((prev) => ({ ...prev, fareType: event.target.value }))}
+                                placeholder="Flex, Light, Promo..."
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">Número do voo</label>
+                              <Input
+                                value={emissionDraft.flightNumber}
+                                onChange={(event) => setEmissionDraft((prev) => ({ ...prev, flightNumber: event.target.value }))}
+                                placeholder="AZ123"
+                              />
+                            </div>
+                          </div>
+                          <div className="mt-4 grid gap-4 md:grid-cols-2">
+                            <div className="space-y-3 rounded-xl border border-white/60 bg-white/80 p-3 shadow-inner">
+                              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-600">Ida *</p>
+                              <div className="grid gap-3 md:grid-cols-2">
+                                <div className="space-y-2">
+                                  <label className="text-xs text-slate-500">Data de embarque</label>
+                                  <Input
+                                    type="date"
+                                    value={emissionDraft.departureDate}
+                                    onChange={(event) => setEmissionDraft((prev) => ({ ...prev, departureDate: event.target.value }))}
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <label className="text-xs text-slate-500">Hora de embarque</label>
+                                  <Input
+                                    type="time"
+                                    value={emissionDraft.outboundDepartureTime}
+                                    onChange={(event) =>
+                                      setEmissionDraft((prev) => ({ ...prev, outboundDepartureTime: event.target.value }))
+                                    }
+                                  />
+                                </div>
+                                <div className="space-y-2 md:col-span-2">
+                                  <label className="text-xs text-slate-500">Hora de chegada</label>
+                                  <Input
+                                    type="time"
+                                    value={emissionDraft.outboundArrivalTime}
+                                    onChange={(event) =>
+                                      setEmissionDraft((prev) => ({ ...prev, outboundArrivalTime: event.target.value }))
+                                    }
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                            <div className="space-y-3 rounded-xl border border-white/60 bg-white/80 p-3 shadow-inner">
+                              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-600">Volta *</p>
+                              <div className="grid gap-3 md:grid-cols-2">
+                                <div className="space-y-2">
+                                  <label className="text-xs text-slate-500">Data de retorno</label>
+                                  <Input
+                                    type="date"
+                                    value={emissionDraft.returnDate}
+                                    onChange={(event) => setEmissionDraft((prev) => ({ ...prev, returnDate: event.target.value }))}
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <label className="text-xs text-slate-500">Hora de embarque</label>
+                                  <Input
+                                    type="time"
+                                    value={emissionDraft.returnDepartureTime}
+                                    onChange={(event) =>
+                                      setEmissionDraft((prev) => ({ ...prev, returnDepartureTime: event.target.value }))
+                                    }
+                                  />
+                                </div>
+                                <div className="space-y-2 md:col-span-2">
+                                  <label className="text-xs text-slate-500">Hora de chegada</label>
+                                  <Input
+                                    type="time"
+                                    value={emissionDraft.returnArrivalTime}
+                                    onChange={(event) =>
+                                      setEmissionDraft((prev) => ({ ...prev, returnArrivalTime: event.target.value }))
+                                    }
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </section>
+
+                        <section className="rounded-2xl border border-slate-200 bg-white p-4">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Passageiros vinculados</p>
+                              <h3 className="text-lg font-semibold text-slate-900">Dados dos viajantes</h3>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button variant="outline" onClick={addPassenger}>
+                                Adicionar passageiro
+                              </Button>
+                              <Button onClick={handleSavePassengers} disabled={saving}>
+                                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar passageiros"}
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="mt-4 space-y-3">
+                            {passengerDrafts.map((passenger) => (
+                              <div key={passenger.id} className="rounded-xl border border-slate-100 bg-slate-50/60 p-3 shadow-inner">
+                                <div className="flex flex-wrap justify-between gap-3">
+                                  <p className="text-sm font-semibold text-slate-800">Passageiro</p>
+                                  <button className="text-xs font-semibold text-rose-600" onClick={() => removePassenger(passenger.id)}>
+                                    Remover
+                                  </button>
+                                </div>
+                                <div className="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                                  <Input
+                                    placeholder="Nome completo"
+                                    value={passenger.fullName}
+                                    onChange={(event) => updatePassengerField(passenger.id, "fullName", event.target.value)}
+                                  />
+                                  <Input
+                                    placeholder="CPF"
+                                    value={passenger.cpf}
+                                    onChange={(event) => updatePassengerField(passenger.id, "cpf", event.target.value)}
+                                  />
+                                  <Input
+                                    type="date"
+                                    placeholder="Data de nascimento"
+                                    value={passenger.birthDate}
+                                    onChange={(event) => updatePassengerField(passenger.id, "birthDate", event.target.value)}
+                                  />
+                                  <Input
+                                    placeholder="Telefone"
+                                    value={passenger.phone}
+                                    onChange={(event) => updatePassengerField(passenger.id, "phone", event.target.value)}
+                                  />
+                                  <Input
+                                    placeholder="E-mail"
+                                    value={passenger.email}
+                                    onChange={(event) => updatePassengerField(passenger.id, "email", event.target.value)}
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                            {passengerDrafts.length === 0 && (
+                              <p className="text-sm text-slate-600">Nenhum passageiro vinculado ainda.</p>
+                            )}
+                          </div>
+                        </section>
+
+                        <section className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Pagamento</p>
+                          <div className="mt-3 grid gap-4 md:grid-cols-2">
+                            <div>
+                              <p className="text-xs text-slate-500">Meio de pagamento</p>
+                              <p className="font-semibold text-slate-900">
+                                {selectedPurchase.payment ? PAYMENT_METHOD_LABELS[selectedPurchase.payment.method] : "Não registrado"}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-slate-500">Status do pagamento</p>
+                              <p className="font-semibold text-slate-900">{PAYMENT_STATUS_LABELS[(selectedPurchase.payment?.status ?? "PENDENTE") as PaymentStatusValue]}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-slate-500">Valor registrado</p>
+                              <p className="font-semibold text-slate-900">
+                                {selectedPurchase.payment ? currencyFormatter.format(selectedPurchase.payment.amount) : "—"}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-slate-500">Identificador</p>
+                              <p className="font-semibold text-slate-900">
+                                {selectedPurchase.payment?.externalReference ?? "Não informado"}
+                              </p>
+                            </div>
+                          </div>
+                        </section>
+
+                        <section className="rounded-2xl border border-slate-200 bg-white p-4">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Ações do pedido</p>
+                              <h3 className="text-lg font-semibold text-slate-900">Controle rápido</h3>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <select
+                                className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                                value={statusDraft}
+                                onChange={(event) => setStatusDraft(event.target.value as typeof statusDraft)}
+                              >
+                                <option value="AGUARDANDO_EMISSAO">Aguardando emissão</option>
+                                <option value="EMITIDA">Emitida</option>
+                              </select>
+                              <Button variant="outline" onClick={handleCancel}>
+                                Cancelar compra
+                              </Button>
+                              <Button variant="secondary" onClick={handleSaveAll} disabled={saving}>
+                                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar todas as alterações"}
+                              </Button>
+                              <Button onClick={handleMarkAsIssued} disabled={saving || selectedPurchase.status === "EMITIDA"}>
+                                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Marcar como emitido"}
+                              </Button>
+                            </div>
+                          </div>
+                        </section>
+                      </div>
+                    )}
                   </li>
                 );
               })}
@@ -585,298 +873,6 @@ export function AdminPurchasesTable({ purchases }: AdminPurchasesTableProps) {
           </div>
         )}
       </section>
-
-      <Dialog open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <DialogContent className="fixed inset-y-0 right-0 z-50 h-full w-full max-w-5xl translate-x-0 overflow-y-auto rounded-none border-l border-slate-200 bg-white p-0 shadow-2xl">
-          {selectedPurchase && (
-            <div className="flex h-full flex-col">
-              <div className="border-b border-slate-100 p-6">
-                <DialogHeader>
-                  <DialogTitle className="text-2xl font-bold text-slate-900">Detalhes da compra</DialogTitle>
-                  <DialogDescription className="text-slate-600">
-                    Preencha os dados obrigatórios para emissão, gerencie passageiros e acompanhe o pagamento.
-                  </DialogDescription>
-                </DialogHeader>
-              </div>
-
-              <div className="flex-1 space-y-6 overflow-y-auto p-6">
-                <section className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Dados da compra</p>
-                  <div className="mt-3 grid gap-4 md:grid-cols-2">
-                    <div>
-                      <p className="text-xs text-slate-500">Código</p>
-                      <p className="font-semibold text-slate-900">#{selectedPurchase.id}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Status atual</p>
-                      <div className="mt-1">{renderStatusBadge(selectedPurchase.status)}</div>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Criada em</p>
-                      <p className="font-semibold text-slate-900">{dateFormatter.format(new Date(selectedPurchase.dataCompra))}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Trechos</p>
-                      <p className="font-semibold text-slate-900">Ida e volta</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Companhia / Voo</p>
-                      <p className="font-semibold text-slate-900">
-                        {selectedPurchase.ticketDetails?.airline ?? "—"} {selectedPurchase.ticketDetails?.flightNumber ?? ""}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Observações</p>
-                      <p className="text-sm text-slate-700">{selectedPurchase.observacao || "Nenhuma observação registrada."}</p>
-                    </div>
-                  </div>
-                </section>
-
-                <section className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-blue-600">Dados para emissão *</p>
-                      <h3 className="text-lg font-semibold text-slate-900">Informações obrigatórias</h3>
-                    </div>
-                    <Button onClick={handleSaveEmission} disabled={saving}>
-                      {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar dados para emissão"}
-                    </Button>
-                  </div>
-                  <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                    <div className="space-y-2">
-                      <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">Localizador (PNR)</label>
-                      <Input
-                        value={emissionDraft.locator}
-                        onChange={(event) => setEmissionDraft((prev) => ({ ...prev, locator: event.target.value }))}
-                        placeholder="AB1234"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">Companhia aérea</label>
-                      <Input
-                        value={emissionDraft.airline}
-                        onChange={(event) => setEmissionDraft((prev) => ({ ...prev, airline: event.target.value }))}
-                        placeholder="Azul, Gol, Latam..."
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">Tipo de tarifa</label>
-                      <Input
-                        value={emissionDraft.fareType}
-                        onChange={(event) => setEmissionDraft((prev) => ({ ...prev, fareType: event.target.value }))}
-                        placeholder="Flex, Light, Promo..."
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">Número do voo</label>
-                      <Input
-                        value={emissionDraft.flightNumber}
-                        onChange={(event) => setEmissionDraft((prev) => ({ ...prev, flightNumber: event.target.value }))}
-                        placeholder="AZ123"
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-4 grid gap-4 md:grid-cols-2">
-                    <div className="space-y-3 rounded-xl border border-white/60 bg-white/80 p-3 shadow-inner">
-                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-600">Ida *</p>
-                      <div className="grid gap-3 md:grid-cols-2">
-                        <div className="space-y-2">
-                          <label className="text-xs text-slate-500">Data de embarque</label>
-                          <Input
-                            type="date"
-                            value={emissionDraft.departureDate}
-                            onChange={(event) => setEmissionDraft((prev) => ({ ...prev, departureDate: event.target.value }))}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-xs text-slate-500">Hora de embarque</label>
-                          <Input
-                            type="time"
-                            value={emissionDraft.outboundDepartureTime}
-                            onChange={(event) =>
-                              setEmissionDraft((prev) => ({ ...prev, outboundDepartureTime: event.target.value }))
-                            }
-                          />
-                        </div>
-                        <div className="space-y-2 md:col-span-2">
-                          <label className="text-xs text-slate-500">Hora de chegada</label>
-                          <Input
-                            type="time"
-                            value={emissionDraft.outboundArrivalTime}
-                            onChange={(event) =>
-                              setEmissionDraft((prev) => ({ ...prev, outboundArrivalTime: event.target.value }))
-                            }
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-3 rounded-xl border border-white/60 bg-white/80 p-3 shadow-inner">
-                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-600">Volta *</p>
-                      <div className="grid gap-3 md:grid-cols-2">
-                        <div className="space-y-2">
-                          <label className="text-xs text-slate-500">Data de retorno</label>
-                          <Input
-                            type="date"
-                            value={emissionDraft.returnDate}
-                            onChange={(event) => setEmissionDraft((prev) => ({ ...prev, returnDate: event.target.value }))}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-xs text-slate-500">Hora de embarque</label>
-                          <Input
-                            type="time"
-                            value={emissionDraft.returnDepartureTime}
-                            onChange={(event) =>
-                              setEmissionDraft((prev) => ({ ...prev, returnDepartureTime: event.target.value }))
-                            }
-                          />
-                        </div>
-                        <div className="space-y-2 md:col-span-2">
-                          <label className="text-xs text-slate-500">Hora de chegada</label>
-                          <Input
-                            type="time"
-                            value={emissionDraft.returnArrivalTime}
-                            onChange={(event) =>
-                              setEmissionDraft((prev) => ({ ...prev, returnArrivalTime: event.target.value }))
-                            }
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </section>
-
-                <section className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Passageiros vinculados</p>
-                      <h3 className="text-lg font-semibold text-slate-900">Dados dos viajantes</h3>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" onClick={addPassenger}>
-                        Adicionar passageiro
-                      </Button>
-                      <Button onClick={handleSavePassengers} disabled={saving}>
-                        {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar passageiros"}
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="mt-4 space-y-3">
-                    {passengerDrafts.map((passenger) => (
-                      <div key={passenger.id} className="rounded-xl border border-slate-100 bg-slate-50/60 p-3 shadow-inner">
-                        <div className="flex flex-wrap justify-between gap-3">
-                          <p className="text-sm font-semibold text-slate-800">Passageiro</p>
-                          <button className="text-xs font-semibold text-rose-600" onClick={() => removePassenger(passenger.id)}>
-                            Remover
-                          </button>
-                        </div>
-                        <div className="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                          <Input
-                            placeholder="Nome completo"
-                            value={passenger.fullName}
-                            onChange={(event) => updatePassengerField(passenger.id, "fullName", event.target.value)}
-                          />
-                          <Input
-                            placeholder="CPF"
-                            value={passenger.cpf}
-                            onChange={(event) => updatePassengerField(passenger.id, "cpf", event.target.value)}
-                          />
-                          <Input
-                            type="date"
-                            placeholder="Data de nascimento"
-                            value={passenger.birthDate}
-                            onChange={(event) => updatePassengerField(passenger.id, "birthDate", event.target.value)}
-                          />
-                          <Input
-                            placeholder="Telefone"
-                            value={passenger.phone}
-                            onChange={(event) => updatePassengerField(passenger.id, "phone", event.target.value)}
-                          />
-                          <Input
-                            placeholder="E-mail"
-                            value={passenger.email}
-                            onChange={(event) => updatePassengerField(passenger.id, "email", event.target.value)}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                    {passengerDrafts.length === 0 && (
-                      <p className="text-sm text-slate-600">Nenhum passageiro vinculado ainda.</p>
-                    )}
-                  </div>
-                </section>
-
-                <section className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Pagamento</p>
-                  <div className="mt-3 grid gap-4 md:grid-cols-2">
-                    <div>
-                      <p className="text-xs text-slate-500">Meio de pagamento</p>
-                      <p className="font-semibold text-slate-900">
-                        {selectedPurchase.payment ? PAYMENT_METHOD_LABELS[selectedPurchase.payment.method] : "Não registrado"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Status do pagamento</p>
-                      <p className="font-semibold text-slate-900">{PAYMENT_STATUS_LABELS[paymentStatus]}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Valor registrado</p>
-                      <p className="font-semibold text-slate-900">
-                        {selectedPurchase.payment ? currencyFormatter.format(selectedPurchase.payment.amount) : "—"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Identificador</p>
-                      <p className="font-semibold text-slate-900">
-                        {selectedPurchase.payment?.externalReference ?? "Não informado"}
-                      </p>
-                    </div>
-                  </div>
-                </section>
-
-                <section className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Ações do pedido</p>
-                      <h3 className="text-lg font-semibold text-slate-900">Controle rápido</h3>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <select
-                        className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                        value={statusDraft}
-                        onChange={(event) => setStatusDraft(event.target.value as typeof statusDraft)}
-                      >
-                        <option value="AGUARDANDO_EMISSAO">Aguardando emissão</option>
-                        <option value="EMITIDA">Emitida</option>
-                      </select>
-                      <Button variant="outline" onClick={handleCancel}>
-                        Cancelar compra
-                      </Button>
-                      <Button variant="secondary" onClick={handleSaveAll} disabled={saving}>
-                        {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar todas as alterações"}
-                      </Button>
-                      <Button onClick={handleMarkAsIssued} disabled={saving || selectedPurchase.status === "EMITIDA"}>
-                        {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Marcar como emitido"}
-                      </Button>
-                    </div>
-                  </div>
-                </section>
-              </div>
-
-              <DialogFooter className="border-t border-slate-100 bg-white px-6 py-4">
-                <div className="flex flex-1 flex-wrap justify-end gap-2">
-                  <Button variant="outline" onClick={handleCloseDrawer}>
-                    Fechar
-                  </Button>
-                  <Button onClick={handleSaveAll} disabled={saving}>
-                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar todas as alterações"}
-                  </Button>
-                </div>
-              </DialogFooter>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

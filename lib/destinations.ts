@@ -60,6 +60,13 @@ export const destinationFormSchema = z
       1,
       "Envie pelo menos uma foto ou informe uma URL válida.",
     ),
+    pixKey: z
+      .string()
+      .trim()
+      .max(255, "A chave Pix deve ter até 255 caracteres.")
+      .optional()
+      .transform((value) => (value ? value : undefined)),
+    pixQrUrl: photoUrlSchema.optional(),
   })
   .refine(
     (data) => data.endDate >= data.startDate,
@@ -108,6 +115,8 @@ export type SerializedDestination = {
   endDate: string;
   rating: number;
   photos: string[];
+  pixKey?: string | null;
+  pixQrUrl?: string | null;
   createdAt: string;
   updatedAt: string;
   isFavorite?: boolean;
@@ -130,6 +139,8 @@ export function serializeDestination(
     endDate: destination.endDate.toISOString(),
     rating: destination.rating,
     photos: destination.photos,
+    pixKey: destination.pixKey,
+    pixQrUrl: destination.pixQrUrl,
     createdAt: destination.createdAt.toISOString(),
     updatedAt: destination.updatedAt.toISOString(),
   };

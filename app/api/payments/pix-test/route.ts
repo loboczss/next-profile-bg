@@ -1,21 +1,11 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 
-import { createCoraPayment } from "@/lib/payments";
+import { createManualPaymentIntent } from "@/lib/payments";
 import { prisma } from "@/lib/prisma";
 
 const PIX_TEST_AMOUNT_IN_CENTS = 500;
 const PIX_TEST_AMOUNT_DECIMAL = new Prisma.Decimal(5);
-
-function ensurePixKey(): string | null {
-  const apiKey = process.env.CORA_PIX_API_KEY?.trim();
-
-  if (!apiKey) {
-    return null;
-  }
-
-  return apiKey;
-}
 
 export async function GET() {
   if (!prisma) {
@@ -57,23 +47,11 @@ export async function POST() {
     );
   }
 
-  const apiKey = ensurePixKey();
-
-  if (!apiKey) {
-    return NextResponse.json(
-      {
-        status: "error",
-        message: "Configure CORA_PIX_API_KEY no arquivo .env para habilitar o Pix.",
-      },
-      { status: 500 }
-    );
-  }
-
   try {
-    const payment = await createCoraPayment({
+    const payment = await createManualPaymentIntent({
       amountInCents: PIX_TEST_AMOUNT_IN_CENTS,
       method: "PIX",
-      description: "Teste Pix Banco Cora (Home)",
+      description: "Teste Pix do site",
       customerName: "Visitante Evastur",
       customerEmail: "pagamentos@evastur.com",
     });

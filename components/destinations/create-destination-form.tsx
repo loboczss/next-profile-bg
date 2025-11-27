@@ -84,9 +84,11 @@ function BaseDestinationForm({
 }: BaseDestinationFormProps) {
   const formRef = useRef<HTMLFormElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const pixQrInputRef = useRef<HTMLInputElement | null>(null);
   const [state, formAction] = useActionState(action, destinationFormInitialState);
 
   const photoErrors = useMemo(() => state.errors?.photoFiles, [state.errors]);
+  const pixKeyErrors = useMemo(() => state.errors?.pixKey, [state.errors]);
   const shouldResetOnSuccess = mode === "create";
 
   const destinationDefaults = useMemo(() => {
@@ -106,6 +108,7 @@ function BaseDestinationForm({
       startDate: formatDateForInput(destination.startDate),
       endDate: formatDateForInput(destination.endDate),
       photos: destination.photos.join("\n"),
+      pixKey: destination.pixKey ?? "",
     };
   }, [destination]);
 
@@ -129,6 +132,9 @@ function BaseDestinationForm({
       }
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
+      }
+      if (pixQrInputRef.current) {
+        pixQrInputRef.current.value = "";
       }
     }
   }, [shouldResetOnSuccess, state.message, state.status]);
@@ -316,6 +322,45 @@ function BaseDestinationForm({
             defaultValue={destinationDefaults?.endDate}
           />
           <FieldError errors={state.errors?.endDate} />
+        </div>
+      </div>
+
+      <div className="grid gap-5 md:grid-cols-2">
+        <div className="space-y-1.5">
+          <label htmlFor="pixKey" className="text-sm font-semibold text-slate-700">
+            Chave Pix (copia e cola)
+          </label>
+          <Input
+            id="pixKey"
+            name="pixKey"
+            placeholder="Informe a chave Pix que os clientes podem copiar"
+            defaultValue={destinationDefaults?.pixKey}
+          />
+          <FieldError errors={pixKeyErrors} />
+        </div>
+
+        <div className="space-y-2">
+          <span className="text-sm font-semibold text-slate-700">QR Code do Pix</span>
+          <label
+            className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 p-6 text-center text-sm text-slate-500 transition hover:border-slate-400 hover:bg-slate-50"
+          >
+            <UploadCloud className="size-6 text-slate-400" />
+            <span className="font-medium text-slate-600">Adicionar imagem do QR Code</span>
+            <span className="text-xs text-slate-400">PNG, JPG ou WEBP</span>
+            <Input
+              ref={pixQrInputRef}
+              id="pixQrFile"
+              name="pixQrFile"
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="sr-only"
+            />
+          </label>
+          {destination?.pixQrUrl ? (
+            <p className="text-xs text-slate-500">
+              QR atual: <span className="font-semibold text-slate-700">{destination.pixQrUrl}</span>
+            </p>
+          ) : null}
         </div>
       </div>
 

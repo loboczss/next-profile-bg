@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { DigitalTicketPreview } from "@/components/purchases/digital-ticket-preview";
+import { PaymentProofUploader } from "@/components/purchases/payment-proof-uploader";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PURCHASE_STATUS_LABELS, serializePurchase, type SerializedPurchase } from "@/lib/purchases";
@@ -268,6 +269,14 @@ export default async function MinhasComprasPage() {
                             )}
                           </dd>
                         </div>
+                        {purchase.status !== "EMITIDA" ? (
+                          <div className="sm:col-span-2">
+                            <PaymentProofUploader
+                              purchaseId={purchase.id}
+                              receiptUrl={purchase.payment?.receiptUrl ?? null}
+                            />
+                          </div>
+                        ) : null}
                       </dl>
                     </div>
                   </div>

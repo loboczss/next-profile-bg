@@ -1,7 +1,6 @@
 import Link from "next/link";
 import Hero from "components/hero";
 import { DestinationGrid } from "@/components/destinations/destination-grid";
-import { PixTestButton } from "@/components/payments/pix-test-button";
 import { auth } from "@/lib/auth";
 import {
   serializeDestination,
@@ -159,18 +158,6 @@ export default async function HomePage() {
       icon: Headphones,
     },
   ];
-
-  let pixTestSuccessCount = 0;
-
-  if (prismaClient) {
-    try {
-      pixTestSuccessCount = await prismaClient.pixTestPayment.count({
-        where: { status: "CONCLUIDO" },
-      });
-    } catch (error) {
-      console.error("Erro ao carregar o contador de testes Pix", error);
-    }
-  }
 
   return (
     <main className="flex min-h-dvh flex-col bg-gradient-to-b from-white via-[#f6f8ff] to-[#fff3f6] text-foreground">

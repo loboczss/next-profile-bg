@@ -86,6 +86,7 @@ export type SerializedPurchase = {
     status: PaymentStatusValue;
     amount: number;
     externalReference: string | null;
+    receiptUrl: string | null;
   } | null;
 };
 
@@ -133,6 +134,7 @@ export function serializePurchase(purchase: PurchaseWithRelations): SerializedPu
           status: purchase.payment.status as PaymentStatusValue,
           amount: Number(purchase.payment.amount),
           externalReference: purchase.payment.externalReference,
+          receiptUrl: purchase.payment.receiptUrl,
         }
       : null,
   };

@@ -34,8 +34,17 @@ function run(command, options = {}) {
 
 const hasDatabaseUrl = typeof process.env.DATABASE_URL === 'string' && process.env.DATABASE_URL.trim().length > 0;
 
+const prismaGenerateEnv = {};
+
+if (!hasDatabaseUrl) {
+  prismaGenerateEnv.PRISMA_GENERATE_SKIP_ENV_CHECK = '1';
+  console.warn(
+    'DATABASE_URL is not defined; running "prisma generate" with PRISMA_GENERATE_SKIP_ENV_CHECK=1 to allow the build to proceed.',
+  );
+}
+
 try {
-  run('prisma generate');
+  run('prisma generate', { env: prismaGenerateEnv });
 } catch (error) {
   console.error('Failed to run "prisma generate".', error);
   process.exit(error.status ?? 1);

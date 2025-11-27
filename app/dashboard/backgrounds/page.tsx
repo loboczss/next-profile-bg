@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { BackgroundsAdminContent } from "@/components/BackgroundsAdminContent";
+import { BackgroundGalleryManager } from "@/components/BackgroundGalleryManager";
 import { auth } from "@/lib/auth";
 import { DashboardAnimatedWrapper } from "../dashboard-animated-wrapper";
 import { DashboardShell } from "../_components/dashboard-shell";
@@ -29,7 +29,7 @@ export default async function DashboardBackgroundsPage() {
     <DashboardAnimatedWrapper userName={session.user.name ?? "Administrador"}>
       <DashboardShell navItems={navItems} user={dashboardUserInfo} activeItemId="backgrounds">
         <section id="backgrounds" className="space-y-8">
-          <BackgroundsAdminContent />
+          <BackgroundGalleryManager />
         </section>
       </DashboardShell>
     </DashboardAnimatedWrapper>

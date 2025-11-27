@@ -9,6 +9,7 @@ import {
   HeartHandshake,
   Crown,
   Globe2,
+  Instagram,
   MapPinned,
   Clock8,
   PhoneCall,
@@ -239,6 +240,58 @@ export default function AboutPage() {
               <div className="size-full animate-pulse rounded-full bg-white/60" />
             </div>
             <span className="text-xs font-medium text-white/70">Role para conhecer</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Redes sociais */}
+      <section className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
+        <div className="group relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/70 to-white/50 p-6 backdrop-blur-xl sm:p-8">
+          <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5" />
+          </div>
+
+          <div className="relative grid items-center gap-6 md:grid-cols-[1.2fr_1fr] md:items-start">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 text-xs font-semibold text-blue-800">
+                <Sparkles className="size-4" />
+                Novidades da Evastur em tempo real
+              </div>
+              <h2 className="mt-3 text-2xl font-bold md:text-3xl">Vamos além dos roteiros: compartilhamos bastidores e inspirações</h2>
+              <p className="mt-2 text-sm text-slate-600">
+                Acompanhe nossos especialistas testando experiências, conheça destinos antes de embarcar e veja como cuidamos de cada viagem. Nosso Instagram é a vitrine viva do que entregamos diariamente.
+              </p>
+              <ul className="mt-4 grid gap-3 text-sm text-slate-700 sm:grid-cols-2">
+                {[
+                  "Bastidores de roteiros personalizados",
+                  "Cobertura de viagens e inspeções de hotéis",
+                  "Dicas rápidas de documentação e seguros",
+                  "Ofertas relâmpago e oportunidades exclusivas",
+                ].map((item, i) => (
+                  <li key={i} className="flex items-start gap-2 rounded-xl border border-white/30 bg-white/60 px-4 py-3 shadow-sm">
+                    <CheckCircle2 className="mt-0.5 size-4 text-blue-600" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="relative overflow-hidden rounded-2xl border border-white/20 bg-white/70 p-5 text-center shadow-lg">
+              <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-gradient-to-br from-purple-500/15 to-blue-500/15">
+                <Instagram className="size-7 text-pink-600" />
+              </div>
+              <p className="mt-4 text-sm font-semibold text-slate-800">Siga a Evastur nas redes</p>
+              <Link
+                href="https://www.instagram.com/evastur.turismo"
+                className="mt-2 inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-orange-500 px-5 py-2 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg"
+              >
+                @evastur.turismo
+                <ArrowRight className="size-4" />
+              </Link>
+              <p className="mt-3 text-xs text-slate-600">
+                Mensagens diretas, suporte rápido e inspirações diárias. Estamos presentes para ajudar antes, durante e depois da sua viagem.
+              </p>
+            </div>
           </div>
         </div>
       </section>

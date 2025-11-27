@@ -39,11 +39,8 @@ export async function createDestination(
 
   const pixQrFile = formData.get("pixQrFile");
 
-  const pixQrFile = formData.get("pixQrFile");
-
   const uploadedPhotos: string[] = [];
   const uploadErrors: string[] = [];
-  let pixQrUrl: string | undefined;
   let pixQrUrl: string | undefined;
 
   for (const file of photoFiles) {
@@ -69,23 +66,6 @@ export async function createDestination(
           ? error.message
           : "Não foi possível enviar o arquivo.";
       uploadErrors.push(`${file.name || "Arquivo"}: ${message}`);
-    }
-  }
-
-  if (pixQrFile instanceof File && pixQrFile.size > 0) {
-    try {
-      assertImage(pixQrFile);
-      const ext = sanitizeExt(pixQrFile.type);
-      const arrayBuffer = await pixQrFile.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      pixQrUrl = await storeDestinationPhoto(String(user.id), ext, buffer, {
-        originalName: pixQrFile.name || "qr-pix",
-      });
-    } catch (error) {
-      console.error("Erro ao enviar QR Code do Pix", error);
-      const message =
-        error instanceof Error ? error.message : "Não foi possível enviar o QR Code.";
-      uploadErrors.push(`${pixQrFile.name || "QR Code"}: ${message}`);
     }
   }
 
@@ -219,6 +199,8 @@ export async function updateDestination(
     .split(/\r?\n|,/)
     .map((value) => value.trim())
     .filter(Boolean);
+
+  const pixQrUrl = formData.get("pixQrUrl") ?? undefined;
 
   const photoFiles = formData
     .getAll("photoFiles")

@@ -74,6 +74,8 @@ model Destination {
   endDate            DateTime
   rating             Float
   photos             String[]
+  pixKey             String?
+  pixQrUrl           String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -120,7 +122,6 @@ enum PaymentMethod {
   CARTAO
   PIX
   BOLETO
-  CARNE
 }
 
 enum PaymentStatus {
@@ -170,6 +171,7 @@ model Payment {
   status            PaymentStatus  @default(PENDENTE)
   amount            Decimal        @db.Decimal(10, 2)
   externalReference String?
+  receiptUrl        String?
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
 

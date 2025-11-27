@@ -24,7 +24,7 @@ export function PixTestButton({ initialCount }: PixTestButtonProps) {
     setIsError(false);
 
     try {
-      const response = await fetch("/api/cora/pix-test", {
+      const response = await fetch("/api/payments/pix-test", {
         method: "POST",
       });
 

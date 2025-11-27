@@ -37,8 +37,14 @@ export async function createDestination(
     .getAll("photoFiles")
     .filter((value): value is File => value instanceof File && value.size > 0);
 
+  const pixQrFile = formData.get("pixQrFile");
+
+  const pixQrFile = formData.get("pixQrFile");
+
   const uploadedPhotos: string[] = [];
   const uploadErrors: string[] = [];
+  let pixQrUrl: string | undefined;
+  let pixQrUrl: string | undefined;
 
   for (const file of photoFiles) {
     try {
@@ -66,6 +72,40 @@ export async function createDestination(
     }
   }
 
+  if (pixQrFile instanceof File && pixQrFile.size > 0) {
+    try {
+      assertImage(pixQrFile);
+      const ext = sanitizeExt(pixQrFile.type);
+      const arrayBuffer = await pixQrFile.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      pixQrUrl = await storeDestinationPhoto(String(user.id), ext, buffer, {
+        originalName: pixQrFile.name || "qr-pix",
+      });
+    } catch (error) {
+      console.error("Erro ao enviar QR Code do Pix", error);
+      const message =
+        error instanceof Error ? error.message : "Não foi possível enviar o QR Code.";
+      uploadErrors.push(`${pixQrFile.name || "QR Code"}: ${message}`);
+    }
+  }
+
+  if (pixQrFile instanceof File && pixQrFile.size > 0) {
+    try {
+      assertImage(pixQrFile);
+      const ext = sanitizeExt(pixQrFile.type);
+      const arrayBuffer = await pixQrFile.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      pixQrUrl = await storeDestinationPhoto(String(session.user.id), ext, buffer, {
+        originalName: pixQrFile.name || "qr-pix",
+      });
+    } catch (error) {
+      console.error("Erro ao enviar QR Code do Pix", error);
+      const message =
+        error instanceof Error ? error.message : "Não foi possível enviar o QR Code.";
+      uploadErrors.push(`${pixQrFile.name || "QR Code"}: ${message}`);
+    }
+  }
+
   if (uploadErrors.length > 0) {
     return {
       status: "error",
@@ -90,6 +130,8 @@ export async function createDestination(
     endDate: formData.get("endDate"),
     rating: formData.get("rating"),
     photos,
+    pixKey: formData.get("pixKey"),
+    pixQrUrl,
   });
 
   if (!parsed.success) {
@@ -123,6 +165,8 @@ export async function createDestination(
         endDate: parsed.data.endDate,
         rating: parsed.data.rating,
         photos: parsed.data.photos,
+        pixKey: parsed.data.pixKey,
+        pixQrUrl: parsed.data.pixQrUrl,
         userId: Number(session.user.id),
       },
     });
@@ -225,6 +269,8 @@ export async function updateDestination(
     endDate: formData.get("endDate"),
     rating: formData.get("rating"),
     photos,
+    pixKey: formData.get("pixKey"),
+    pixQrUrl,
   });
 
   if (!parsed.success) {
@@ -246,7 +292,7 @@ export async function updateDestination(
   try {
     const existingDestination = await prisma.destination.findUnique({
       where: { id: destinationId },
-      select: { id: true, userId: true },
+      select: { id: true, userId: true, pixQrUrl: true },
     });
 
     if (!existingDestination) {
@@ -266,6 +312,8 @@ export async function updateDestination(
       };
     }
 
+    const nextPixQrUrl = parsed.data.pixQrUrl ?? existingDestination.pixQrUrl ?? null;
+
     await prisma.destination.update({
       where: { id: destinationId },
       data: {
@@ -280,6 +328,8 @@ export async function updateDestination(
         endDate: parsed.data.endDate,
         rating: parsed.data.rating,
         photos: parsed.data.photos,
+        pixKey: parsed.data.pixKey,
+        pixQrUrl: nextPixQrUrl,
       },
     });
   } catch (error) {

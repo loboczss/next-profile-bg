@@ -239,3 +239,24 @@ export async function storeDestinationPhoto(
     successMessage: "Upload da foto de destino concluído no Dropbox.",
   });
 }
+
+export async function storePaymentReceipt(
+  userId: string,
+  purchaseId: string,
+  ext: string,
+  buffer: Buffer,
+  options: { originalName?: string } = {},
+) {
+  const safeUserId = sanitizeSegment(userId);
+  const safePurchaseId = sanitizeSegment(purchaseId);
+  const baseName = options.originalName
+    ? sanitizeSegment(path.parse(options.originalName).name)
+    : "comprovante";
+  const fileName = `${Date.now()}-${baseName}.${ext}`;
+  const dropboxPath = `/apps/${appName}/payments/${safeUserId}/${safePurchaseId}-${fileName}`;
+
+  return tryDropboxUpload(dropboxPath, buffer, {
+    itemDescription: "comprovante de pagamento",
+    successMessage: "Comprovante enviado com sucesso para o Dropbox.",
+  });
+}

@@ -1,10 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { ComponentProps } from "react";
-import { Clock, Loader2, Minus, Plus, ShieldCheck, Users } from "lucide-react";
+import { Check, Clock, Copy, Loader2, Minus, Plus, QrCode, ShieldCheck, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,7 @@ export function PurchaseForm({ destination }: PurchaseFormProps) {
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodValue>("CARTAO");
+  const [pixKeyCopied, setPixKeyCopied] = useState(false);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -57,6 +58,22 @@ export function PurchaseForm({ destination }: PurchaseFormProps) {
 
   const cover = destination.photos[0] ?? "/placeholder.jpg";
   const maxSeats = Math.max(destination.totalSeats, 1);
+
+  const monthsUntilTravel = useMemo(() => {
+    const travelDate = new Date(destination.startDate);
+    const now = new Date();
+
+    if (Number.isNaN(travelDate.getTime())) {
+      return 1;
+    }
+
+    const monthsDiff =
+      (travelDate.getFullYear() - now.getFullYear()) * 12 +
+      (travelDate.getMonth() - now.getMonth()) +
+      1;
+
+    return Math.max(1, monthsDiff);
+  }, [destination.startDate]);
 
   const formattedPrice = useMemo(
     () =>
@@ -76,10 +93,73 @@ export function PurchaseForm({ destination }: PurchaseFormProps) {
   }, [destination.description]);
 
   const paymentMethodDescriptions: Record<PaymentMethodValue, string> = {
-    CARTAO: "Combine o pagamento no cartão diretamente com nossa equipe.",
-    PIX: "Receba os dados do Pix para pagar com rapidez e segurança.",
-    BOLETO: "Geramos um boleto digital para você pagar como preferir.",
-    CARNE: "Parcelamos a viagem em carnê digital combinado pela agência.",
+    CARTAO: `Parcelamos em até ${monthsUntilTravel}x e confirmamos tudo pelo WhatsApp.`,
+    PIX: "Receba a chave e o QR Code do Pix para pagar com rapidez e segurança.",
+    BOLETO: `Boleto parcelado até o mês da viagem (até ${monthsUntilTravel}x) com acompanhamento pelo WhatsApp.`,
+  };
+
+  const renderPaymentGuidelines = () => {
+    if (paymentMethod === "PIX") {
+      return (
+        <div className="space-y-3 rounded-2xl border border-emerald-100 bg-emerald-50/80 p-4 text-sm text-emerald-800 shadow-inner">
+          <p className="font-semibold">Pagamento imediato via Pix</p>
+          {destination.pixKey ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <code className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-emerald-700 shadow-sm">
+                {destination.pixKey}
+              </code>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="rounded-full"
+                onClick={handleCopyPixKey}
+              >
+                {pixKeyCopied ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />} Copiar chave
+              </Button>
+            </div>
+          ) : (
+            <p className="text-xs text-emerald-700">A chave Pix será enviada pela equipe após finalizar a solicitação.</p>
+          )}
+
+          {destination.pixQrUrl ? (
+            <div className="flex items-center gap-3 rounded-xl bg-white/70 p-3 text-emerald-700">
+              <QrCode className="size-10" />
+              <div className="space-y-1 text-xs">
+                <p className="font-semibold">Escaneie o QR Code para pagar</p>
+                <Image
+                  src={destination.pixQrUrl}
+                  alt="QR Code do Pix"
+                  width={120}
+                  height={120}
+                  className="rounded-lg border border-emerald-100 bg-white object-contain p-2"
+                />
+              </div>
+            </div>
+          ) : null}
+
+          <p className="text-xs text-emerald-700">
+            Envie o comprovante pela área Minhas Compras para acelerarmos a emissão.
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-3 rounded-2xl border border-blue-100 bg-blue-50/80 p-4 text-sm text-blue-800 shadow-inner">
+        <p className="font-semibold">
+          Parcelamento disponível em até {monthsUntilTravel}x (até o mês da viagem)
+        </p>
+        <p>
+          As parcelas acompanham o calendário: conforme o mês da viagem se aproxima, a quantidade de parcelas disponíveis
+          diminui. Um atendente entrará em contato pelo WhatsApp para combinar a melhor forma de pagamento e liberar o
+          boleto ou link do cartão.
+        </p>
+        <p className="text-xs text-blue-700">
+          Assim que recebermos o comprovante, o status ficará como “Aguardando emissão” para priorizar sua passagem.
+        </p>
+      </div>
+    );
   };
 
   const buildLoginRedirect = () => {
@@ -276,6 +356,24 @@ export function PurchaseForm({ destination }: PurchaseFormProps) {
 
   const passengersLabel = quantity === 1 ? "1 passageiro" : `${quantity} passageiros`;
 
+  const handleCopyPixKey = async () => {
+    if (!destination.pixKey) return;
+
+    try {
+      await navigator.clipboard?.writeText(destination.pixKey);
+      setPixKeyCopied(true);
+      toast.success("Chave Pix copiada");
+      setTimeout(() => setPixKeyCopied(false), 2000);
+    } catch (error) {
+      console.error("Erro ao copiar chave Pix", error);
+      toast.error("Não foi possível copiar a chave Pix agora.");
+    }
+  };
+
+  useEffect(() => {
+    setPixKeyCopied(false);
+  }, [paymentMethod]);
+
   return (
     <div className="space-y-6">
       <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
@@ -471,6 +569,7 @@ export function PurchaseForm({ destination }: PurchaseFormProps) {
               );
             })}
           </div>
+          {renderPaymentGuidelines()}
         </section>
 
         <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 shadow-sm">

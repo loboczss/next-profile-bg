@@ -902,6 +902,21 @@ export function AdminPurchasesTable({ purchases }: AdminPurchasesTableProps) {
                   "Não informado"}
               </p>
             </div>
+            <div className="space-y-1.5">
+              <p className="text-xs text-slate-500">Comprovante</p>
+              {selectedPurchase.payment?.receiptUrl ? (
+                <a
+                  href={selectedPurchase.payment.receiptUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm font-semibold text-blue-700 underline hover:text-blue-900"
+                >
+                  Abrir arquivo enviado
+                </a>
+              ) : (
+                <p className="text-sm text-slate-600">Nenhum comprovante anexado.</p>
+              )}
+            </div>
           </div>
         </section>
       </div>
@@ -1095,8 +1110,19 @@ export function AdminPurchasesTable({ purchases }: AdminPurchasesTableProps) {
               </div>
             </div>
           </div>
-        </section>
+          </section>
+        </div>
       </div>
     </div>
-  </div>
-)}
+  )}
+
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}

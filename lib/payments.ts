@@ -1,7 +1,7 @@
 import type { PaymentStatus } from "@prisma/client";
 import { z } from "zod";
 
-export const paymentMethodValues = ["CARTAO", "PIX", "BOLETO", "CARNE"] as const;
+export const paymentMethodValues = ["CARTAO", "PIX", "BOLETO"] as const;
 export type PaymentMethodValue = (typeof paymentMethodValues)[number];
 export const paymentMethodSchema = z.enum(paymentMethodValues, {
   required_error: "Selecione um método de pagamento.",
@@ -16,7 +16,6 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethodValue, string> = {
   CARTAO: "Cartão de crédito",
   PIX: "Pix",
   BOLETO: "Boleto bancário",
-  CARNE: "Carnê",
 };
 
 export const PAYMENT_STATUS_LABELS: Record<PaymentStatusValue, string> = {
@@ -38,7 +37,7 @@ export function isPaymentCompleted(status: PaymentStatus | PaymentStatusValue | 
   return (typeof status === "string" ? status : String(status)) === "CONCLUIDO";
 }
 
-interface CreateCoraPaymentParams {
+interface CreatePaymentIntentParams {
   amountInCents: number;
   method: PaymentMethodValue;
   description: string;
@@ -46,13 +45,13 @@ interface CreateCoraPaymentParams {
   customerEmail: string;
 }
 
-interface CreateCoraPaymentResult {
+interface CreatePaymentIntentResult {
   status: PaymentStatusValue;
   externalReference: string;
 }
 
 function generatePaymentReference(method: PaymentMethodValue): string {
-  const prefix = `cora_${method.toLowerCase()}_`;
+  const prefix = `manual_${method.toLowerCase()}_`;
   const globalCrypto = typeof globalThis !== "undefined" ? (globalThis as { crypto?: Crypto }).crypto : undefined;
 
   if (globalCrypto && typeof globalCrypto.randomUUID === "function") {
@@ -66,9 +65,9 @@ function generatePaymentReference(method: PaymentMethodValue): string {
 // Mantemos a função por compatibilidade, mas ela agora gera apenas uma
 // referência local para registrar a intenção de pagamento sem acionar
 // qualquer provedor externo.
-export async function createCoraPayment(
-  params: CreateCoraPaymentParams
-): Promise<CreateCoraPaymentResult> {
+export async function createManualPaymentIntent(
+  params: CreatePaymentIntentParams
+): Promise<CreatePaymentIntentResult> {
   const { method } = params;
 
   const status: PaymentStatusValue = "PENDENTE";

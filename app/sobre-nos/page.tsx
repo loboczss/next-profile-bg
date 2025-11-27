@@ -190,7 +190,7 @@ export default function AboutPage() {
 
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 md:py-28 lg:px-8">
           <div className="flex flex-col items-center text-center text-white">
-            <Badge>Evastur • desde 1996</Badge>
+            <Badge>Evastur+ • 1996 → 2025+</Badge>
             <div className="mt-6 inline-flex items-center gap-3">
               <div className="relative">
                 <Plane className="size-10 text-blue-300 animate-bounce" />
@@ -204,7 +204,7 @@ export default function AboutPage() {
               </h1>
             </div>
             <p className="mt-4 max-w-2xl text-sm text-white/90 sm:text-base">
-              Desde 1996, Mais do que viagens, entregamos tranquilidade. Compra segura, suporte real e experiências que marcam.
+              Do Vale do Juruá para o mundo: 29 anos de pioneirismo, resiliência e inovação. De roteiros autorais a suporte 24/7, seguimos conectando pessoas, sonhos e destinos.
             </p>
 
             <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row">
@@ -387,19 +387,23 @@ export default function AboutPage() {
       <section className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-white/70 to-white/50 p-6 backdrop-blur-xl">
           <h2 className="text-center text-2xl font-bold md:text-3xl">
-            Nossa jornada desde <span className="text-blue-700">1996</span>
+            Nossa jornada: do primeiro balcão à EVASTUR+
           </h2>
           <p className="mx-auto mt-2 max-w-2xl text-center text-sm text-slate-600">
-            Crescemos com você: do atendimento de balcão ao planejamento digital com curadoria premium.
+            Uma linha do tempo de coragem, adaptação e inovação — sempre ao lado dos passageiros do Vale do Juruá.
           </p>
 
           <ol className="relative mx-auto mt-8 grid max-w-4xl gap-8 border-l border-slate-200 pl-6">
             {[
-              { year: 1996, title: "Nasce a Evastur", desc: "Agência de bairro com atendimento próximo e foco em viagens nacionais.", Icon: Handshake },
-              { year: 2008, title: "Parcerias globais", desc: "Acordos internacionais e melhores tarifas com hotéis e operadoras.", Icon: Hotel },
-              { year: 2015, title: "Roteiros autorais", desc: "Curadoria própria: experiências locais, gastronômicas e culturais.", Icon: Stars },
-              { year: 2020, title: "Suporte total 24/7", desc: "Acompanhamento ponta a ponta — pré, durante e pós viagem.", Icon: ShieldCheck },
-              { year: new Date().getFullYear(), title: "Tecnologia & UX", desc: "Plataforma moderna, gestão de pacotes e atendimento omnichannel.", Icon: Globe2 },
+              { year: "1996", title: "Nasce a EVASTUR", desc: "Primeira agência de viagens do Vale do Juruá — atendimento próximo e foco em viagens nacionais.", Icon: Handshake },
+              { year: "2001", title: "Mudança na aviação mundial", desc: "Após 11/09, a aviação se reformula globalmente e a EVASTUR se adapta para seguir conectando com segurança.", Icon: ShieldCheck },
+              { year: "2008", title: "Parcerias globais", desc: "Acordos com hotéis, operadoras e companhias aéreas ampliam destinos e tarifas competitivas.", Icon: Hotel },
+              { year: "2012", title: "Nova direção", desc: "Ex-RICO e TRIP assume 100% da empresa, profissionaliza processos e prepara a expansão.", Icon: Crown },
+              { year: "2015", title: "Roteiros autorais", desc: "Experiências culturais, gastronômicas e vivências locais com curadoria própria EVASTUR.", Icon: Stars },
+              { year: "2019–2020", title: "Pandemia e resiliência", desc: "Mesmo com o mundo parado, garantimos 100% dos embarques, mantivemos a equipe e não fechamos um dia sequer.", Icon: HeartHandshake },
+              { year: "2020", title: "Suporte total 24/7", desc: "A cultura criada na pandemia vira política: acompanhamento integral antes, durante e depois da viagem.", Icon: Clock8 },
+              { year: "2025", title: "Rebranding EVASTUR+", desc: "Nova identidade, logo renovada e lançamento do portal online com pacotes exclusivos para Cruzeiro do Sul.", Icon: Sparkles },
+              { year: "2025+", title: "Conectividade e expansão digital", desc: "Plataforma que reúne clientes, hotéis, companhias aéreas e operadoras para simplificar compras online.", Icon: Globe2 },
             ].map(({ year, title, desc, Icon }, i) => (
               <li key={i} className="relative">
                 <span className="absolute -left-[9px] top-1 grid size-4 place-items-center rounded-full border-2 border-blue-600 bg-white" />

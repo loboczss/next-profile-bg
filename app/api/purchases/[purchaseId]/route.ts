@@ -55,7 +55,7 @@ const ticketDetailsSchema = z.object({
 });
 
 const passengerUpdateSchema = z.object({
-  id: z.coerce.number({ invalid_type_error: "Passageiro inválido." }).int().positive(),
+  id: z.coerce.number({ invalid_type_error: "Passageiro inválido." }).int().positive().optional(),
   fullName: z
     .string({ required_error: "Informe o nome do passageiro." })
     .trim()
@@ -207,9 +207,11 @@ export async function PATCH(
   try {
     const purchase = await prisma.$transaction(async (tx) => {
       const passengerUpdates = passengers ?? [];
+      const passengersToCreate = passengerUpdates.filter((passenger) => !passenger.id);
+      const passengersToUpdate = passengerUpdates.filter((passenger) => passenger.id);
 
-      if (passengerUpdates.length > 0) {
-        for (const passenger of passengerUpdates) {
+      if (passengersToUpdate.length > 0) {
+        for (const passenger of passengersToUpdate) {
           const result = await tx.passenger.updateMany({
             where: { id: passenger.id, purchaseId },
             data: {
@@ -225,6 +227,19 @@ export async function PATCH(
             throw new PassengerNotFoundError();
           }
         }
+      }
+
+      if (passengersToCreate.length > 0) {
+        await tx.passenger.createMany({
+          data: passengersToCreate.map((passenger) => ({
+            purchaseId,
+            fullName: passenger.fullName,
+            cpf: passenger.cpf,
+            birthDate: passenger.birthDate,
+            phone: passenger.phone,
+            email: passenger.email,
+          })),
+        });
       }
 
       const dataToUpdate: Record<string, unknown> = {};

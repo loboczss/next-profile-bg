@@ -198,21 +198,15 @@ export function DashboardShell({
         <div className="flex min-h-screen flex-1 flex-col">
           <header className="sticky top-0 z-20 border-b border-white/40 bg-white/80 px-4 py-4 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/80 sm:px-6 lg:px-10">
             <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-xl lg:hidden"
-                  onClick={() => setIsSidebarOpen((state) => !state)}
-                  aria-label={isSidebarOpen ? "Fechar menu" : "Abrir menu"}
-                >
-                  <Menu className="h-5 w-5" />
-                </Button>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-blue-500">Painel administrativo</p>
-                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">Bem-vindo(a), {user.name.split(" ")[0] ?? user.name}</h2>
-                </div>
-              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-xl lg:hidden"
+                onClick={() => setIsSidebarOpen((state) => !state)}
+                aria-label={isSidebarOpen ? "Fechar menu" : "Abrir menu"}
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
               <div className="flex items-center gap-3">
                 <Button
                   variant="outline"

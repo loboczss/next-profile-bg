@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { CheckCircle2, Clock3, Filter, Loader2, Search, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -571,8 +572,10 @@ export function AdminPurchasesTable({ purchases }: AdminPurchasesTableProps) {
                     <div className="flex flex-col items-start gap-3 lg:items-end">
                       {renderStatusBadge(purchase.status)}
                       <div className="flex flex-wrap gap-2">
-                        <Button variant="outline" onClick={() => handleToggleExpand(purchase)}>
-                          {isExpanded ? "Recolher" : "Detalhes"}
+                        <Button asChild variant="outline">
+                          <Link href={`/dashboard/compras/${purchase.id}`} target="_blank" rel="noreferrer">
+                            Detalhes
+                          </Link>
                         </Button>
                         {canIssue && (
                           <Button

@@ -21,7 +21,7 @@ const CruiseCarousel = () => {
         .from("packages")
         .select("*, destinations(name)")
         .eq("active", true)
-        .eq("status", "ativo")
+        .in("status", ["ativo", "esgotado"])
         .eq("category", "cruzeiro")
         .order("created_at", { ascending: false })
         .limit(8);
@@ -106,6 +106,7 @@ const CruiseCarousel = () => {
                     totalPrice={pkg.price}
                     slug={pkg.slug}
                     category={pkg.category}
+                    status={pkg.status}
                   />
                 </motion.div>
               ))}

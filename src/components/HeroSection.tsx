@@ -30,7 +30,7 @@ const HeroSection = () => {
             </div>
 
             {/* Title */}
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight text-shadow-hero">
+            <h1 className="text-[1.3rem] sm:text-[1.575rem] lg:text-[2.1rem] xl:text-[2.625rem] font-bold leading-tight text-shadow-hero">
               <span className="text-white">Viagens sob medida </span>
               <span className="text-amber-400">para criar memórias</span>
               <span className="text-white"> que duram para sempre.</span>

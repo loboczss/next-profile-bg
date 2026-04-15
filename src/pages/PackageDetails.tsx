@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowLeft, Clock, Car, Coffee, Bed, Map, Shield, MessageCircle, Users, Utensils, Compass, Camera, MapPin, Loader2, CreditCard, Heart, Star, UserCircle, ShoppingCart, Calendar, Maximize2, Ticket, Sparkles, ArrowRight, Send, Info, ChevronDown, Hotel, Plane, UtensilsCrossed, CheckCircle2, Plus, Minus
+  ArrowLeft, Clock, Car, Coffee, Bed, Map, Shield, MessageCircle, Users, Utensils, Compass, Camera, MapPin, Loader2, CreditCard, Heart, Star, UserCircle, ShoppingCart, Calendar, Maximize2, Ticket, Sparkles, ArrowRight, Send, Info, ChevronDown, Hotel, Plane, UtensilsCrossed, CheckCircle2, Plus, Minus, Ban
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -232,6 +232,7 @@ const PackageDetails = () => {
   const destinationName: string | null = (pkg as any).destination_name || null;
   const installments = pkg.installments || 10;
   const isInternal = pkg.category === "interno";
+  const isSoldOut = pkg.status === "esgotado";
 
   // Calcula o total dos extras do cardápio
   const menuExtrasTotal = menuItems
@@ -312,6 +313,12 @@ const PackageDetails = () => {
                   <Badge variant="outline" className="border-amber-300/60 text-amber-200 backdrop-blur-sm bg-black/20">
                     <Calendar size={12} className="mr-1" />
                     Saída: {new Date((pkg as any).travel_date).toLocaleDateString("pt-BR")}
+                  </Badge>
+                )}
+                {isSoldOut && (
+                  <Badge className="bg-red-600 text-white border-0 animate-pulse">
+                    <Ban size={12} className="mr-1" />
+                    Esgotado
                   </Badge>
                 )}
                 <div className="flex items-center gap-1 text-amber-400 bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-full text-sm font-medium border border-white/10">
@@ -611,6 +618,18 @@ const PackageDetails = () => {
                   </p>
                 </div>
 
+                {isSoldOut && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                      <Ban size={20} className="text-red-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-red-700">Pacote Esgotado</p>
+                      <p className="text-xs text-red-600/80">Este pacote não está mais disponível para reserva.</p>
+                    </div>
+                  </div>
+                )}
+
                 {pkg.duration && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground py-2 border-b">
                     <Clock size={16} className="text-primary" />
@@ -671,48 +690,72 @@ const PackageDetails = () => {
                 )}
 
 
-                <Button
-                  className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg transition-all disabled:opacity-60"
-                  size="lg"
-                  onClick={async () => {
-                    if (!user) {
-                      navigate(`/login?redirect=/pacote/${slugParam}`);
-                      return;
-                    }
-                    if (isInternal && (!customerTravelDate || !customerTravelTime)) {
-                      toast.error("Por favor, selecione a data e o horário do passeio antes de reservar.");
-                      return;
-                    }
-                    // Adiciona ao carrinho e vai direto pro checkout
-                    await addToCart.mutateAsync();
-                    navigate("/checkout");
-                  }}
-                  disabled={addToCart.isPending || (isInternal && (!customerTravelDate || !customerTravelTime))}
-                >
-                  {addToCart.isPending ? (
-                    <Loader2 size={20} className="animate-spin" />
-                  ) : (
-                    <>
-                      <CreditCard size={20} />
-                      Reservar Agora
-                    </>
-                  )}
-                </Button>
+                {isSoldOut ? (
+                  <>
+                    <Button
+                      className="w-full gap-2 bg-gray-400 text-white cursor-not-allowed"
+                      size="lg"
+                      disabled
+                    >
+                      <Ban size={20} />
+                      Esgotado — Indisponível
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full gap-2 border-primary text-primary hover:bg-primary/5 hover:text-primary transition-all"
+                      size="lg"
+                      onClick={() => setIsQuoteOpen(true)}
+                    >
+                      <MessageCircle size={20} />
+                      Falar com a Evastur
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg transition-all disabled:opacity-60"
+                      size="lg"
+                      onClick={async () => {
+                        if (!user) {
+                          navigate(`/login?redirect=/pacote/${slugParam}`);
+                          return;
+                        }
+                        if (isInternal && (!customerTravelDate || !customerTravelTime)) {
+                          toast.error("Por favor, selecione a data e o horário do passeio antes de reservar.");
+                          return;
+                        }
+                        // Adiciona ao carrinho e vai direto pro checkout
+                        await addToCart.mutateAsync();
+                        navigate("/checkout");
+                      }}
+                      disabled={addToCart.isPending || (isInternal && (!customerTravelDate || !customerTravelTime))}
+                    >
+                      {addToCart.isPending ? (
+                        <Loader2 size={20} className="animate-spin" />
+                      ) : (
+                        <>
+                          <CreditCard size={20} />
+                          Reservar Agora
+                        </>
+                      )}
+                    </Button>
 
-                <Button
-                  variant="outline"
-                  className="w-full gap-2 border-primary text-primary hover:bg-primary/5 hover:text-primary transition-all"
-                  size="lg"
-                  onClick={() => addToCart.mutate()}
-                  disabled={addToCart.isPending}
-                >
-                  {addToCart.isPending ? (
-                    <Loader2 size={20} className="animate-spin" />
-                  ) : (
-                    <ShoppingCart size={20} />
-                  )}
-                  Adicionar ao Carrinho
-                </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full gap-2 border-primary text-primary hover:bg-primary/5 hover:text-primary transition-all"
+                      size="lg"
+                      onClick={() => addToCart.mutate()}
+                      disabled={addToCart.isPending}
+                    >
+                      {addToCart.isPending ? (
+                        <Loader2 size={20} className="animate-spin" />
+                      ) : (
+                        <ShoppingCart size={20} />
+                      )}
+                      Adicionar ao Carrinho
+                    </Button>
+                  </>
+                )}
 
                 <p className="text-xs text-center text-muted-foreground">
                   Pagamento 100% seguro via PIX, Crédito ou Débito

@@ -1,4 +1,4 @@
-import { MapPin, Clock, Star, ArrowUpRight, Heart } from "lucide-react";
+import { MapPin, Clock, Star, ArrowUpRight, Heart, Ban } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useFavorite } from "@/hooks/useFavorite";
@@ -20,6 +20,7 @@ interface DestinationCardProps {
   slug?: string;
   category?: string;
   id?: string; // Adicionando ID opcional para favoritar
+  status?: string; // "ativo" | "esgotado" etc
 }
 
 // Labels humanizadas para as categorias (usadas na badge)
@@ -54,8 +55,10 @@ const DestinationCard = ({
   slug,
   category,
   id,
+  status,
 }: DestinationCardProps) => {
   const { isFavorite, toggleFavorite } = useFavorite(id);
+  const isSoldOut = status === "esgotado";
 
   return (
     <div className="relative">
@@ -124,10 +127,10 @@ const DestinationCard = ({
             <div className="h-px bg-border mb-3" />
 
             {/* ÁREA DE PREÇO */}
-            <div className="flex items-end justify-between">
+            <div className={`flex items-end justify-between ${isSoldOut ? "opacity-50" : ""}`}>
               <div>
                 <p className="text-xs text-muted-foreground mb-0.5">A partir de</p>
-                <p className="text-lg font-bold text-primary leading-none">
+                <p className={`text-lg font-bold leading-none ${isSoldOut ? "text-muted-foreground line-through" : "text-primary"}`}>
                   {installments}x{" "}
                   <span className="text-base">
                     R${" "}
@@ -146,13 +149,20 @@ const DestinationCard = ({
               </div>
 
               {/* Botão Visual de Ação */}
-              <motion.span
-                className="inline-flex items-center gap-1 text-xs font-semibold text-accent border border-accent/30 rounded-xl px-3 py-1.5 bg-accent/5 group-hover:bg-accent group-hover:text-white transition-all duration-200"
-                variants={{ hover: { scale: 1.03 } }}
-              >
-                Ver pacote
-                <ArrowUpRight size={12} />
-              </motion.span>
+              {isSoldOut ? (
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 border border-red-200 rounded-xl px-3 py-1.5 bg-red-50">
+                  <Ban size={12} />
+                  Esgotado
+                </span>
+              ) : (
+                <motion.span
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-accent border border-accent/30 rounded-xl px-3 py-1.5 bg-accent/5 group-hover:bg-accent group-hover:text-white transition-all duration-200"
+                  variants={{ hover: { scale: 1.03 } }}
+                >
+                  Ver pacote
+                  <ArrowUpRight size={12} />
+                </motion.span>
+              )}
             </div>
           </div>
         </motion.article>

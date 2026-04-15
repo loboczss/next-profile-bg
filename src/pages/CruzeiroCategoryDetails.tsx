@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Car, Home, Coffee, Map, Eye, Loader2, ChevronLeft, ChevronRight, Images } from "lucide-react";
+import { ArrowLeft, Car, Home, Coffee, Map, Eye, Loader2, ChevronLeft, ChevronRight, Images, Ban } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -132,9 +132,9 @@ const CruzeiroCategoryDetails = () => {
         queryKey: ["cruzeiro-category", slug],
         queryFn: async () => {
             const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug || "");
-            
+
             let query = supabase.from("cruzeiro_categories").select("*");
-            
+
             if (isUuid) {
                 query = query.eq("id", slug!);
             } else {
@@ -156,7 +156,7 @@ const CruzeiroCategoryDetails = () => {
                 .select("*, package_inclusions(inclusion_key, label)")
                 .in("id", category!.assigned_packages || [])
                 .eq("active", true)
-                .eq("status", "ativo")
+                .in("status", ["ativo", "esgotado"])
                 .order("price");
             if (error) throw error;
             return data;
@@ -293,17 +293,24 @@ const CruzeiroCategoryDetails = () => {
                                             })}
                                         </div>
                                         <div className="flex items-center justify-between pt-4 border-t border-border">
-                                            <div>
+                                            <div className={pkg.status === "esgotado" ? "opacity-50" : ""}>
                                                 <span className="text-xs text-muted-foreground">A partir de</span>
-                                                <p className="text-xl font-bold text-primary">R$ {Number(pkg.price).toLocaleString("pt-BR")}</p>
+                                                <p className={`text-xl font-bold ${pkg.status === "esgotado" ? "text-muted-foreground line-through" : "text-primary"}`}>R$ {Number(pkg.price).toLocaleString("pt-BR")}</p>
                                             </div>
-                                            <Link
-                                                to={`/pacote/${pkg.slug}`}
-                                                className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-4 py-2.5 rounded-lg transition-colors text-sm"
-                                            >
-                                                <Eye size={16} />
-                                                Detalhes
-                                            </Link>
+                                            {pkg.status === "esgotado" ? (
+                                                <span className="inline-flex items-center gap-2 text-red-600 border border-red-200 bg-red-50 font-semibold px-4 py-2.5 rounded-lg text-sm">
+                                                    <Ban size={16} />
+                                                    Esgotado
+                                                </span>
+                                            ) : (
+                                                <Link
+                                                    to={`/pacote/${pkg.slug}`}
+                                                    className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-4 py-2.5 rounded-lg transition-colors text-sm"
+                                                >
+                                                    <Eye size={16} />
+                                                    Detalhes
+                                                </Link>
+                                            )}
                                         </div>
                                     </div>
                                 </motion.div>

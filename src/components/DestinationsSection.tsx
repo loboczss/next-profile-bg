@@ -16,7 +16,7 @@ type Filter = (typeof filters)[number];
 
 const filterConfig: Record<
   Filter,
-  { label: string; icon: React.ComponentType<{ size?: number; className?: string }> }
+  { label: string; icon: React.ComponentType<{ size?: string | number; className?: string }> }
 > = {
   Todos: { label: "Todos", icon: Layers3 },
   nacional: { label: "Nacional", icon: MapPin },
@@ -76,7 +76,7 @@ const DestinationsSection = () => {
         .from("packages")
         .select("*, destinations(name)")
         .eq("active", true) // Apenas pacotes "ligados" (visíveis)
-        .eq("status", "ativo") // Apenas com status de venda ativo
+        .in("status", ["ativo", "esgotado"]) // Inclui pacotes ativos e esgotados
         .in("category", ["nacional", "internacional", "cruzeiro"]) // Filtra as categorias da Home
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -236,17 +236,16 @@ const DestinationsSection = () => {
                 <button
                   key={f}
                   onClick={() => setActive(f)}
-                  className={`relative flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap ${
-                    isActive
+                  className={`relative flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap ${isActive
                       ? "text-primary-foreground shadow-sm"
                       : "text-muted-foreground hover:text-foreground"
-                  }`}
+                    }`}
                   style={
                     isActive
                       ? {
-                          background:
-                            "linear-gradient(135deg, hsl(232 100% 23%) 0%, hsl(232 100% 30%) 100%)",
-                        }
+                        background:
+                          "linear-gradient(135deg, hsl(232 100% 23%) 0%, hsl(232 100% 30%) 100%)",
+                      }
                       : {}
                   }
                 >
@@ -254,11 +253,10 @@ const DestinationsSection = () => {
                   {label}
                   {counts[f] > 0 && (
                     <span
-                      className={`ml-0.5 text-xs px-1.5 py-0.5 rounded-full font-semibold ${
-                        isActive
+                      className={`ml-0.5 text-xs px-1.5 py-0.5 rounded-full font-semibold ${isActive
                           ? "bg-white/20 text-white"
                           : "bg-muted text-muted-foreground"
-                      }`}
+                        }`}
                     >
                       {counts[f]}
                     </span>
@@ -326,6 +324,7 @@ const DestinationsSection = () => {
                     totalPrice={pkg.price}
                     slug={pkg.slug}
                     category={pkg.category}
+                    status={pkg.status}
                   />
                 </motion.div>
               ))}

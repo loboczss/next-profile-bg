@@ -22,7 +22,7 @@ const DestinationsCarousel = () => {
         .from("packages")
         .select("*, destinations(name)")
         .eq("active", true)
-        .eq("status", "ativo")
+        .in("status", ["ativo", "esgotado"])
         .in("category", ["nacional", "internacional"])
         .order("created_at", { ascending: false })
         .limit(8);
@@ -101,6 +101,7 @@ const DestinationsCarousel = () => {
                     totalPrice={pkg.price}
                     slug={pkg.slug}
                     category={pkg.category}
+                    status={pkg.status}
                   />
                 </motion.div>
               ))}

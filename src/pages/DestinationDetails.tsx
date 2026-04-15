@@ -2,7 +2,7 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
-import { ArrowLeft, MapPin, Car, Home, Coffee, Map, Eye, Camera, Star, Loader2 } from "lucide-react";
+import { ArrowLeft, MapPin, Car, Home, Coffee, Map, Eye, Camera, Star, Loader2, Ban } from "lucide-react";
 import Navbar from "@/components/Navbar";
 
 const fadeUp = {
@@ -66,7 +66,7 @@ const DestinationDetails = () => {
         .select("*, package_inclusions(inclusion_key, label)")
         .eq("destination_id", destination!.id)
         .eq("active", true)
-        .eq("status", "ativo")
+        .in("status", ["ativo", "esgotado"])
         .order("price");
       if (error) throw error;
       return data;
@@ -232,14 +232,21 @@ const DestinationDetails = () => {
                       })}
                     </div>
                     <div className="flex items-center justify-between pt-4 border-t border-border">
-                      <div>
+                      <div className={pkg.status === "esgotado" ? "opacity-50" : ""}>
                         <span className="text-xs text-muted-foreground">A partir de</span>
-                        <p className="text-xl font-bold text-primary">R$ {Number(pkg.price).toLocaleString("pt-BR")}</p>
+                        <p className={`text-xl font-bold ${pkg.status === "esgotado" ? "text-muted-foreground line-through" : "text-primary"}`}>R$ {Number(pkg.price).toLocaleString("pt-BR")}</p>
                       </div>
-                      <Link to={`/pacote/${pkg.slug}`} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-4 py-2.5 rounded-lg transition-colors text-sm">
-                        <Eye size={16} />
-                        Ver Detalhes
-                      </Link>
+                      {pkg.status === "esgotado" ? (
+                        <span className="inline-flex items-center gap-2 text-red-600 border border-red-200 bg-red-50 font-semibold px-4 py-2.5 rounded-lg text-sm">
+                          <Ban size={16} />
+                          Esgotado
+                        </span>
+                      ) : (
+                        <Link to={`/pacote/${pkg.slug}`} className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-4 py-2.5 rounded-lg transition-colors text-sm">
+                          <Eye size={16} />
+                          Ver Detalhes
+                        </Link>
+                      )}
                     </div>
                   </div>
                 </motion.div>

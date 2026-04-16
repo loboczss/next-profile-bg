@@ -443,8 +443,7 @@ const CheckoutPage = () => {
                             <div className="flex items-center gap-1 text-xs mt-1 text-amber-600 font-medium">
                               <Calendar size={11} />
                               <span>
-                                {new Date(item.travel_date).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short", year: "numeric" })}
-                                {item.travel_date.includes("T") && item.travel_date.length > 10 && ` às ${new Date(item.travel_date).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}h`}
+                                {(() => { const dt = item.travel_date; if (dt.includes("T") && dt.length > 10) { return new Date(dt).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short", year: "numeric" }) + ` às ${new Date(dt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}h`; } const [y, m, d] = dt.substring(0, 10).split("-"); return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short", year: "numeric" }); })()}
                               </span>
                             </div>
                           )}

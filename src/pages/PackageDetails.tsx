@@ -19,6 +19,7 @@ import { useFavorite } from "@/hooks/useFavorite";
 import Navbar from "@/components/Navbar";
 import { toast } from "sonner";
 import QuoteFormDialog from "@/components/QuoteFormDialog";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -51,6 +52,7 @@ const PackageDetails = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { data: siteSettings } = useSiteSettings();
 
   const [isQuoteOpen, setIsQuoteOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("roteiro");
@@ -312,7 +314,7 @@ const PackageDetails = () => {
                 {(pkg as any).travel_date && (
                   <Badge variant="outline" className="border-amber-300/60 text-amber-200 backdrop-blur-sm bg-black/20">
                     <Calendar size={12} className="mr-1" />
-                    Saída: {new Date((pkg as any).travel_date).toLocaleDateString("pt-BR")}
+                    Saída: {(() => { const [y, m, d] = (pkg as any).travel_date.substring(0, 10).split("-"); return `${d}/${m}/${y}`; })()}
                   </Badge>
                 )}
                 {isSoldOut && (
@@ -493,11 +495,11 @@ const PackageDetails = () => {
               <motion.h2 custom={0} variants={fadeUp} className="text-2xl font-bold text-primary">
                 Galeria
               </motion.h2>
-              <motion.div custom={1} variants={fadeUp} className="grid grid-cols-2 md:grid-cols-3 gap-3 auto-rows-[180px]">
+              <motion.div custom={1} variants={fadeUp} className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {images.map((img: any, i: number) => (
-                  <div key={img.image_url} className={`group relative rounded-xl overflow-hidden cursor-pointer ${i === 0 ? "md:col-span-2 md:row-span-2" : ""}`}>
-                    <img src={img.image_url} alt={`Gallery ${i + 1}`} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
+                  <div key={img.image_url} className={`group relative rounded-xl overflow-hidden cursor-pointer bg-secondary/30 ${i === 0 ? "md:col-span-2 md:row-span-2" : ""}`}>
+                    <img src={img.image_url} alt={`Gallery ${i + 1}`} className="w-full h-auto object-contain transition-transform duration-500 group-hover:scale-105" />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 pointer-events-none" />
                   </div>
                 ))}
               </motion.div>
@@ -643,7 +645,7 @@ const PackageDetails = () => {
                     <Calendar size={16} className="text-amber-500" />
                     <span className="font-medium text-amber-700">Data da Viagem:</span>
                     <span className="font-semibold text-amber-600">
-                      {new Date((pkg as any).travel_date).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}
+                      {(() => { const [y, m, d] = (pkg as any).travel_date.substring(0, 10).split("-"); return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" }); })()}
                     </span>
                   </div>
                 )}
@@ -702,9 +704,13 @@ const PackageDetails = () => {
                     </Button>
                     <Button
                       variant="outline"
-                      className="w-full gap-2 border-primary text-primary hover:bg-primary/5 hover:text-primary transition-all"
+                      className="w-full gap-2 border-emerald-600 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 transition-all"
                       size="lg"
-                      onClick={() => setIsQuoteOpen(true)}
+                      onClick={() => {
+                        const phone = siteSettings?.agencyWhatsapp?.replace(/\D/g, "") || "5568999872973";
+                        const msg = encodeURIComponent(`Olá! Vi no site que o pacote *${pkg.title}* está esgotado. Gostaria de saber se há previsão de novas vagas ou pacotes similares. Obrigado!`);
+                        window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
+                      }}
                     >
                       <MessageCircle size={20} />
                       Falar com a Evastur

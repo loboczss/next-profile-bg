@@ -183,7 +183,7 @@ export default function AdminFinanceiro() {
                             {r.updated_at ? new Date(r.updated_at).toLocaleDateString("pt-BR") : "—"}
                           </td>
                           <td className="px-4 py-3 text-xs text-muted-foreground">
-                            {r.travel_date ? new Date(r.travel_date).toLocaleDateString("pt-BR") : "—"}
+                            {r.travel_date ? (() => { const dt = r.travel_date; if (dt.includes("T") && dt.length > 10) return new Date(dt).toLocaleDateString("pt-BR"); const [y, m, d] = dt.substring(0, 10).split("-"); return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString("pt-BR"); })() : "—"}
                           </td>
                           <td className="px-4 py-3">
                             <Badge className="bg-emerald-100 text-emerald-700 text-xs border-0">

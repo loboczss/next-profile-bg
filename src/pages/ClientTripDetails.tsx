@@ -112,7 +112,7 @@ const ClientTripDetails = () => {
                     <p className="font-medium flex items-center gap-1">
                       <Calendar size={14} />
                       {reservation.travel_date
-                        ? new Date(reservation.travel_date).toLocaleDateString("pt-BR")
+                        ? (() => { const dt = reservation.travel_date; if (dt.includes("T") && dt.length > 10) { return new Date(dt).toLocaleDateString("pt-BR"); } const [y, m, d] = dt.substring(0, 10).split("-"); return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString("pt-BR"); })()
                         : "A definir"}
                     </p>
                   </div>

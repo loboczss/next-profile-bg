@@ -112,7 +112,7 @@ const PaymentSuccessPage = () => {
                             <p className="font-semibold text-foreground">{r.package_name}</p>
                             <p className="text-xs text-muted-foreground mt-0.5">
                               {r.people} pessoa{r.people > 1 ? "s" : ""}
-                              {r.travel_date && ` • ${new Date(r.travel_date).toLocaleDateString("pt-BR")}`}
+                              {r.travel_date && ` • ${(() => { const dt = r.travel_date; if (dt.includes("T") && dt.length > 10) { return new Date(dt).toLocaleDateString("pt-BR"); } const [y, m, d] = dt.substring(0, 10).split("-"); return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString("pt-BR"); })()}`}
                             </p>
                           </div>
                           <div className="text-right">

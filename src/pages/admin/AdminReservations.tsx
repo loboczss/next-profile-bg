@@ -187,7 +187,7 @@ export default function AdminReservations() {
                     <td className="px-4 py-3 text-muted-foreground">
                       {r.travel_date ? (
                         <div>
-                          <span>{new Date(r.travel_date).toLocaleDateString("pt-BR")}</span>
+                          <span>{(() => { const dt = r.travel_date; if (dt.includes("T") && dt.length > 10) return new Date(dt).toLocaleDateString("pt-BR"); const [y, m, d] = dt.substring(0, 10).split("-"); return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString("pt-BR"); })()}</span>
                           {r.travel_date.includes("T") && r.travel_date.length > 10 && (
                             <span className="block text-xs text-amber-600 font-medium">
                               {new Date(r.travel_date).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}h
@@ -304,7 +304,7 @@ export default function AdminReservations() {
                     <span>
                       {selected.travel_date ? (
                         <>
-                          {new Date(selected.travel_date).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short", year: "numeric" })}
+                          {(() => { const dt = selected.travel_date; if (dt.includes("T") && dt.length > 10) return new Date(dt).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short", year: "numeric" }); const [y, m, d] = dt.substring(0, 10).split("-"); return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short", year: "numeric" }); })()}
                           {selected.travel_date.includes("T") && selected.travel_date.length > 10 && (
                             <strong className="ml-1 text-amber-600">
                               às {new Date(selected.travel_date).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}h

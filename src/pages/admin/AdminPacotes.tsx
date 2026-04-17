@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import {
   Plus, Search, Pencil, Trash2, Loader2,
-  Package, MapPin, ToggleLeft, ToggleRight, Filter,
+  Package, MapPin, ToggleLeft, ToggleRight, Filter, Users,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,8 @@ type PackageRow = {
   destination_name?: string | null;
   destinations?: { name: string } | null;
   created_at: string;
+  total_slots?: number | null;
+  available_slots?: number | null;
 };
 
 const categoryConfig: Record<string, { label: string; color: string; dot: string }> = {
@@ -212,6 +214,18 @@ export default function AdminPacotes() {
                     <span className={`inline-flex text-[11px] font-medium px-2 py-0.5 rounded-full border ${st.color}`}>
                       {st.label}
                     </span>
+                    {pkg.available_slots != null && (
+                      <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border ${
+                        pkg.available_slots === 0
+                          ? "text-red-700 bg-red-50 border-red-200"
+                          : pkg.available_slots <= 5
+                          ? "text-amber-700 bg-amber-50 border-amber-200"
+                          : "text-sky-700 bg-sky-50 border-sky-200"
+                      }`}>
+                        <Users size={10} />
+                        {pkg.available_slots} vaga{pkg.available_slots !== 1 ? "s" : ""}
+                      </span>
+                    )}
                   </div>
                   {destName && (
                     <div className="flex items-center gap-1 mt-0.5">

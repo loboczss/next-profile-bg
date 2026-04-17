@@ -4,20 +4,22 @@
  * FLUXO RESUMIDO:
  * 1. O cliente vem do carrinho (CartPage ou CartSheet)
  * 2. Busca os itens do carrinho com dados do pacote (preço, imagem, parcelas)
- * 3. Preenche/confirma nome, whatsapp e CPF
- * 4. Escolhe forma de pagamento: Cartão de Crédito, Débito ou PIX
- * 5. Clica em "Pagar" → chama a Edge Function "create-payment"
- * 6. Para CARTÃO: Redireciona para página segura do Asaas (invoiceUrl)
- * 7. Para PIX: Exibe QR Code inline para pagamento instantâneo
- * 8. Após pagar, o Asaas manda um webhook (asaas-webhook) que confirma a reserva
+ * 3. Para cada item, preenche dados de TODOS os ocupantes (nome, CPF, nascimento)
+ * 4. Crianças ≤ 2 anos: não pagam e não ocupam vaga
+ * 5. Escolhe forma de pagamento: Cartão de Crédito, Débito ou PIX
+ * 6. Clica em "Pagar" → chama a Edge Function "create-payment"
+ * 7. Para CARTÃO: Redireciona para página segura do Asaas (invoiceUrl)
+ * 8. Para PIX: Exibe QR Code inline para pagamento instantâneo
+ * 9. Após pagar, o Asaas manda um webhook (asaas-webhook) que confirma a reserva
  *
  * IMPORTANTE:
  * - A data da viagem vem do cart_item (definida pelo admin ou pelo cliente na página do pacote)
  * - NÃO existe mais campo de data nesta página
  * - O parcelamento máximo é definido pelo pacote com MENOS parcelas no carrinho
+ * - Dados dos ocupantes (nome, CPF, nascimento) são enviados no payload
  */
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/Navbar";
@@ -43,10 +45,19 @@ import {
   Copy,
   Smartphone,
   Wallet,
+  UserPlus,
+  Baby,
+  Trash2,
+  AlertCircle,
+  Plane,
+  ArrowRight,
+  MapPin,
+  Clock,
+  Info,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Link, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef } from "react";
 
 type PaymentMethod = "credit_card" | "debit_card" | "pix";
@@ -57,14 +68,53 @@ interface PixData {
   expiration_date: string;
 }
 
+interface Occupant {
+  name: string;
+  cpf: string;
+  birth_date: string;
+  is_infant: boolean;
+}
+
+// ─── Helpers ───
+function formatCpfValue(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+  if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+}
+
+function isInfant(birthDate: string): boolean {
+  if (!birthDate) return false;
+  const today = new Date();
+  const birth = new Date(birthDate + "T12:00:00");
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age <= 2;
+}
+
+function getAge(birthDate: string): number {
+  if (!birthDate) return 0;
+  const today = new Date();
+  const birth = new Date(birthDate + "T12:00:00");
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age;
+}
+
 // ─── Componente principal do Checkout ───
 const CheckoutPage = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
-  const [clientCpf, setClientCpf] = useState("");
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("credit_card");
   const [selectedInstallments, setSelectedInstallments] = useState(1);
@@ -73,6 +123,9 @@ const CheckoutPage = () => {
   const [currentPaymentId, setCurrentPaymentId] = useState<string | null>(null);
   const [pixConfirmed, setPixConfirmed] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Mapa de ocupantes por cart_item id
+  const [occupantsMap, setOccupantsMap] = useState<Record<string, Occupant[]>>({});
 
   // --- PIX Polling: check every 5s if payment was confirmed via Asaas API ---
   useEffect(() => {
@@ -125,9 +178,7 @@ const CheckoutPage = () => {
 
   useEffect(() => {
     if (profile) {
-      setClientName(profile.full_name || "");
       setClientPhone(profile.whatsapp || "");
-      setClientCpf(profile.cpf || "");
     }
   }, [profile]);
 
@@ -141,7 +192,7 @@ const CheckoutPage = () => {
         .select(`
           *,
           package:packages (
-            id, title, slug, price, cover_image_url, duration, installments, category, travel_date
+            id, title, slug, price, cover_image_url, duration, installments, category, travel_date, available_slots, status, route_info, package_details
           )
         `)
         .eq("user_id", user!.id)
@@ -151,14 +202,198 @@ const CheckoutPage = () => {
     },
   });
 
+  // Inicializa occupantsMap quando os cart items ou profile carregarem
+  useEffect(() => {
+    if (cartItems.length === 0) return;
+
+    setOccupantsMap((prev) => {
+      const updated = { ...prev };
+      cartItems.forEach((item: any) => {
+        if (!updated[item.id]) {
+          // Cria array de ocupantes com base no número de pessoas
+          const occupants: Occupant[] = [];
+          for (let i = 0; i < item.people; i++) {
+            if (i === 0 && profile) {
+              // Primeiro ocupante pré-preenche com dados do perfil
+              occupants.push({
+                name: profile.full_name || "",
+                cpf: profile.cpf || "",
+                birth_date: "",
+                is_infant: false,
+              });
+            } else {
+              occupants.push({ name: "", cpf: "", birth_date: "", is_infant: false });
+            }
+          }
+          updated[item.id] = occupants;
+        } else {
+          // Ajusta tamanho se o people mudou
+          const current = updated[item.id];
+          const payingOccupants = current.filter((o) => !o.is_infant);
+          const infantOccupants = current.filter((o) => o.is_infant);
+          
+          if (payingOccupants.length < item.people) {
+            // Adicionar mais ocupantes pagantes
+            const diff = item.people - payingOccupants.length;
+            for (let i = 0; i < diff; i++) {
+              payingOccupants.push({ name: "", cpf: "", birth_date: "", is_infant: false });
+            }
+          } else if (payingOccupants.length > item.people) {
+            // Remover do final
+            payingOccupants.splice(item.people);
+          }
+          updated[item.id] = [...payingOccupants, ...infantOccupants];
+        }
+      });
+      return updated;
+    });
+  }, [cartItems, profile]);
+
+  // ── Funções para gerenciar ocupantes ──
+  const updateOccupant = (cartItemId: string, index: number, field: keyof Occupant, value: string) => {
+    setOccupantsMap((prev) => {
+      const list = [...(prev[cartItemId] || [])];
+      const occ = { ...list[index] };
+      if (field === "cpf") {
+        occ.cpf = formatCpfValue(value);
+      } else if (field === "birth_date") {
+        occ.birth_date = value;
+        occ.is_infant = isInfant(value);
+      } else if (field === "name") {
+        occ.name = value;
+      }
+      list[index] = occ;
+      return { ...prev, [cartItemId]: list };
+    });
+  };
+
+  const addInfant = (cartItemId: string) => {
+    setOccupantsMap((prev) => {
+      const list = [...(prev[cartItemId] || [])];
+      list.push({ name: "", cpf: "", birth_date: "", is_infant: true });
+      return { ...prev, [cartItemId]: list };
+    });
+  };
+
+  const removeOccupant = (cartItemId: string, index: number) => {
+    setOccupantsMap((prev) => {
+      const list = [...(prev[cartItemId] || [])];
+      const occ = list[index];
+      if (occ.is_infant) {
+        list.splice(index, 1);
+      } else {
+        // Não pode remover pagante se só tem 1
+        const payingCount = list.filter((o) => !o.is_infant).length;
+        if (payingCount > 1) {
+          list.splice(index, 1);
+          // Atualizar o people no carrinho
+          const newPeople = list.filter((o) => !o.is_infant).length;
+          supabase.from("cart_items").update({ people: newPeople }).eq("id", cartItemId).then(() => {
+            queryClient.invalidateQueries({ queryKey: ["cart-checkout", user?.id] });
+          });
+        }
+      }
+      return { ...prev, [cartItemId]: list };
+    });
+  };
+
+  const addPayingOccupant = (cartItemId: string, currentPeople: number, availableSlots: number | null) => {
+    // Verificar vagas
+    if (availableSlots != null && currentPeople + 1 > availableSlots) {
+      toast.error("Não há vagas suficientes disponíveis!");
+      return;
+    }
+
+    // Atualizar no banco
+    supabase
+      .from("cart_items")
+      .update({ people: currentPeople + 1 })
+      .eq("id", cartItemId)
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ["cart-checkout", user?.id] });
+        queryClient.invalidateQueries({ queryKey: ["cart", user?.id] });
+      });
+
+    // Atualizar localmente
+    setOccupantsMap((prev) => {
+      const list = [...(prev[cartItemId] || [])];
+      // Inserir antes dos infants
+      const firstInfantIdx = list.findIndex((o) => o.is_infant);
+      const newOcc: Occupant = { name: "", cpf: "", birth_date: "", is_infant: false };
+      if (firstInfantIdx >= 0) {
+        list.splice(firstInfantIdx, 0, newOcc);
+      } else {
+        list.push(newOcc);
+      }
+      return { ...prev, [cartItemId]: list };
+    });
+  };
+
   // Pega o menor número de parcelas entre todos os itens do carrinho
-  // Maximum installments allowed (minimum across all cart items)
   const maxInstallments = cartItems.length > 0
     ? cartItems.reduce((min: number, item: any) => {
         const pkg = item.package?.installments || 1;
         return Math.min(min, pkg);
       }, cartItems[0]?.package?.installments || 1)
     : 1;
+
+  // Calcula total considerando infants (não pagam)
+  const calculateTotal = () =>
+    cartItems.reduce((total, item: any) => {
+      const menuExtras = Array.isArray(item.menu_selections)
+        ? (item.menu_selections as any[]).reduce((s: number, m: any) => s + Number(m.price || 0), 0)
+        : 0;
+      const occupants = occupantsMap[item.id] || [];
+      const payingCount = occupants.filter((o) => !o.is_infant).length || item.people;
+      return total + ((item.package?.price || 0) + menuExtras) * payingCount;
+    }, 0);
+
+  const total = calculateTotal();
+
+  // Conta infants por item
+  const getInfantCount = (cartItemId: string) => {
+    const occupants = occupantsMap[cartItemId] || [];
+    return occupants.filter((o) => o.is_infant).length;
+  };
+
+  // Conta pagantes por item
+  const getPayingCount = (cartItemId: string, fallback: number) => {
+    const occupants = occupantsMap[cartItemId] || [];
+    const paying = occupants.filter((o) => !o.is_infant).length;
+    return paying || fallback;
+  };
+
+  // Valida se todos os ocupantes têm dados preenchidos
+  const allOccupantsValid = cartItems.every((item: any) => {
+    const occupants = occupantsMap[item.id] || [];
+    if (occupants.length === 0) return false;
+    return occupants.every((o) => {
+      if (o.is_infant) {
+        return o.name.trim().length > 0 && o.birth_date.length > 0;
+      }
+      return o.name.trim().length > 0 && o.cpf.replace(/\D/g, "").length === 11 && o.birth_date.length > 0;
+    });
+  });
+
+  // Verifica se algum item excede vagas disponíveis
+  const slotsExceeded = cartItems.some((item: any) => {
+    const slots = item.package?.available_slots;
+    const payingCount = getPayingCount(item.id, item.people);
+    return slots != null && payingCount > slots;
+  });
+  const soldOutItems = cartItems.filter((item: any) => item.package?.status === "esgotado");
+
+  // Pega clientName e clientCpf do primeiro ocupante do primeiro item
+  const getClientNameAndCpf = () => {
+    for (const item of cartItems) {
+      const occupants = occupantsMap[item.id] || [];
+      if (occupants.length > 0) {
+        return { name: occupants[0].name, cpf: occupants[0].cpf };
+      }
+    }
+    return { name: "", cpf: "" };
+  };
+  const { name: clientName, cpf: clientCpf } = getClientNameAndCpf();
 
   // Mutation que envia os dados para a Edge Function create-payment
   const checkoutMutation = useMutation({
@@ -173,15 +408,23 @@ const CheckoutPage = () => {
         const menuExtras = Array.isArray(item.menu_selections)
           ? (item.menu_selections as any[]).reduce((s: number, m: any) => s + Number(m.price || 0), 0)
           : 0;
+        const occupants = occupantsMap[item.id] || [];
+        const payingCount = occupants.filter((o) => !o.is_infant).length || item.people;
         return {
           package_id: item.package_id,
           package_name: item.package?.title || "Pacote",
           price: (item.package?.price || 0) + menuExtras,
-          people: item.people,
+          people: payingCount,
           cover_image_url: item.package?.cover_image_url || null,
           installments: paymentMethod === "credit_card" ? selectedInstallments : 1,
           menu_selections: item.menu_selections || [],
           travel_date: item.travel_date || null,
+          occupants: occupants.map((o) => ({
+            name: o.name,
+            cpf: o.cpf,
+            birth_date: o.birth_date,
+            is_infant: o.is_infant,
+          })),
         };
       });
 
@@ -224,24 +467,6 @@ const CheckoutPage = () => {
 
   const formatBRL = (value: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
-
-  const calculateTotal = () =>
-    cartItems.reduce((total, item: any) => {
-      const menuExtras = Array.isArray(item.menu_selections)
-        ? (item.menu_selections as any[]).reduce((s: number, m: any) => s + Number(m.price || 0), 0)
-        : 0;
-      return total + ((item.package?.price || 0) + menuExtras) * item.people;
-    }, 0);
-
-  const total = calculateTotal();
-
-  const formatCpf = (value: string) => {
-    const digits = value.replace(/\D/g, "").slice(0, 11);
-    if (digits.length <= 3) return digits;
-    if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
-    if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
-    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
-  };
 
   const copyPixCode = async () => {
     if (pixData?.copy_paste) {
@@ -391,114 +616,252 @@ const CheckoutPage = () => {
               Finalizar Pedido
             </h1>
             <p className="text-muted-foreground mt-2">
-              Revise seus itens, escolha como pagar e confirme.
+              Preencha os dados dos passageiros, escolha como pagar e confirme.
             </p>
           </header>
 
           {cartItems.length > 0 ? (
             <div className="grid lg:grid-cols-3 gap-8">
-              {/* Coluna esquerda: Itens + Formulário + Método de Pagamento */}
+              {/* Coluna esquerda: Itens + Ocupantes + Método de Pagamento */}
               <div className="lg:col-span-2 space-y-6">
 
-                {/* Lista de itens do pedido */}
-                <Card className="border-none shadow-sm">
-                  <CardContent className="p-6 space-y-4">
-                    <h3 className="font-bold text-lg text-primary border-b pb-3">Itens do Pedido</h3>
-                    {cartItems.map((item: any, index: number) => (
-                      <motion.div
-                        key={item.id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        className="flex gap-4 py-3 border-b last:border-0"
-                      >
-                        <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-muted">
-                          {item.package?.cover_image_url && (
-                            <img
-                              src={item.package.cover_image_url}
-                              alt={item.package.title}
-                              className="w-full h-full object-cover"
-                            />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-foreground">{item.package?.title}</h4>
-                          <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
-                            <span className="flex items-center gap-1">
-                              <UsersIcon size={12} /> {item.people} pessoa{item.people > 1 ? "s" : ""}
-                            </span>
-                            {item.package?.duration && (
-                              <span className="flex items-center gap-1">
-                                <Calendar size={12} /> {item.package.duration}
-                              </span>
-                            )}
-                            {item.package?.installments > 1 && (
-                              <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
-                                até {item.package.installments}x
-                              </Badge>
+                {/* Lista de itens do pedido com formulário de ocupantes */}
+                {cartItems.map((item: any, itemIndex: number) => {
+                  const occupants = occupantsMap[item.id] || [];
+                  const payingOccupants = occupants.filter((o) => !o.is_infant);
+                  const infantOccupants = occupants.filter((o) => o.is_infant);
+                  const menuExtras = Array.isArray(item.menu_selections)
+                    ? (item.menu_selections as any[]).reduce((s: number, m: any) => s + Number(m.price || 0), 0)
+                    : 0;
+                  const itemTotal = ((item.package?.price || 0) + menuExtras) * payingOccupants.length;
+
+                  return (
+                    <Card key={item.id} className="border-none shadow-sm overflow-hidden">
+                      <CardContent className="p-0">
+                        {/* Header do item */}
+                        <motion.div
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: itemIndex * 0.1 }}
+                          className="flex gap-4 p-6 border-b bg-gradient-to-r from-primary/[0.02] to-transparent"
+                        >
+                          <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-muted">
+                            {item.package?.cover_image_url && (
+                              <img
+                                src={item.package.cover_image_url}
+                                alt={item.package.title}
+                                className="w-full h-full object-cover"
+                              />
                             )}
                           </div>
-                          {/* Data da viagem */}
-                          {item.travel_date && (
-                            <div className="flex items-center gap-1 text-xs mt-1 text-amber-600 font-medium">
-                              <Calendar size={11} />
-                              <span>
-                                {(() => { const dt = item.travel_date; if (dt.includes("T") && dt.length > 10) { return new Date(dt).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short", year: "numeric" }) + ` às ${new Date(dt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}h`; } const [y, m, d] = dt.substring(0, 10).split("-"); return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short", year: "numeric" }); })()}
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-foreground">{item.package?.title}</h4>
+                            <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
+                              <span className="flex items-center gap-1">
+                                <UsersIcon size={12} /> {payingOccupants.length} pagante{payingOccupants.length > 1 ? "s" : ""}
+                                {infantOccupants.length > 0 && (
+                                  <span className="text-emerald-600 ml-1">+ {infantOccupants.length} colo</span>
+                                )}
                               </span>
+                              {item.package?.duration && (
+                                <span className="flex items-center gap-1">
+                                  <Calendar size={12} /> {item.package.duration}
+                                </span>
+                              )}
                             </div>
-                          )}
-                          {/* Itens extras do cardápio */}
-                          {Array.isArray(item.menu_selections) && item.menu_selections.length > 0 && (
-                            <div className="mt-2">
-                              <div className="flex items-center gap-1 text-xs text-orange-600 font-medium mb-1">
-                                <UtensilsCrossed size={10} /> Cardápio extra:
+                            {/* Data da viagem */}
+                            {item.travel_date && (
+                              <div className="flex items-center gap-1 text-xs mt-1 text-amber-600 font-medium">
+                                <Calendar size={11} />
+                                <span>
+                                  {(() => { const dt = item.travel_date; if (dt.includes("T") && dt.length > 10) { return new Date(dt).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short", year: "numeric" }) + ` às ${new Date(dt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}h`; } const [y, m, d] = dt.substring(0, 10).split("-"); return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short", year: "numeric" }); })()}
+                                </span>
                               </div>
-                              <div className="flex flex-wrap gap-1">
-                                {(item.menu_selections as any[]).map((m: any, idx: number) => (
-                                  <span key={idx} className="text-[10px] bg-orange-50 border border-orange-200 text-orange-600 rounded-full px-2 py-0.5">
-                                    {m.name}
-                                  </span>
-                                ))}
+                            )}
+                            {/* Itens extras do cardápio */}
+                            {Array.isArray(item.menu_selections) && item.menu_selections.length > 0 && (
+                              <div className="mt-2">
+                                <div className="flex items-center gap-1 text-xs text-orange-600 font-medium mb-1">
+                                  <UtensilsCrossed size={10} /> Cardápio extra:
+                                </div>
+                                <div className="flex flex-wrap gap-1">
+                                  {(item.menu_selections as any[]).map((m: any, idx: number) => (
+                                    <span key={idx} className="text-[10px] bg-orange-50 border border-orange-200 text-orange-600 rounded-full px-2 py-0.5">
+                                      {m.name}
+                                    </span>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs text-muted-foreground">
-                            {formatBRL(item.package?.price || 0)} × {item.people}
-                          </p>
-                          {Array.isArray(item.menu_selections) && item.menu_selections.length > 0 && (() => {
-                            const extras = (item.menu_selections as any[]).reduce((s: number, m: any) => s + Number(m.price || 0), 0);
-                            return <p className="text-[10px] text-orange-600">+ {formatBRL(extras)} extras</p>;
-                          })()}
-                          <p className="font-bold text-primary">
-                            {formatBRL((() => {
-                              const extras = Array.isArray(item.menu_selections)
-                                ? (item.menu_selections as any[]).reduce((s: number, m: any) => s + Number(m.price || 0), 0)
-                                : 0;
-                              return ((item.package?.price || 0) + extras) * item.people;
-                            })())}
-                          </p>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </CardContent>
-                </Card>
+                            )}
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-xs text-muted-foreground">
+                              {formatBRL(item.package?.price || 0)} × {payingOccupants.length}
+                            </p>
+                            {menuExtras > 0 && (
+                              <p className="text-[10px] text-orange-600">+ {formatBRL(menuExtras)} extras</p>
+                            )}
+                            <p className="font-bold text-primary">{formatBRL(itemTotal)}</p>
+                          </div>
+                        </motion.div>
 
-                {/* Dados do viajante (nome, whatsapp e CPF) */}
+                        {/* Formulários dos ocupantes */}
+                        <div className="p-6 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-bold text-sm text-primary flex items-center gap-2">
+                              <UsersIcon size={16} />
+                              Dados dos Passageiros
+                            </h3>
+                            <div className="flex gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="text-xs gap-1.5 border-primary/30 text-primary hover:bg-primary/5"
+                                onClick={() => addPayingOccupant(item.id, item.people, item.package?.available_slots)}
+                              >
+                                <UserPlus size={14} />
+                                Adicionar Vaga
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="text-xs gap-1.5 border-emerald-300 text-emerald-600 hover:bg-emerald-50"
+                                onClick={() => addInfant(item.id)}
+                              >
+                                <Baby size={14} />
+                                Criança de Colo
+                              </Button>
+                            </div>
+                          </div>
+
+                          <AnimatePresence mode="popLayout">
+                            {occupants.map((occ, occIndex) => {
+                              const occNumber = occIndex + 1;
+                              const isInfantOcc = occ.is_infant;
+                              const hasInfantBirthDate = occ.birth_date && isInfant(occ.birth_date);
+                              const showInfantWarning = !isInfantOcc && hasInfantBirthDate;
+
+                              return (
+                                <motion.div
+                                  key={`${item.id}-${occIndex}`}
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: "auto" }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  className="overflow-hidden"
+                                >
+                                  <div
+                                    className={`rounded-xl border p-4 space-y-3 transition-all ${
+                                      isInfantOcc
+                                        ? "border-emerald-200 bg-emerald-50/50"
+                                        : showInfantWarning
+                                          ? "border-amber-200 bg-amber-50/30"
+                                          : "border-border/60 bg-muted/20"
+                                    }`}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                                          isInfantOcc
+                                            ? "bg-emerald-100 text-emerald-700"
+                                            : "bg-primary/10 text-primary"
+                                        }`}>
+                                          {isInfantOcc ? "🍼 Colo" : `Passageiro ${occupants.slice(0, occIndex + 1).filter((o) => !o.is_infant).length || occNumber}`}
+                                        </span>
+                                        {isInfantOcc && (
+                                          <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px]">
+                                            Gratuito — Não ocupa vaga
+                                          </Badge>
+                                        )}
+                                        {showInfantWarning && (
+                                          <Badge className="bg-amber-100 text-amber-700 border-0 text-[10px] gap-1">
+                                            <AlertCircle size={10} />
+                                            Criança ≤ 2 anos detectada — será tratada como colo
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      {(isInfantOcc || occupants.filter((o) => !o.is_infant).length > 1) && (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                          onClick={() => removeOccupant(item.id, occIndex)}
+                                        >
+                                          <Trash2 size={14} />
+                                        </Button>
+                                      )}
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                      <div className="space-y-1.5">
+                                        <Label className="text-xs text-muted-foreground">Nome Completo *</Label>
+                                        <Input
+                                          value={occ.name}
+                                          onChange={(e) => updateOccupant(item.id, occIndex, "name", e.target.value)}
+                                          placeholder="Nome do passageiro"
+                                          className="h-9 text-sm"
+                                        />
+                                      </div>
+                                      <div className="space-y-1.5">
+                                        <Label className="text-xs text-muted-foreground">
+                                          CPF {isInfantOcc ? "(opcional)" : "*"}
+                                        </Label>
+                                        <Input
+                                          value={occ.cpf}
+                                          onChange={(e) => updateOccupant(item.id, occIndex, "cpf", e.target.value)}
+                                          placeholder="000.000.000-00"
+                                          maxLength={14}
+                                          className="h-9 text-sm"
+                                        />
+                                      </div>
+                                      <div className="space-y-1.5">
+                                        <Label className="text-xs text-muted-foreground">Data de Nascimento *</Label>
+                                        <Input
+                                          type="date"
+                                          value={occ.birth_date}
+                                          onChange={(e) => updateOccupant(item.id, occIndex, "birth_date", e.target.value)}
+                                          className="h-9 text-sm"
+                                          max={new Date().toISOString().split("T")[0]}
+                                        />
+                                        {occ.birth_date && (
+                                          <p className={`text-[10px] font-medium ${
+                                            isInfant(occ.birth_date) ? "text-emerald-600" : "text-muted-foreground"
+                                          }`}>
+                                            {isInfant(occ.birth_date)
+                                              ? `🍼 ${getAge(occ.birth_date)} ano(s) — Criança de colo (gratuito)`
+                                              : `${getAge(occ.birth_date)} anos`}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Se passageiro pagante e nascimento indica ≤ 2 anos */}
+                                    {showInfantWarning && (
+                                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-700 flex items-start gap-2">
+                                        <Baby size={16} className="shrink-0 mt-0.5" />
+                                        <div>
+                                          <p className="font-semibold">Esta criança tem {getAge(occ.birth_date)} ano(s) e não paga!</p>
+                                          <p>Crianças com até 2 anos viajam gratuitamente e não ocupam uma vaga do pacote. O valor será ajustado automaticamente.</p>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </motion.div>
+                              );
+                            })}
+                          </AnimatePresence>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+
+                {/* WhatsApp do comprador */}
                 <Card className="border-none shadow-sm">
                   <CardContent className="p-6 space-y-4">
-                    <h3 className="font-bold text-lg text-primary border-b pb-3">Dados do Viajante</h3>
+                    <h3 className="font-bold text-lg text-primary border-b pb-3">Contato do Comprador</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Nome Completo</Label>
-                        <Input
-                          id="name"
-                          value={clientName}
-                          onChange={(e) => setClientName(e.target.value)}
-                          placeholder="Seu nome completo"
-                        />
-                      </div>
                       <div className="space-y-2">
                         <Label htmlFor="email">E-mail</Label>
                         <Input
@@ -515,16 +878,6 @@ const CheckoutPage = () => {
                           value={clientPhone}
                           onChange={(e) => setClientPhone(e.target.value)}
                           placeholder="(68) 9 9999-9999"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="cpf">CPF</Label>
-                        <Input
-                          id="cpf"
-                          value={clientCpf}
-                          onChange={(e) => setClientCpf(formatCpf(e.target.value))}
-                          placeholder="000.000.000-00"
-                          maxLength={14}
                         />
                       </div>
                     </div>
@@ -675,21 +1028,39 @@ const CheckoutPage = () => {
 
               {/* Coluna direita: Resumo do pedido */}
               <div className="lg:col-span-1">
-                <Card className="sticky top-24 border-primary/10 shadow-lg">
+                <div className="sticky top-24 space-y-4">
+                <Card className="border-primary/10 shadow-lg">
                   <CardContent className="p-6 space-y-6">
                     <h3 className="font-bold text-lg border-b pb-3 text-primary">Resumo do Pedido</h3>
 
                     <div className="space-y-3">
-                      {cartItems.map((item: any) => (
-                        <div key={item.id} className="flex justify-between text-sm">
-                          <span className="text-muted-foreground line-clamp-1 flex-1 mr-2">
-                            {item.package?.title} × {item.people}
-                          </span>
-                          <span className="font-medium shrink-0">
-                            {formatBRL((item.package?.price || 0) * item.people)}
-                          </span>
-                        </div>
-                      ))}
+                      {cartItems.map((item: any) => {
+                        const occupants = occupantsMap[item.id] || [];
+                        const payingCount = occupants.filter((o) => !o.is_infant).length || item.people;
+                        const infantCount = occupants.filter((o) => o.is_infant).length;
+                        const menuExtras = Array.isArray(item.menu_selections)
+                          ? (item.menu_selections as any[]).reduce((s: number, m: any) => s + Number(m.price || 0), 0)
+                          : 0;
+
+                        return (
+                          <div key={item.id} className="space-y-1">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground line-clamp-1 flex-1 mr-2">
+                                {item.package?.title} × {payingCount}
+                              </span>
+                              <span className="font-medium shrink-0">
+                                {formatBRL(((item.package?.price || 0) + menuExtras) * payingCount)}
+                              </span>
+                            </div>
+                            {infantCount > 0 && (
+                              <p className="text-[11px] text-emerald-600 flex items-center gap-1">
+                                <Baby size={11} />
+                                + {infantCount} criança{infantCount > 1 ? "s" : ""} de colo (grátis)
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
                       <div className="pt-3 border-t flex justify-between items-baseline">
                         <span className="font-bold">Total</span>
                         <span className="text-2xl font-black text-primary">
@@ -712,7 +1083,7 @@ const CheckoutPage = () => {
                             : "bg-primary hover:bg-primary/90 text-primary-foreground"
                       }`}
                       onClick={() => checkoutMutation.mutate()}
-                      disabled={checkoutMutation.isPending || isRedirecting || !clientCpf}
+                      disabled={checkoutMutation.isPending || isRedirecting || !allOccupantsValid || slotsExceeded || soldOutItems.length > 0}
                     >
                       {checkoutMutation.isPending || isRedirecting ? (
                         <Loader2 className="animate-spin" size={20} />
@@ -729,9 +1100,21 @@ const CheckoutPage = () => {
                       )}
                     </Button>
 
-                    {!clientCpf && (
+                    {!allOccupantsValid && (
                       <p className="text-xs text-center text-amber-600 font-medium">
-                        ⚠️ Preencha seu CPF para continuar
+                        ⚠️ Preencha todos os dados dos passageiros para continuar
+                      </p>
+                    )}
+
+                    {slotsExceeded && (
+                      <p className="text-xs text-center text-red-600 font-medium">
+                        ⚠️ Um ou mais pacotes não tem vagas suficientes para a quantidade selecionada
+                      </p>
+                    )}
+
+                    {soldOutItems.length > 0 && (
+                      <p className="text-xs text-center text-red-600 font-medium">
+                        ❌ {soldOutItems.map((i: any) => i.package?.title).join(", ")} está esgotado
                       </p>
                     )}
 
@@ -746,6 +1129,93 @@ const CheckoutPage = () => {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Package Extras (Trajeto & Detalhes) — Compact */}
+                {Array.from(new Set(cartItems.map((item: any) => item.package?.id))).map((packageId: any) => {
+                  const pkg = cartItems.find((item: any) => item.package?.id === packageId)?.package;
+                  if (!pkg) return null;
+
+                  const pd = pkg.package_details;
+                  const hasDetails = pd && Array.isArray(pd) && pd.length > 0;
+                  
+                  const ri = pkg.route_info;
+                  const dep = ri?.departure;
+                  const ret = ri?.return;
+                  const hasDep = dep && (dep.from || dep.to);
+                  const hasRet = ret && (ret.from || ret.to);
+                  const hasRoute = hasDep || hasRet;
+
+                  if (!hasDetails && !hasRoute) return null;
+
+                  const fmtD = (d: string) => { if (!d) return ''; const p = d.split('-'); return `${p[2]}/${p[1]}`; };
+
+                  return (
+                    <Card key={pkg.id} className="border-primary/10 shadow-sm">
+                      <CardContent className="p-4 space-y-3">
+                        {hasRoute && (
+                          <>
+                            <h4 className="font-bold text-xs text-primary flex items-center gap-1.5 uppercase tracking-wider">
+                              <Plane size={13} />
+                              Trajeto
+                            </h4>
+                            <div className="space-y-1.5">
+                              {hasDep && (
+                                <div className="flex items-center gap-2 text-xs bg-indigo-50 rounded-lg px-2.5 py-2 border border-indigo-100">
+                                  <span className="w-4 h-4 rounded-full bg-indigo-500 text-white flex items-center justify-center shrink-0">
+                                    <ArrowRight size={10} strokeWidth={3} />
+                                  </span>
+                                  <span className="font-semibold text-indigo-900 truncate">{dep.from || '--'}</span>
+                                  <ArrowRight size={10} className="text-indigo-300 shrink-0" />
+                                  <span className="font-semibold text-indigo-900 truncate">{dep.to || '--'}</span>
+                                  {(dep.date || dep.time) && (
+                                    <span className="ml-auto text-[10px] text-indigo-600 font-medium shrink-0 whitespace-nowrap">
+                                      {dep.date ? fmtD(dep.date) : ''}{dep.date && dep.time ? ' ' : ''}{dep.time ? `${dep.time}h` : ''}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                              {hasRet && (
+                                <div className="flex items-center gap-2 text-xs bg-emerald-50 rounded-lg px-2.5 py-2 border border-emerald-100">
+                                  <span className="w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                                    <ArrowLeft size={10} strokeWidth={3} />
+                                  </span>
+                                  <span className="font-semibold text-emerald-900 truncate">{ret.from || '--'}</span>
+                                  <ArrowRight size={10} className="text-emerald-300 shrink-0" />
+                                  <span className="font-semibold text-emerald-900 truncate">{ret.to || '--'}</span>
+                                  {(ret.date || ret.time) && (
+                                    <span className="ml-auto text-[10px] text-emerald-600 font-medium shrink-0 whitespace-nowrap">
+                                      {ret.date ? fmtD(ret.date) : ''}{ret.date && ret.time ? ' ' : ''}{ret.time ? `${ret.time}h` : ''}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        )}
+
+                        {hasDetails && (
+                          <>
+                            {hasRoute && <div className="border-t" />}
+                            <h4 className="font-bold text-xs text-primary flex items-center gap-1.5 uppercase tracking-wider">
+                              <Info size={13} />
+                              Detalhes
+                            </h4>
+                            <div className="space-y-1">
+                              {pd.map((item: any, i: number) => (
+                                <div key={i} className="flex items-baseline gap-2 text-xs">
+                                  <span className="text-muted-foreground font-semibold shrink-0">{item.label}:</span>
+                                  <span className="text-foreground font-medium leading-snug">{item.value}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+
+                </div>
               </div>
             </div>
           ) : (

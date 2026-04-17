@@ -29,7 +29,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowLeft, Plus, Trash2, Loader2, Send, Package,
-  Image, FileText, CheckSquare, Map, Info, UtensilsCrossed,
+  Image, FileText, CheckSquare, Map, Info, UtensilsCrossed, Users, Plane, ClipboardList,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,6 +63,12 @@ interface MenuItemDraft {
   name: string;
   description: string;
   price: string;
+}
+
+interface PackageDetailItem {
+  id: string;
+  label: string;
+  value: string;
 }
 
 const inclusionOptions = [
@@ -131,6 +137,20 @@ export default function AdminPackageForm() {
   const [installments, setInstallments] = useState("10");
   const [travelDate, setTravelDate] = useState("");
   const [menuItems, setMenuItems] = useState<MenuItemDraft[]>([]);
+  const [totalSlots, setTotalSlots] = useState("");
+
+  // Route info state
+  const [routeDepartureFrom, setRouteDepartureFrom] = useState("");
+  const [routeDepartureTo, setRouteDepartureTo] = useState("");
+  const [routeDepartureDate, setRouteDepartureDate] = useState("");
+  const [routeDepartureTime, setRouteDepartureTime] = useState("");
+  const [routeReturnFrom, setRouteReturnFrom] = useState("");
+  const [routeReturnTo, setRouteReturnTo] = useState("");
+  const [routeReturnDate, setRouteReturnDate] = useState("");
+  const [routeReturnTime, setRouteReturnTime] = useState("");
+
+  // Package details state
+  const [packageDetails, setPackageDetails] = useState<PackageDetailItem[]>([]);
 
 
   const { isLoading } = useQuery({
@@ -181,6 +201,7 @@ export default function AdminPackageForm() {
       setCoverImageUrl(pkg.cover_image_url || null);
       setInstallments(String(pkg.installments || 10));
       setTravelDate((pkg as any).travel_date ? (pkg as any).travel_date.split("T")[0] : "");
+      setTotalSlots((pkg as any).available_slots != null ? String((pkg as any).available_slots) : "");
       setSelectedInclusions(inclusions?.map((i) => i.inclusion_key) || []);
       setItinerary(
         days?.map((d) => ({
@@ -198,13 +219,38 @@ export default function AdminPackageForm() {
           price: String(m.price),
         })) || []
       );
+
+      // Load route info
+      const ri = (pkg as any).route_info;
+      if (ri && typeof ri === "object") {
+        setRouteDepartureFrom(ri.departure?.from || "");
+        setRouteDepartureTo(ri.departure?.to || "");
+        setRouteDepartureDate(ri.departure?.date || "");
+        setRouteDepartureTime(ri.departure?.time || "");
+        setRouteReturnFrom(ri.return?.from || "");
+        setRouteReturnTo(ri.return?.to || "");
+        setRouteReturnDate(ri.return?.date || "");
+        setRouteReturnTime(ri.return?.time || "");
+      }
+
+      // Load package details
+      const pd = (pkg as any).package_details;
+      if (pd && Array.isArray(pd)) {
+        setPackageDetails(pd.map((item: any) => ({
+          id: item.id || crypto.randomUUID(),
+          label: item.label || "",
+          value: item.value || "",
+        })));
+      }
+
       return pkg;
     },
   });
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const pkgData = {
+      const slotsValue = totalSlots ? parseInt(totalSlots) : null;
+      const pkgData: any = {
         title,
         slug,
         destination_name: destinationName || null,
@@ -219,6 +265,46 @@ export default function AdminPackageForm() {
         travel_date: travelDate || null,
         updated_at: new Date().toISOString(),
       };
+
+      // Build route_info
+      const hasRoute = routeDepartureFrom || routeDepartureTo || routeReturnFrom || routeReturnTo;
+      if (hasRoute) {
+        pkgData.route_info = {
+          departure: {
+            from: routeDepartureFrom || null,
+            to: routeDepartureTo || null,
+            date: routeDepartureDate || null,
+            time: routeDepartureTime || null,
+          },
+          return: {
+            from: routeReturnFrom || null,
+            to: routeReturnTo || null,
+            date: routeReturnDate || null,
+            time: routeReturnTime || null,
+          },
+        };
+      } else {
+        pkgData.route_info = null;
+      }
+
+      // Build package_details
+      const validDetails = packageDetails.filter(d => d.label.trim() || d.value.trim());
+      pkgData.package_details = validDetails.length > 0
+        ? validDetails.map(d => ({ id: d.id, label: d.label, value: d.value }))
+        : null;
+
+      if (!isEditing) {
+        // Na criação: total_slots e available_slots iguais
+        pkgData.total_slots = slotsValue;
+        pkgData.available_slots = slotsValue;
+      } else {
+        // Na edição: admin ajusta available_slots direto
+        pkgData.available_slots = slotsValue;
+        // Se o total_slots original era null e agora definiu, atualiza também
+        if (slotsValue !== null) {
+          pkgData.total_slots = slotsValue;
+        }
+      }
 
       let pkgId = id;
 
@@ -521,6 +607,27 @@ export default function AdminPackageForm() {
               </div>
             )}
 
+            {/* Vagas disponíveis */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                <Users size={14} className="text-muted-foreground" />
+                Vagas disponíveis
+              </Label>
+              <Input
+                type="number"
+                min={0}
+                value={totalSlots}
+                onChange={(e) => setTotalSlots(e.target.value)}
+                placeholder="Ilimitado"
+                className="h-11"
+              />
+              <p className="text-xs text-muted-foreground">
+                {totalSlots
+                  ? `${totalSlots} vaga(s) — ao esgotar, o pacote será marcado como esgotado automaticamente`
+                  : "Deixe vazio para vagas ilimitadas"}
+              </p>
+            </div>
+
 
             {/* Status de venda */}
             <div className="space-y-1.5">
@@ -553,6 +660,119 @@ export default function AdminPackageForm() {
                   }}
                 />
               </div>
+            </div>
+          </div>
+        </SectionCard>
+
+        {/* ── 1.5 TRAJETO IDA E VOLTA ── */}
+        <SectionCard
+          icon={Plane}
+          title="Trajeto Ida e Volta"
+          description="Informe os trechos de ida e volta com datas e horários de saída (opcional)"
+          color="text-indigo-600"
+          iconBg="bg-indigo-50"
+        >
+          <div className="space-y-5">
+            {/* IDA */}
+            <div className="space-y-3 p-4 rounded-xl border border-indigo-200 bg-indigo-50/30">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">→</span>
+                <span className="text-sm font-semibold text-indigo-700">Ida</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Origem</Label>
+                  <Input
+                    value={routeDepartureFrom}
+                    onChange={(e) => setRouteDepartureFrom(e.target.value)}
+                    placeholder="Ex: Cruzeiro do Sul"
+                    className="h-10"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Destino</Label>
+                  <Input
+                    value={routeDepartureTo}
+                    onChange={(e) => setRouteDepartureTo(e.target.value)}
+                    placeholder="Ex: Rio Branco"
+                    className="h-10"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Data da ida</Label>
+                  <Input
+                    type="date"
+                    value={routeDepartureDate}
+                    onChange={(e) => setRouteDepartureDate(e.target.value)}
+                    className="h-10"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Horário de saída</Label>
+                  <Input
+                    type="time"
+                    value={routeDepartureTime}
+                    onChange={(e) => setRouteDepartureTime(e.target.value)}
+                    className="h-10"
+                  />
+                </div>
+              </div>
+              {routeDepartureFrom && routeDepartureTo && routeDepartureDate && (
+                <p className="text-xs text-indigo-600 font-medium mt-1">
+                  ✈️ {routeDepartureFrom} → {routeDepartureTo} • {(() => { const [y, m, d] = routeDepartureDate.split("-"); return `${d}/${m}/${y}`; })()}{routeDepartureTime ? ` às ${routeDepartureTime}h` : ""}
+                </p>
+              )}
+            </div>
+
+            {/* VOLTA */}
+            <div className="space-y-3 p-4 rounded-xl border border-emerald-200 bg-emerald-50/30">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">←</span>
+                <span className="text-sm font-semibold text-emerald-700">Volta</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Origem</Label>
+                  <Input
+                    value={routeReturnFrom}
+                    onChange={(e) => setRouteReturnFrom(e.target.value)}
+                    placeholder="Ex: Rio Branco"
+                    className="h-10"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Destino</Label>
+                  <Input
+                    value={routeReturnTo}
+                    onChange={(e) => setRouteReturnTo(e.target.value)}
+                    placeholder="Ex: Cruzeiro do Sul"
+                    className="h-10"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Data da volta</Label>
+                  <Input
+                    type="date"
+                    value={routeReturnDate}
+                    onChange={(e) => setRouteReturnDate(e.target.value)}
+                    className="h-10"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Horário de saída</Label>
+                  <Input
+                    type="time"
+                    value={routeReturnTime}
+                    onChange={(e) => setRouteReturnTime(e.target.value)}
+                    className="h-10"
+                  />
+                </div>
+              </div>
+              {routeReturnFrom && routeReturnTo && routeReturnDate && (
+                <p className="text-xs text-emerald-600 font-medium mt-1">
+                  ✈️ {routeReturnFrom} → {routeReturnTo} • {(() => { const [y, m, d] = routeReturnDate.split("-"); return `${d}/${m}/${y}`; })()}{routeReturnTime ? ` às ${routeReturnTime}h` : ""}
+                </p>
+              )}
             </div>
           </div>
         </SectionCard>
@@ -719,6 +939,75 @@ export default function AdminPackageForm() {
             >
               <Plus size={14} />
               Adicionar dia ao roteiro
+            </Button>
+          </div>
+        </SectionCard>
+
+        {/* ── 5.5 DETALHES DO PACOTE ── */}
+        <SectionCard
+          icon={ClipboardList}
+          title="Detalhes do Pacote"
+          description="Informações adicionais como tipo de tarifa, bagagem, data de emissão, etc. (opcional)"
+          color="text-cyan-600"
+          iconBg="bg-cyan-50"
+        >
+          <div className="space-y-3">
+            {packageDetails.map((item, i) => (
+              <div
+                key={item.id}
+                className="flex items-start gap-2"
+              >
+                <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Rótulo</Label>
+                    <Input
+                      value={item.label}
+                      onChange={(e) => setPackageDetails(prev => prev.map(d => d.id === item.id ? { ...d, label: e.target.value } : d))}
+                      placeholder="Ex: Tipo de Tarifa"
+                      className="h-9 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Valor</Label>
+                    <Input
+                      value={item.value}
+                      onChange={(e) => setPackageDetails(prev => prev.map(d => d.id === item.id ? { ...d, value: e.target.value } : d))}
+                      placeholder="Ex: Econômica com bagagem inclusa"
+                      className="h-9 text-sm"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPackageDetails(prev => prev.filter(d => d.id !== item.id))}
+                  className="w-8 h-8 mt-5 rounded-lg flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+
+            {packageDetails.length === 0 && (
+              <div className="border-2 border-dashed border-cyan-200 rounded-xl py-8 text-center bg-cyan-50/30">
+                <ClipboardList size={28} className="text-cyan-300 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">
+                  Nenhum detalhe adicionado
+                </p>
+                <p className="text-xs text-muted-foreground/70 mt-1">
+                  Adicione informações como tarifa, bagagem, data de emissão, etc.
+                </p>
+              </div>
+            )}
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setPackageDetails(prev => [...prev, { id: crypto.randomUUID(), label: "", value: "" }])}
+              className="gap-2 w-full border-dashed border-cyan-300 text-cyan-700 hover:bg-cyan-50 hover:border-cyan-400"
+            >
+              <Plus size={14} />
+              Adicionar detalhe
             </Button>
           </div>
         </SectionCard>

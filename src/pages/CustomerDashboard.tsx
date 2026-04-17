@@ -86,6 +86,29 @@ function generateVoucherHTML(voucher: any): string {
     ? new Date(voucher.travel_date + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
     : "A definir";
 
+  // Build route HTML
+  const ri = voucher.route_info;
+  let routeHTML = '';
+  if (ri && typeof ri === 'object') {
+    const dep = ri.departure;
+    const ret = ri.return;
+    const hasDep = dep && (dep.from || dep.to);
+    const hasRet = ret && (ret.from || ret.to);
+    if (hasDep || hasRet) {
+      const fmtD = (d: string) => { if (!d) return ''; const p = d.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; };
+      let rows = '';
+      if (hasDep) {
+        const info = [dep.date ? fmtD(dep.date) : '', dep.time ? `${dep.time}h` : ''].filter(Boolean).join(' \u2022 ');
+        rows += `<tr><td style="padding:8px 12px;font-size:13px;"><span style="display:inline-block;width:20px;height:20px;border-radius:50%;background:#6366f1;color:#fff;text-align:center;line-height:20px;font-size:10px;font-weight:700;margin-right:8px;">\u2192</span><span style="color:#312e81;font-weight:600;">IDA</span></td><td style="padding:8px 12px;font-size:13px;color:#0f172a;font-weight:600;">${dep.from || ''} \u2192 ${dep.to || ''}</td><td style="padding:8px 12px;font-size:12px;color:#64748b;">${info}</td></tr>`;
+      }
+      if (hasRet) {
+        const info = [ret.date ? fmtD(ret.date) : '', ret.time ? `${ret.time}h` : ''].filter(Boolean).join(' \u2022 ');
+        rows += `<tr><td style="padding:8px 12px;font-size:13px;"><span style="display:inline-block;width:20px;height:20px;border-radius:50%;background:#059669;color:#fff;text-align:center;line-height:20px;font-size:10px;font-weight:700;margin-right:8px;">\u2190</span><span style="color:#065f46;font-weight:600;">VOLTA</span></td><td style="padding:8px 12px;font-size:13px;color:#0f172a;font-weight:600;">${ret.from || ''} \u2192 ${ret.to || ''}</td><td style="padding:8px 12px;font-size:12px;color:#64748b;">${info}</td></tr>`;
+      }
+      routeHTML = `<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;"><tr style="background:#eef2ff;"><td colspan="3" style="padding:14px 16px;border-bottom:1px solid #e5e7eb;"><span style="color:#4338ca;font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">\u2708\ufe0f Trajeto</span></td></tr><tr style="background:#f8fafc;border-bottom:1px solid #e5e7eb;"><td style="padding:6px 12px;font-size:10px;color:#94a3b8;text-transform:uppercase;font-weight:700;width:90px;">Trecho</td><td style="padding:6px 12px;font-size:10px;color:#94a3b8;text-transform:uppercase;font-weight:700;">Rota</td><td style="padding:6px 12px;font-size:10px;color:#94a3b8;text-transform:uppercase;font-weight:700;">Data / Hor\u00e1rio</td></tr>${rows}</table>`;
+    }
+  }
+
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -103,9 +126,9 @@ function generateVoucherHTML(voucher: any): string {
         </span>
       </div>
       <h1 style="color:#ffffff;font-size:28px;font-weight:700;margin:12px 0 4px;">VOUCHER DE VIAGEM</h1>
-      <p style="color:rgba(255,255,255,0.7);font-size:13px;margin:0;">Documento de confirmação de reserva</p>
+      <p style="color:rgba(255,255,255,0.7);font-size:13px;margin:0;">Documento de confirma\u00e7\u00e3o de reserva</p>
       <div style="margin-top:20px;display:inline-block;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:10px 24px;">
-        <span style="color:rgba(255,255,255,0.6);font-size:11px;text-transform:uppercase;letter-spacing:2px;display:block;">Código do Voucher</span>
+        <span style="color:rgba(255,255,255,0.6);font-size:11px;text-transform:uppercase;letter-spacing:2px;display:block;">C\u00f3digo do Voucher</span>
         <span style="color:#38bdf8;font-size:22px;font-weight:800;letter-spacing:3px;">${voucher.voucher_code}</span>
       </div>
     </div>
@@ -123,21 +146,48 @@ function generateVoucherHTML(voucher: any): string {
         <tr style="background:#f8fafc;"><td colspan="2" style="padding:14px 16px;border-bottom:1px solid #e5e7eb;"><span style="color:#0369a1;font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Detalhes da Viagem</span></td></tr>
         <tr>
           <td style="padding:12px 16px;width:50%;border-bottom:1px solid #f1f5f9;"><span style="color:#94a3b8;font-size:11px;text-transform:uppercase;">Pacote</span><br><span style="color:#0f172a;font-size:15px;font-weight:600;">${voucher.package_name}</span></td>
-          <td style="padding:12px 16px;width:50%;border-bottom:1px solid #f1f5f9;"><span style="color:#94a3b8;font-size:11px;text-transform:uppercase;">Destino</span><br><span style="color:#0f172a;font-size:15px;font-weight:600;">${voucher.destination || "—"}</span></td>
+          <td style="padding:12px 16px;width:50%;border-bottom:1px solid #f1f5f9;"><span style="color:#94a3b8;font-size:11px;text-transform:uppercase;">Destino</span><br><span style="color:#0f172a;font-size:15px;font-weight:600;">${voucher.destination || "\u2014"}</span></td>
         </tr>
         <tr>
           <td style="padding:12px 16px;width:50%;border-bottom:1px solid #f1f5f9;"><span style="color:#94a3b8;font-size:11px;text-transform:uppercase;">Data da Viagem</span><br><span style="color:#0f172a;font-size:15px;font-weight:600;">${travelDateFormatted}</span></td>
-          <td style="padding:12px 16px;width:50%;border-bottom:1px solid #f1f5f9;"><span style="color:#94a3b8;font-size:11px;text-transform:uppercase;">Duração</span><br><span style="color:#0f172a;font-size:15px;font-weight:600;">${voucher.package_duration || "—"}</span></td>
+          <td style="padding:12px 16px;width:50%;border-bottom:1px solid #f1f5f9;"><span style="color:#94a3b8;font-size:11px;text-transform:uppercase;">Dura\u00e7\u00e3o</span><br><span style="color:#0f172a;font-size:15px;font-weight:600;">${voucher.package_duration || "\u2014"}</span></td>
         </tr>
         <tr>
           <td style="padding:12px 16px;width:50%;"><span style="color:#94a3b8;font-size:11px;text-transform:uppercase;">Passageiros</span><br><span style="color:#0f172a;font-size:15px;font-weight:600;">${voucher.people} pessoa(s)</span></td>
           <td style="padding:12px 16px;width:50%;"><span style="color:#94a3b8;font-size:11px;text-transform:uppercase;">Valor Total</span><br><span style="color:#059669;font-size:18px;font-weight:800;">${formatCurrency(Number(voucher.total_price))}</span></td>
         </tr>
       </table>
+      ${routeHTML}
       <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
-        <tr style="background:#f0fdf4;"><td style="padding:14px 16px;border-bottom:1px solid #e5e7eb;"><span style="color:#15803d;font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">O que está incluso</span></td></tr>
+        <tr style="background:#f0fdf4;"><td style="padding:14px 16px;border-bottom:1px solid #e5e7eb;"><span style="color:#15803d;font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">O que est\u00e1 incluso</span></td></tr>
         ${inclusionsHTML}
       </table>
+      ${(() => {
+        const occupants = (voucher.occupants || []) as any[];
+        if (occupants.length === 0) return '';
+        const occupantsRows = occupants.map((occ: any) => {
+          const type = occ.is_infant ? '🍼 Colo (grátis)' : 'Passageiro';
+          const birthFormatted = occ.birth_date
+            ? new Date(occ.birth_date + 'T12:00:00').toLocaleDateString('pt-BR')
+            : '—';
+          return `<tr style="border-bottom:1px solid #f1f5f9;">
+            <td style="padding:8px 12px;font-size:13px;color:#0f172a;font-weight:600;">${occ.name}</td>
+            <td style="padding:8px 12px;font-size:13px;color:#64748b;">${occ.cpf || '—'}</td>
+            <td style="padding:8px 12px;font-size:13px;color:#64748b;">${birthFormatted}</td>
+            <td style="padding:8px 12px;font-size:12px;${occ.is_infant ? 'color:#059669;font-weight:600;' : 'color:#64748b;'}">${type}</td>
+          </tr>`;
+        }).join('');
+        return `<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+          <tr style="background:#f0f9ff;"><td colspan="4" style="padding:14px 16px;border-bottom:1px solid #e5e7eb;"><span style="color:#0369a1;font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Passageiros</span></td></tr>
+          <tr style="background:#f8fafc;border-bottom:1px solid #e5e7eb;">
+            <td style="padding:6px 12px;font-size:10px;color:#94a3b8;text-transform:uppercase;font-weight:700;">Nome</td>
+            <td style="padding:6px 12px;font-size:10px;color:#94a3b8;text-transform:uppercase;font-weight:700;">CPF</td>
+            <td style="padding:6px 12px;font-size:10px;color:#94a3b8;text-transform:uppercase;font-weight:700;">Nascimento</td>
+            <td style="padding:6px 12px;font-size:10px;color:#94a3b8;text-transform:uppercase;font-weight:700;">Tipo</td>
+          </tr>
+          ${occupantsRows}
+        </table>`;
+      })()}
       <div style="text-align:center;padding:16px;background:#f0fdf4;border-radius:10px;border:1px solid #bbf7d0;">
         <span style="color:#15803d;font-size:14px;font-weight:700;">✅ PAGAMENTO CONFIRMADO</span>
         <br><span style="color:#4ade80;font-size:12px;">Reserva confirmada e garantida</span>

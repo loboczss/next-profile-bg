@@ -21,7 +21,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import {
-  Search, Eye, MessageCircle, Loader2, FileText
+  Search, Eye, MessageCircle, Loader2, FileText, Baby
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -35,7 +35,7 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter,
 } from "@/components/ui/sheet";
 
-type Reservation = Tables<"reservations"> & { payment_status?: string };
+type Reservation = Tables<"reservations"> & { payment_status?: string; occupants?: any[] | null };
 type ReservationStatus = "novo" | "aguardando" | "confirmado" | "cancelado";
 
 const statusConfig: Record<string, { label: string; color: string }> = {
@@ -325,6 +325,62 @@ export default function AdminReservations() {
                     </span>
                   </div>
                 </div>
+
+                {/* Occupants / Passageiros */}
+                {(() => {
+                  const occupants = Array.isArray((selected as any).occupants) ? (selected as any).occupants as any[] : [];
+                  if (occupants.length === 0) return null;
+                  const paying = occupants.filter((o: any) => !o.is_infant);
+                  const infants = occupants.filter((o: any) => o.is_infant);
+                  return (
+                    <div className="space-y-3 p-4 border rounded-lg bg-sky-50/50 border-sky-200">
+                      <h4 className="text-sm font-semibold flex items-center justify-between">
+                        <span>Passageiros / Ocupantes</span>
+                        <span className="text-xs font-normal text-muted-foreground">
+                          {paying.length} pagante{paying.length !== 1 ? "s" : ""}
+                          {infants.length > 0 && ` + ${infants.length} colo`}
+                        </span>
+                      </h4>
+                      <div className="space-y-2">
+                        {occupants.map((occ: any, idx: number) => (
+                          <div
+                            key={idx}
+                            className={`flex items-center gap-3 p-2.5 rounded-lg text-sm ${
+                              occ.is_infant
+                                ? "bg-emerald-50 border border-emerald-200"
+                                : "bg-white border border-border/50"
+                            }`}
+                          >
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                              occ.is_infant
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-sky-100 text-sky-700"
+                            }`}>
+                              {occ.is_infant ? "🍼" : `#${occupants.slice(0, idx + 1).filter((o: any) => !o.is_infant).length}`}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate">{occ.name}</p>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                {occ.cpf && <span>CPF: {occ.cpf}</span>}
+                                {occ.birth_date && (
+                                  <span>
+                                    Nasc: {new Date(occ.birth_date + "T12:00:00").toLocaleDateString("pt-BR")}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            {occ.is_infant && (
+                              <Badge className="bg-emerald-100 text-emerald-700 border-0 text-[10px] gap-1 shrink-0">
+                                <Baby size={10} />
+                                Colo (grátis)
+                              </Badge>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Notes */}
                 <div className="space-y-2">

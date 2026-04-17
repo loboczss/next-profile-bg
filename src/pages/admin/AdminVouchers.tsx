@@ -56,6 +56,8 @@ interface Voucher {
   total_price: number;
   package_duration: string | null;
   package_inclusions: string[];
+  occupants: any[] | null;
+  route_info: any | null;
   status: string;
   created_at: string;
 }
@@ -90,6 +92,29 @@ function generateVoucherHTML(voucher: Voucher): string {
   const travelDateFormatted = voucher.travel_date
     ? new Date(voucher.travel_date + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
     : "A definir";
+
+  // Build route HTML
+  const ri = voucher.route_info;
+  let routeHTML = '';
+  if (ri && typeof ri === 'object') {
+    const dep = ri.departure;
+    const ret = ri.return;
+    const hasDep = dep && (dep.from || dep.to);
+    const hasRet = ret && (ret.from || ret.to);
+    if (hasDep || hasRet) {
+      const fmtD = (d: string) => { if (!d) return ''; const p = d.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; };
+      let rows = '';
+      if (hasDep) {
+        const info = [dep.date ? fmtD(dep.date) : '', dep.time ? `${dep.time}h` : ''].filter(Boolean).join(' • ');
+        rows += `<tr><td style="padding:8px 12px;font-size:13px;"><span style="display:inline-block;width:20px;height:20px;border-radius:50%;background:#6366f1;color:#fff;text-align:center;line-height:20px;font-size:10px;font-weight:700;margin-right:8px;">→</span><span style="color:#312e81;font-weight:600;">IDA</span></td><td style="padding:8px 12px;font-size:13px;color:#0f172a;font-weight:600;">${dep.from || ''} → ${dep.to || ''}</td><td style="padding:8px 12px;font-size:12px;color:#64748b;">${info}</td></tr>`;
+      }
+      if (hasRet) {
+        const info = [ret.date ? fmtD(ret.date) : '', ret.time ? `${ret.time}h` : ''].filter(Boolean).join(' • ');
+        rows += `<tr><td style="padding:8px 12px;font-size:13px;"><span style="display:inline-block;width:20px;height:20px;border-radius:50%;background:#059669;color:#fff;text-align:center;line-height:20px;font-size:10px;font-weight:700;margin-right:8px;">←</span><span style="color:#065f46;font-weight:600;">VOLTA</span></td><td style="padding:8px 12px;font-size:13px;color:#0f172a;font-weight:600;">${ret.from || ''} → ${ret.to || ''}</td><td style="padding:8px 12px;font-size:12px;color:#64748b;">${info}</td></tr>`;
+      }
+      routeHTML = `<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;"><tr style="background:#eef2ff;"><td colspan="3" style="padding:14px 16px;border-bottom:1px solid #e5e7eb;"><span style="color:#4338ca;font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">✈️ Trajeto</span></td></tr><tr style="background:#f8fafc;border-bottom:1px solid #e5e7eb;"><td style="padding:6px 12px;font-size:10px;color:#94a3b8;text-transform:uppercase;font-weight:700;width:90px;">Trecho</td><td style="padding:6px 12px;font-size:10px;color:#94a3b8;text-transform:uppercase;font-weight:700;">Rota</td><td style="padding:6px 12px;font-size:10px;color:#94a3b8;text-transform:uppercase;font-weight:700;">Data / Horário</td></tr>${rows}</table>`;
+    }
+  }
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -161,6 +186,7 @@ function generateVoucherHTML(voucher: Voucher): string {
           </td>
         </tr>
       </table>
+      ${routeHTML}
       <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
         <tr style="background:#f0fdf4;">
           <td style="padding:14px 16px;border-bottom:1px solid #e5e7eb;">
@@ -169,6 +195,32 @@ function generateVoucherHTML(voucher: Voucher): string {
         </tr>
         ${inclusionsHTML}
       </table>
+      ${(() => {
+        const occupants = voucher.occupants || [];
+        if (occupants.length === 0) return '';
+        const occupantsRows = occupants.map((occ: any, idx: number) => {
+          const type = occ.is_infant ? '🍼 Colo (grátis)' : 'Passageiro';
+          const birthFormatted = occ.birth_date
+            ? new Date(occ.birth_date + 'T12:00:00').toLocaleDateString('pt-BR')
+            : '—';
+          return `<tr style="border-bottom:1px solid #f1f5f9;">
+            <td style="padding:8px 12px;font-size:13px;color:#0f172a;font-weight:600;">${occ.name}</td>
+            <td style="padding:8px 12px;font-size:13px;color:#64748b;">${occ.cpf || '—'}</td>
+            <td style="padding:8px 12px;font-size:13px;color:#64748b;">${birthFormatted}</td>
+            <td style="padding:8px 12px;font-size:12px;${occ.is_infant ? 'color:#059669;font-weight:600;' : 'color:#64748b;'}">${type}</td>
+          </tr>`;
+        }).join('');
+        return `<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+          <tr style="background:#f0f9ff;"><td colspan="4" style="padding:14px 16px;border-bottom:1px solid #e5e7eb;"><span style="color:#0369a1;font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Passageiros</span></td></tr>
+          <tr style="background:#f8fafc;border-bottom:1px solid #e5e7eb;">
+            <td style="padding:6px 12px;font-size:10px;color:#94a3b8;text-transform:uppercase;font-weight:700;">Nome</td>
+            <td style="padding:6px 12px;font-size:10px;color:#94a3b8;text-transform:uppercase;font-weight:700;">CPF</td>
+            <td style="padding:6px 12px;font-size:10px;color:#94a3b8;text-transform:uppercase;font-weight:700;">Nascimento</td>
+            <td style="padding:6px 12px;font-size:10px;color:#94a3b8;text-transform:uppercase;font-weight:700;">Tipo</td>
+          </tr>
+          ${occupantsRows}
+        </table>`;
+      })()}
       <div style="text-align:center;padding:16px;background:#f0fdf4;border-radius:10px;border:1px solid #bbf7d0;">
         <span style="color:#15803d;font-size:14px;font-weight:700;">✅ PAGAMENTO CONFIRMADO</span>
         <br><span style="color:#4ade80;font-size:12px;">Reserva confirmada e garantida</span>

@@ -392,7 +392,9 @@ export type Database = {
           full_description: string | null
           id: string
           installments: number | null
+          package_details: Json | null
           price: number
+          route_info: Json | null
           short_description: string | null
           slug: string
           status: string
@@ -411,7 +413,9 @@ export type Database = {
           full_description?: string | null
           id?: string
           installments?: number | null
+          package_details?: Json | null
           price?: number
+          route_info?: Json | null
           short_description?: string | null
           slug: string
           status?: string
@@ -430,7 +434,9 @@ export type Database = {
           full_description?: string | null
           id?: string
           installments?: number | null
+          package_details?: Json | null
           price?: number
+          route_info?: Json | null
           short_description?: string | null
           slug?: string
           status?: string
@@ -509,6 +515,7 @@ export type Database = {
           destination: string | null
           id: string
           notes: string | null
+          occupants: Json | null
           order_id: string
           package_id: string | null
           package_name: string
@@ -530,6 +537,7 @@ export type Database = {
           destination?: string | null
           id?: string
           notes?: string | null
+          occupants?: Json | null
           order_id: string
           package_id?: string | null
           package_name: string
@@ -551,6 +559,7 @@ export type Database = {
           destination?: string | null
           id?: string
           notes?: string | null
+          occupants?: Json | null
           order_id?: string
           package_id?: string | null
           package_name?: string
@@ -732,11 +741,13 @@ export type Database = {
           created_at: string | null
           destination: string | null
           id: string
+          occupants: Json | null
           package_duration: string | null
           package_inclusions: Json | null
           package_name: string
           people: number | null
           reservation_id: string | null
+          route_info: Json | null
           status: string
           total_price: number | null
           travel_date: string | null
@@ -748,11 +759,13 @@ export type Database = {
           created_at?: string | null
           destination?: string | null
           id?: string
+          occupants?: Json | null
           package_duration?: string | null
           package_inclusions?: Json | null
           package_name: string
           people?: number | null
           reservation_id?: string | null
+          route_info?: Json | null
           status?: string
           total_price?: number | null
           travel_date?: string | null
@@ -764,11 +777,13 @@ export type Database = {
           created_at?: string | null
           destination?: string | null
           id?: string
+          occupants?: Json | null
           package_duration?: string | null
           package_inclusions?: Json | null
           package_name?: string
           people?: number | null
           reservation_id?: string | null
+          route_info?: Json | null
           status?: string
           total_price?: number | null
           travel_date?: string | null

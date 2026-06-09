@@ -29,7 +29,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowLeft, Plus, Trash2, Loader2, Send, Package,
-  Image, FileText, CheckSquare, Map, Info, UtensilsCrossed, Users, Plane, ClipboardList,
+  Image, FileText, CheckSquare, Map, Info, UtensilsCrossed, Users, Plane, ClipboardList, Luggage,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +41,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { ImageUpload, MultiImageUpload } from "@/components/ImageUpload";
+import AirlineSelect, { getAirlineInfo } from "@/components/AirlineSelect";
 
 
 function slugify(text: string) {
@@ -139,15 +140,31 @@ export default function AdminPackageForm() {
   const [menuItems, setMenuItems] = useState<MenuItemDraft[]>([]);
   const [totalSlots, setTotalSlots] = useState("");
 
-  // Route info state
-  const [routeDepartureFrom, setRouteDepartureFrom] = useState("");
-  const [routeDepartureTo, setRouteDepartureTo] = useState("");
+  // Route info state — Departure (Ida)
+  const [routeDepartureAirportFrom, setRouteDepartureAirportFrom] = useState("");
+  const [routeDepartureCityFrom, setRouteDepartureCityFrom] = useState("");
+  const [routeDepartureAirportTo, setRouteDepartureAirportTo] = useState("");
+  const [routeDepartureCityTo, setRouteDepartureCityTo] = useState("");
   const [routeDepartureDate, setRouteDepartureDate] = useState("");
   const [routeDepartureTime, setRouteDepartureTime] = useState("");
-  const [routeReturnFrom, setRouteReturnFrom] = useState("");
-  const [routeReturnTo, setRouteReturnTo] = useState("");
+  const [routeDepartureArrivalTime, setRouteDepartureArrivalTime] = useState("");
+  const [routeDepartureAirline, setRouteDepartureAirline] = useState("");
+  const [routeDepartureStops, setRouteDepartureStops] = useState("");
+  const [routeDepartureDuration, setRouteDepartureDuration] = useState("");
+  const [routeDepartureBaggage, setRouteDepartureBaggage] = useState("");
+
+  // Route info state — Return (Volta)
+  const [routeReturnAirportFrom, setRouteReturnAirportFrom] = useState("");
+  const [routeReturnCityFrom, setRouteReturnCityFrom] = useState("");
+  const [routeReturnAirportTo, setRouteReturnAirportTo] = useState("");
+  const [routeReturnCityTo, setRouteReturnCityTo] = useState("");
   const [routeReturnDate, setRouteReturnDate] = useState("");
   const [routeReturnTime, setRouteReturnTime] = useState("");
+  const [routeReturnArrivalTime, setRouteReturnArrivalTime] = useState("");
+  const [routeReturnAirline, setRouteReturnAirline] = useState("");
+  const [routeReturnStops, setRouteReturnStops] = useState("");
+  const [routeReturnDuration, setRouteReturnDuration] = useState("");
+  const [routeReturnBaggage, setRouteReturnBaggage] = useState("");
 
   // Package details state
   const [packageDetails, setPackageDetails] = useState<PackageDetailItem[]>([]);
@@ -220,17 +237,34 @@ export default function AdminPackageForm() {
         })) || []
       );
 
-      // Load route info
+      // Load route info (retrocompatível com dados antigos from/to)
       const ri = (pkg as any).route_info;
       if (ri && typeof ri === "object") {
-        setRouteDepartureFrom(ri.departure?.from || "");
-        setRouteDepartureTo(ri.departure?.to || "");
-        setRouteDepartureDate(ri.departure?.date || "");
-        setRouteDepartureTime(ri.departure?.time || "");
-        setRouteReturnFrom(ri.return?.from || "");
-        setRouteReturnTo(ri.return?.to || "");
-        setRouteReturnDate(ri.return?.date || "");
-        setRouteReturnTime(ri.return?.time || "");
+        const dep = ri.departure || {};
+        setRouteDepartureAirportFrom(dep.airportCodeFrom || "");
+        setRouteDepartureCityFrom(dep.cityFrom || dep.from || "");
+        setRouteDepartureAirportTo(dep.airportCodeTo || "");
+        setRouteDepartureCityTo(dep.cityTo || dep.to || "");
+        setRouteDepartureDate(dep.date || "");
+        setRouteDepartureTime(dep.departureTime || dep.time || "");
+        setRouteDepartureArrivalTime(dep.arrivalTime || "");
+        setRouteDepartureAirline(dep.airline || "");
+        setRouteDepartureStops(dep.stops || "");
+        setRouteDepartureDuration(dep.duration || "");
+        setRouteDepartureBaggage(dep.baggage || "");
+
+        const ret = ri.return || {};
+        setRouteReturnAirportFrom(ret.airportCodeFrom || "");
+        setRouteReturnCityFrom(ret.cityFrom || ret.from || "");
+        setRouteReturnAirportTo(ret.airportCodeTo || "");
+        setRouteReturnCityTo(ret.cityTo || ret.to || "");
+        setRouteReturnDate(ret.date || "");
+        setRouteReturnTime(ret.departureTime || ret.time || "");
+        setRouteReturnArrivalTime(ret.arrivalTime || "");
+        setRouteReturnAirline(ret.airline || "");
+        setRouteReturnStops(ret.stops || "");
+        setRouteReturnDuration(ret.duration || "");
+        setRouteReturnBaggage(ret.baggage || "");
       }
 
       // Load package details
@@ -267,20 +301,35 @@ export default function AdminPackageForm() {
       };
 
       // Build route_info
-      const hasRoute = routeDepartureFrom || routeDepartureTo || routeReturnFrom || routeReturnTo;
+      const hasRoute = routeDepartureCityFrom || routeDepartureCityTo || routeReturnCityFrom || routeReturnCityTo
+        || routeDepartureAirportFrom || routeDepartureAirportTo || routeReturnAirportFrom || routeReturnAirportTo;
       if (hasRoute) {
         pkgData.route_info = {
           departure: {
-            from: routeDepartureFrom || null,
-            to: routeDepartureTo || null,
+            airportCodeFrom: routeDepartureAirportFrom || null,
+            cityFrom: routeDepartureCityFrom || null,
+            airportCodeTo: routeDepartureAirportTo || null,
+            cityTo: routeDepartureCityTo || null,
             date: routeDepartureDate || null,
-            time: routeDepartureTime || null,
+            departureTime: routeDepartureTime || null,
+            arrivalTime: routeDepartureArrivalTime || null,
+            airline: routeDepartureAirline || null,
+            stops: routeDepartureStops || null,
+            duration: routeDepartureDuration || null,
+            baggage: routeDepartureBaggage || null,
           },
           return: {
-            from: routeReturnFrom || null,
-            to: routeReturnTo || null,
+            airportCodeFrom: routeReturnAirportFrom || null,
+            cityFrom: routeReturnCityFrom || null,
+            airportCodeTo: routeReturnAirportTo || null,
+            cityTo: routeReturnCityTo || null,
             date: routeReturnDate || null,
-            time: routeReturnTime || null,
+            departureTime: routeReturnTime || null,
+            arrivalTime: routeReturnArrivalTime || null,
+            airline: routeReturnAirline || null,
+            stops: routeReturnStops || null,
+            duration: routeReturnDuration || null,
+            baggage: routeReturnBaggage || null,
           },
         };
       } else {
@@ -667,37 +716,63 @@ export default function AdminPackageForm() {
         {/* ── 1.5 TRAJETO IDA E VOLTA ── */}
         <SectionCard
           icon={Plane}
-          title="Trajeto Ida e Volta"
-          description="Informe os trechos de ida e volta com datas e horários de saída (opcional)"
+          title="Informações de Voo"
+          description="Companhia aérea, aeroportos, horários, bagagem e paradas — dados completos para o cliente"
           color="text-indigo-600"
           iconBg="bg-indigo-50"
         >
-          <div className="space-y-5">
-            {/* IDA */}
-            <div className="space-y-3 p-4 rounded-xl border border-indigo-200 bg-indigo-50/30">
-              <div className="flex items-center gap-2 mb-1">
+          <div className="space-y-6">
+            {/* ── IDA ── */}
+            <div className="space-y-4 p-5 rounded-xl border border-indigo-200 bg-indigo-50/30">
+              <div className="flex items-center gap-2 pb-2 border-b border-indigo-200/60">
                 <span className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">→</span>
-                <span className="text-sm font-semibold text-indigo-700">Ida</span>
+                <span className="text-sm font-bold text-indigo-700 uppercase tracking-wider">Ida</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+              {/* Aeroportos: Código + Cidade */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Origem</Label>
+                  <Label className="text-xs text-muted-foreground">Cód. Aeroporto Origem</Label>
                   <Input
-                    value={routeDepartureFrom}
-                    onChange={(e) => setRouteDepartureFrom(e.target.value)}
-                    placeholder="Ex: Cruzeiro do Sul"
+                    value={routeDepartureAirportFrom}
+                    onChange={(e) => setRouteDepartureAirportFrom(e.target.value.toUpperCase())}
+                    placeholder="RBR"
+                    maxLength={4}
+                    className="h-10 font-mono font-bold text-center uppercase"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Cidade Origem</Label>
+                  <Input
+                    value={routeDepartureCityFrom}
+                    onChange={(e) => setRouteDepartureCityFrom(e.target.value)}
+                    placeholder="Rio Branco"
                     className="h-10"
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Destino</Label>
+                  <Label className="text-xs text-muted-foreground">Cód. Aeroporto Destino</Label>
                   <Input
-                    value={routeDepartureTo}
-                    onChange={(e) => setRouteDepartureTo(e.target.value)}
-                    placeholder="Ex: Rio Branco"
+                    value={routeDepartureAirportTo}
+                    onChange={(e) => setRouteDepartureAirportTo(e.target.value.toUpperCase())}
+                    placeholder="GRU"
+                    maxLength={4}
+                    className="h-10 font-mono font-bold text-center uppercase"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Cidade Destino</Label>
+                  <Input
+                    value={routeDepartureCityTo}
+                    onChange={(e) => setRouteDepartureCityTo(e.target.value)}
+                    placeholder="São Paulo"
                     className="h-10"
                   />
                 </div>
+              </div>
+
+              {/* Data, Horários e Duração */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Data da ida</Label>
                   <Input
@@ -708,7 +783,7 @@ export default function AdminPackageForm() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Horário de saída</Label>
+                  <Label className="text-xs text-muted-foreground">Horário de Saída</Label>
                   <Input
                     type="time"
                     value={routeDepartureTime}
@@ -716,39 +791,135 @@ export default function AdminPackageForm() {
                     className="h-10"
                   />
                 </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Horário de Chegada</Label>
+                  <Input
+                    type="time"
+                    value={routeDepartureArrivalTime}
+                    onChange={(e) => setRouteDepartureArrivalTime(e.target.value)}
+                    className="h-10"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Duração do voo</Label>
+                  <Input
+                    value={routeDepartureDuration}
+                    onChange={(e) => setRouteDepartureDuration(e.target.value)}
+                    placeholder="11h 35m"
+                    className="h-10"
+                  />
+                </div>
               </div>
-              {routeDepartureFrom && routeDepartureTo && routeDepartureDate && (
-                <p className="text-xs text-indigo-600 font-medium mt-1">
-                  ✈️ {routeDepartureFrom} → {routeDepartureTo} • {(() => { const [y, m, d] = routeDepartureDate.split("-"); return `${d}/${m}/${y}`; })()}{routeDepartureTime ? ` às ${routeDepartureTime}h` : ""}
-                </p>
+
+              {/* Cia Aérea, Paradas e Bagagem */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Companhia Aérea</Label>
+                  <AirlineSelect
+                    value={routeDepartureAirline}
+                    onChange={setRouteDepartureAirline}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Paradas</Label>
+                  <Select value={routeDepartureStops} onValueChange={setRouteDepartureStops}>
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Direto">✈️ Direto</SelectItem>
+                      <SelectItem value="1 parada">1 parada</SelectItem>
+                      <SelectItem value="2 paradas">2 paradas</SelectItem>
+                      <SelectItem value="3+ paradas">3+ paradas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Bagagem</Label>
+                  <Input
+                    value={routeDepartureBaggage}
+                    onChange={(e) => setRouteDepartureBaggage(e.target.value)}
+                    placeholder="Ex: 23kg, Mão 10kg"
+                    className="h-10"
+                  />
+                </div>
+              </div>
+
+              {/* Preview da ida */}
+              {routeDepartureAirportFrom && routeDepartureAirportTo && (
+                <div className="bg-white/80 rounded-lg p-3 border border-indigo-100 flex items-center gap-3 text-sm">
+                  <Plane size={14} className="text-indigo-500 shrink-0" />
+                  <span className="font-mono font-bold text-indigo-800">{routeDepartureAirportFrom}</span>
+                  <span className="text-indigo-400">→</span>
+                  <span className="font-mono font-bold text-indigo-800">{routeDepartureAirportTo}</span>
+                  {routeDepartureAirline && (() => {
+                    const info = getAirlineInfo(routeDepartureAirline);
+                    return (
+                      <span className="flex items-center gap-1.5 text-muted-foreground">
+                        •
+                        {info?.logo && <img src={info.logo} alt="" className="w-4 h-4 rounded-sm object-contain" />}
+                        {routeDepartureAirline}
+                      </span>
+                    );
+                  })()}
+                  {routeDepartureTime && <span className="text-muted-foreground">• {routeDepartureTime}</span>}
+                  {routeDepartureArrivalTime && <span className="text-muted-foreground">→ {routeDepartureArrivalTime}</span>}
+                  {routeDepartureDuration && <span className="text-indigo-600 font-medium ml-auto">{routeDepartureDuration}</span>}
+                </div>
               )}
             </div>
 
-            {/* VOLTA */}
-            <div className="space-y-3 p-4 rounded-xl border border-emerald-200 bg-emerald-50/30">
-              <div className="flex items-center gap-2 mb-1">
+            {/* ── VOLTA ── */}
+            <div className="space-y-4 p-5 rounded-xl border border-emerald-200 bg-emerald-50/30">
+              <div className="flex items-center gap-2 pb-2 border-b border-emerald-200/60">
                 <span className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">←</span>
-                <span className="text-sm font-semibold text-emerald-700">Volta</span>
+                <span className="text-sm font-bold text-emerald-700 uppercase tracking-wider">Volta</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+              {/* Aeroportos: Código + Cidade */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Origem</Label>
+                  <Label className="text-xs text-muted-foreground">Cód. Aeroporto Origem</Label>
                   <Input
-                    value={routeReturnFrom}
-                    onChange={(e) => setRouteReturnFrom(e.target.value)}
-                    placeholder="Ex: Rio Branco"
+                    value={routeReturnAirportFrom}
+                    onChange={(e) => setRouteReturnAirportFrom(e.target.value.toUpperCase())}
+                    placeholder="GRU"
+                    maxLength={4}
+                    className="h-10 font-mono font-bold text-center uppercase"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Cidade Origem</Label>
+                  <Input
+                    value={routeReturnCityFrom}
+                    onChange={(e) => setRouteReturnCityFrom(e.target.value)}
+                    placeholder="São Paulo"
                     className="h-10"
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Destino</Label>
+                  <Label className="text-xs text-muted-foreground">Cód. Aeroporto Destino</Label>
                   <Input
-                    value={routeReturnTo}
-                    onChange={(e) => setRouteReturnTo(e.target.value)}
-                    placeholder="Ex: Cruzeiro do Sul"
+                    value={routeReturnAirportTo}
+                    onChange={(e) => setRouteReturnAirportTo(e.target.value.toUpperCase())}
+                    placeholder="RBR"
+                    maxLength={4}
+                    className="h-10 font-mono font-bold text-center uppercase"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Cidade Destino</Label>
+                  <Input
+                    value={routeReturnCityTo}
+                    onChange={(e) => setRouteReturnCityTo(e.target.value)}
+                    placeholder="Rio Branco"
                     className="h-10"
                   />
                 </div>
+              </div>
+
+              {/* Data, Horários e Duração */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Data da volta</Label>
                   <Input
@@ -759,7 +930,7 @@ export default function AdminPackageForm() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Horário de saída</Label>
+                  <Label className="text-xs text-muted-foreground">Horário de Saída</Label>
                   <Input
                     type="time"
                     value={routeReturnTime}
@@ -767,11 +938,81 @@ export default function AdminPackageForm() {
                     className="h-10"
                   />
                 </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Horário de Chegada</Label>
+                  <Input
+                    type="time"
+                    value={routeReturnArrivalTime}
+                    onChange={(e) => setRouteReturnArrivalTime(e.target.value)}
+                    className="h-10"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Duração do voo</Label>
+                  <Input
+                    value={routeReturnDuration}
+                    onChange={(e) => setRouteReturnDuration(e.target.value)}
+                    placeholder="10h"
+                    className="h-10"
+                  />
+                </div>
               </div>
-              {routeReturnFrom && routeReturnTo && routeReturnDate && (
-                <p className="text-xs text-emerald-600 font-medium mt-1">
-                  ✈️ {routeReturnFrom} → {routeReturnTo} • {(() => { const [y, m, d] = routeReturnDate.split("-"); return `${d}/${m}/${y}`; })()}{routeReturnTime ? ` às ${routeReturnTime}h` : ""}
-                </p>
+
+              {/* Cia Aérea, Paradas e Bagagem */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Companhia Aérea</Label>
+                  <AirlineSelect
+                    value={routeReturnAirline}
+                    onChange={setRouteReturnAirline}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Paradas</Label>
+                  <Select value={routeReturnStops} onValueChange={setRouteReturnStops}>
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Direto">✈️ Direto</SelectItem>
+                      <SelectItem value="1 parada">1 parada</SelectItem>
+                      <SelectItem value="2 paradas">2 paradas</SelectItem>
+                      <SelectItem value="3+ paradas">3+ paradas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Bagagem</Label>
+                  <Input
+                    value={routeReturnBaggage}
+                    onChange={(e) => setRouteReturnBaggage(e.target.value)}
+                    placeholder="Ex: 23kg, Mão 10kg"
+                    className="h-10"
+                  />
+                </div>
+              </div>
+
+              {/* Preview da volta */}
+              {routeReturnAirportFrom && routeReturnAirportTo && (
+                <div className="bg-white/80 rounded-lg p-3 border border-emerald-100 flex items-center gap-3 text-sm">
+                  <Plane size={14} className="text-emerald-500 shrink-0" />
+                  <span className="font-mono font-bold text-emerald-800">{routeReturnAirportFrom}</span>
+                  <span className="text-emerald-400">→</span>
+                  <span className="font-mono font-bold text-emerald-800">{routeReturnAirportTo}</span>
+                  {routeReturnAirline && (() => {
+                    const info = getAirlineInfo(routeReturnAirline);
+                    return (
+                      <span className="flex items-center gap-1.5 text-muted-foreground">
+                        •
+                        {info?.logo && <img src={info.logo} alt="" className="w-4 h-4 rounded-sm object-contain" />}
+                        {routeReturnAirline}
+                      </span>
+                    );
+                  })()}
+                  {routeReturnTime && <span className="text-muted-foreground">• {routeReturnTime}</span>}
+                  {routeReturnArrivalTime && <span className="text-muted-foreground">→ {routeReturnArrivalTime}</span>}
+                  {routeReturnDuration && <span className="text-emerald-600 font-medium ml-auto">{routeReturnDuration}</span>}
+                </div>
               )}
             </div>
           </div>
@@ -781,29 +1022,79 @@ export default function AdminPackageForm() {
         <SectionCard
           icon={Image}
           title="Imagens"
-          description="Foto de capa e galeria do pacote"
+          description="Banner de capa e galeria de fotos do pacote"
           color="text-violet-600"
           iconBg="bg-violet-50"
         >
           <div className="space-y-6">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Foto de Capa (Hero)</Label>
-              <p className="text-xs text-muted-foreground">
-                Imagem principal exibida nos cards e no topo da página do pacote
-              </p>
+            {/* ── BANNER (HERO) ── */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    🖼️ Imagem do Banner (Hero)
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Imagem panorâmica exibida no topo da página do pacote
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 bg-violet-50 border border-violet-200 rounded-lg px-3 py-1.5">
+                  <span className="text-xs font-bold text-violet-700">1920 × 800px</span>
+                  <span className="text-[10px] text-violet-500 font-medium">(recomendado)</span>
+                </div>
+              </div>
+
+              {/* Preview com aspecto correto */}
+              {coverImageUrl && (
+                <div className="relative rounded-xl overflow-hidden border border-border bg-slate-100" style={{ aspectRatio: "12/5" }}>
+                  <img
+                    src={coverImageUrl}
+                    alt="Preview do banner"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
+                    <span className="text-white/90 text-xs font-medium bg-black/40 backdrop-blur-sm px-2.5 py-1 rounded-full">
+                      Preview do banner (como aparece no site)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setCoverImageUrl(null)}
+                      className="text-white/80 hover:text-red-300 bg-black/40 backdrop-blur-sm p-1.5 rounded-full transition-colors"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <ImageUpload
                 bucket="packages"
                 value={coverImageUrl}
                 onChange={setCoverImageUrl}
                 onRemove={() => setCoverImageUrl(null)}
-                label="Arraste ou clique para enviar a capa"
+                label="Arraste ou clique para enviar o banner"
               />
+
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
+                <Info size={14} className="text-amber-500 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-700 leading-relaxed">
+                  <strong>Dica:</strong> Use imagens <strong>horizontais/paisagem</strong> de pelo menos <strong>1920×800px</strong> para evitar cortes. 
+                  Imagens verticais ou quadradas ficarão cortadas no banner. A proporção ideal é <strong>12:5</strong> (panorâmica).
+                </p>
+              </div>
             </div>
-            <div className="border-t border-border/50 pt-5 space-y-2">
-              <Label className="text-sm font-medium">Galeria de Fotos</Label>
-              <p className="text-xs text-muted-foreground">
-                Fotos adicionais exibidas na página de detalhes do pacote
-              </p>
+
+            {/* ── GALERIA DE FOTOS ── */}
+            <div className="border-t border-border/50 pt-5 space-y-3">
+              <div>
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  📸 Galeria de Fotos
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Fotos adicionais exibidas na página de detalhes — ao clicar, o cliente será direcionado ao WhatsApp
+                </p>
+              </div>
               <MultiImageUpload
                 bucket="packages"
                 values={gallery}

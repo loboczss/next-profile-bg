@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowLeft, Clock, Car, Coffee, Bed, Map, Shield, MessageCircle, Users, Utensils, Compass, Camera, MapPin, Loader2, CreditCard, Heart, Star, UserCircle, ShoppingCart, Calendar, Maximize2, Ticket, Sparkles, ArrowRight, Send, Info, ChevronDown, Hotel, Plane, UtensilsCrossed, CheckCircle2, Plus, Minus, Ban
+  ArrowLeft, Clock, Car, Coffee, Bed, Map, Shield, MessageCircle, Users, Utensils, Compass, Camera, MapPin, Loader2, CreditCard, Heart, Star, UserCircle, ShoppingCart, Calendar, Maximize2, Ticket, Sparkles, ArrowRight, Send, Info, ChevronDown, Hotel, Plane, UtensilsCrossed, CheckCircle2, Plus, Minus, Ban, Luggage, Briefcase
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -20,6 +20,7 @@ import Navbar from "@/components/Navbar";
 import { toast } from "sonner";
 import QuoteFormDialog from "@/components/QuoteFormDialog";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { getAirlineInfo } from "@/components/AirlineSelect";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -263,8 +264,8 @@ const PackageDetails = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      {/* Hero Banner */}
-      <section className="relative h-[40vh] min-h-[350px] overflow-hidden">
+      {/* Hero Banner — mt-16/lg:mt-20 empurra o banner para baixo do menu fixo */}
+      <section className="relative h-[40vh] min-h-[350px] overflow-hidden mt-16 lg:mt-20">
         <motion.img
           src={pkg.cover_image_url || ""}
           alt={pkg.title}
@@ -305,7 +306,7 @@ const PackageDetails = () => {
             <motion.div initial="hidden" animate="visible">
               <motion.div custom={0} variants={fadeUp} className="flex flex-wrap gap-2 mb-3 items-center">
                 <Badge className="bg-evastur-red text-white border-0">
-                  {pkg.category === "interno" ? "Nacional" : "Internacional"}
+                  {{ interno: "Regional", nacional: "Nacional", internacional: "Internacional", cruzeiro: "Cruzeiro" }[pkg.category] || pkg.category}
                 </Badge>
                 {pkg.duration && (
                   <Badge variant="outline" className="border-white/30 text-white/90 backdrop-blur-sm">
@@ -418,8 +419,8 @@ const PackageDetails = () => {
                       type="button"
                       onClick={() => toggleMenuItem(item.id)}
                       className={`text-left p-4 rounded-xl border-2 transition-all duration-200 ${isSelected
-                          ? "border-orange-500 bg-orange-50 shadow-md"
-                          : "border-border bg-card hover:border-orange-300 hover:bg-orange-50/30"
+                        ? "border-orange-500 bg-orange-50 shadow-md"
+                        : "border-border bg-card hover:border-orange-300 hover:bg-orange-50/30"
                         }`}
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -499,10 +500,32 @@ const PackageDetails = () => {
               </motion.h2>
               <motion.div custom={1} variants={fadeUp} className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {images.map((img: any, i: number) => (
-                  <div key={img.image_url} className={`group relative rounded-xl overflow-hidden cursor-pointer bg-secondary/30 ${i === 0 ? "md:col-span-2 md:row-span-2" : ""}`}>
+                  <a
+                    key={img.image_url}
+                    href={(() => {
+                      const phone = siteSettings?.agencyWhatsapp?.replace(/\D/g, "") || "5568999872973";
+                      const link = `${window.location.origin}/pacote/${pkg.slug}`;
+                      const msg = encodeURIComponent(
+                        `Olá! 😊 Vi o pacote *${pkg.title}* no site da Evastur e gostaria de mais informações.\n\n🔗 ${link}\n\nPode me ajudar?`
+                      );
+                      return `https://wa.me/${phone}?text=${msg}`;
+                    })()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`group relative rounded-xl overflow-hidden cursor-pointer bg-secondary/30 ${i === 0 ? "md:col-span-2 md:row-span-2" : ""}`}
+                  >
                     <img src={img.image_url} alt={`Gallery ${i + 1}`} className="w-full h-auto object-contain transition-transform duration-500 group-hover:scale-105" />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 pointer-events-none" />
-                  </div>
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-300 flex items-center justify-center">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center gap-2">
+                        <div className="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg">
+                          <MessageCircle size={22} className="text-white" />
+                        </div>
+                        <span className="text-white text-xs font-semibold bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full">
+                          Falar no WhatsApp
+                        </span>
+                      </div>
+                    </div>
+                  </a>
                 ))}
               </motion.div>
             </motion.div>
@@ -624,11 +647,10 @@ const PackageDetails = () => {
 
                 {/* Vagas disponíveis */}
                 {!isSoldOut && availableSlots != null && availableSlots > 0 && (
-                  <div className={`flex items-center gap-2 text-sm py-3 px-3 rounded-xl border ${
-                    availableSlots <= 5
+                  <div className={`flex items-center gap-2 text-sm py-3 px-3 rounded-xl border ${availableSlots <= 5
                       ? "bg-amber-50 border-amber-200 text-amber-700"
                       : "bg-emerald-50 border-emerald-200 text-emerald-700"
-                  }`}>
+                    }`}>
                     <Users size={16} className={availableSlots <= 5 ? "text-amber-500" : "text-emerald-500"} />
                     <div>
                       <span className={`font-bold ${availableSlots <= 5 ? "animate-pulse" : ""}`}>
@@ -712,62 +734,195 @@ const PackageDetails = () => {
                   </div>
                 )}
 
-                {/* Route Info — Trajeto Ida e Volta */}
+                {/* Route Info — Informações de Voo (Estilo Decolar) */}
                 {(() => {
                   const ri = (pkg as any).route_info;
                   if (!ri || typeof ri !== "object") return null;
                   const dep = ri.departure;
                   const ret = ri.return;
-                  const hasDep = dep && (dep.from || dep.to);
-                  const hasRet = ret && (ret.from || ret.to);
+                  // Retrocompat: suporta dados antigos (from/to) e novos (cityFrom/cityTo/airportCodeFrom/airportCodeTo)
+                  const getAirport = (leg: any, dir: "From" | "To") => leg?.[`airportCode${dir}`] || "";
+                  const getCity = (leg: any, dir: "From" | "To") => leg?.[`city${dir}`] || leg?.[dir === "From" ? "from" : "to"] || "";
+                  const getDepTime = (leg: any) => leg?.departureTime || leg?.time || "";
+                  const getArrTime = (leg: any) => leg?.arrivalTime || "";
+
+                  const hasDep = dep && (getCity(dep, "From") || getCity(dep, "To") || getAirport(dep, "From"));
+                  const hasRet = ret && (getCity(ret, "From") || getCity(ret, "To") || getAirport(ret, "From"));
                   if (!hasDep && !hasRet) return null;
 
-                  const formatRouteDate = (d: string) => {
+                  const formatFullDate = (d: string) => {
                     if (!d) return "";
-                    const [y, m, day] = d.split("-");
-                    return `${day}/${m}`;
+                    const date = new Date(d + "T12:00:00");
+                    return date.toLocaleDateString("pt-BR", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+                  };
+
+                  const FlightLeg = ({ leg, label, color }: { leg: any; label: string; color: "indigo" | "emerald" }) => {
+                    const airFrom = getAirport(leg, "From");
+                    const airTo = getAirport(leg, "To");
+                    const cityFrom = getCity(leg, "From");
+                    const cityTo = getCity(leg, "To");
+                    const depTime = getDepTime(leg);
+                    const arrTime = getArrTime(leg);
+                    const airline = leg?.airline || "";
+                    const stops = leg?.stops || "";
+                    const duration = leg?.duration || "";
+                    const baggage = leg?.baggage || "";
+                    const dateStr = leg?.date ? formatFullDate(leg.date) : "";
+
+                    const colorMap = {
+                      indigo: {
+                        border: "border-indigo-200",
+                        bg: "bg-gradient-to-br from-indigo-50/80 to-white",
+                        label: "text-indigo-600",
+                        labelBg: "bg-indigo-600",
+                        code: "text-slate-800",
+                        city: "text-slate-500",
+                        line: "border-indigo-300",
+                        dot: "border-indigo-400 bg-indigo-100",
+                        time: "text-slate-800",
+                        meta: "text-slate-500",
+                        duration: "text-indigo-600",
+                      },
+                      emerald: {
+                        border: "border-emerald-200",
+                        bg: "bg-gradient-to-br from-emerald-50/80 to-white",
+                        label: "text-emerald-600",
+                        labelBg: "bg-emerald-600",
+                        code: "text-slate-800",
+                        city: "text-slate-500",
+                        line: "border-emerald-300",
+                        dot: "border-emerald-400 bg-emerald-100",
+                        time: "text-slate-800",
+                        meta: "text-slate-500",
+                        duration: "text-emerald-600",
+                      },
+                    };
+                    const c = colorMap[color];
+
+                    return (
+                      <div className={`rounded-xl border ${c.border} ${c.bg} overflow-hidden`}>
+                        {/* Header: Label + Date + Bagagem */}
+                        <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100">
+                          <div className="flex items-center gap-2">
+                            <div className={`flex items-center gap-1.5 ${c.label}`}>
+                              <Plane size={14} className={label === "IDA" ? "" : "rotate-180"} />
+                              <span className="text-xs font-bold uppercase tracking-wider">{label}</span>
+                            </div>
+                            {dateStr && (
+                              <span className="text-xs text-slate-400 ml-1">{dateStr}</span>
+                            )}
+                          </div>
+                          {baggage && (
+                            <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                              <span className="font-medium">Bagagem</span>
+                              <div className="flex items-center gap-1">
+                                <Luggage size={16} className="text-emerald-500" />
+                                <Briefcase size={14} className="text-sky-500" />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Body: Airline + Times + Route */}
+                        <div className="px-4 py-4">
+                          {/* Airline row */}
+                          {airline && (() => {
+                            const info = getAirlineInfo(airline);
+                            return (
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className={`w-7 h-7 rounded-lg bg-white border border-slate-200 flex items-center justify-center overflow-hidden shadow-sm flex-shrink-0`}>
+                                  {info?.logo ? (
+                                    <img src={info.logo} alt={airline} className="w-5 h-5 object-contain" />
+                                  ) : (
+                                    <div className={`w-1.5 h-1.5 rounded-full ${c.labelBg}`} />
+                                  )}
+                                </div>
+                                <span className="text-sm font-semibold text-slate-700">{airline}</span>
+                                {info?.iata && (
+                                  <span className="text-[10px] font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-400">{info.iata}</span>
+                                )}
+                              </div>
+                            );
+                          })()}
+
+                          {/* Times + Stops + Duration row */}
+                          <div className="flex items-center gap-3">
+                            {/* Departure time */}
+                            <div className="text-center min-w-[52px]">
+                              <p className={`text-xl font-bold ${c.time} leading-none`}>{depTime || "--:--"}</p>
+                            </div>
+
+                            {/* Timeline connector */}
+                            <div className="flex-1 flex flex-col items-center gap-0.5 px-1">
+                              {stops && (
+                                <span className="text-[10px] text-slate-400 font-medium">{stops}</span>
+                              )}
+                              <div className="w-full flex items-center gap-0">
+                                <div className={`w-2 h-2 rounded-full border-2 ${c.dot} shrink-0`} />
+                                <div className={`flex-1 border-t-2 border-dashed ${c.line}`} />
+                                <div className={`w-2 h-2 rounded-full border-2 ${c.dot} shrink-0`} />
+                              </div>
+                            </div>
+
+                            {/* Arrival time */}
+                            <div className="text-center min-w-[52px]">
+                              <p className={`text-xl font-bold ${c.time} leading-none`}>{arrTime || "--:--"}</p>
+                            </div>
+
+                            {/* Duration */}
+                            {duration && (
+                              <span className={`text-xs font-semibold ${c.duration} ml-1 whitespace-nowrap`}>{duration}</span>
+                            )}
+
+                            {/* Baggage detail */}
+                            {baggage && (
+                              <span className="text-xs text-slate-400 font-medium whitespace-nowrap ml-1">{baggage}</span>
+                            )}
+                          </div>
+
+                          {/* Airport codes + cities row */}
+                          {(airFrom || airTo) && (
+                            <div className="flex items-start mt-2">
+                              <div className="min-w-[52px] text-center">
+                                <p className="text-sm font-bold text-slate-700 font-mono">{airFrom}</p>
+                                <p className="text-[10px] text-slate-400 leading-tight">{cityFrom}</p>
+                              </div>
+                              <div className="flex-1" />
+                              <div className="min-w-[52px] text-center">
+                                <p className="text-sm font-bold text-slate-700 font-mono">{airTo}</p>
+                                <p className="text-[10px] text-slate-400 leading-tight">{cityTo}</p>
+                              </div>
+                              {/* Spacers to align with duration/baggage columns */}
+                              {duration && <div className="ml-1 min-w-[40px]" />}
+                              {baggage && <div className="ml-1 min-w-[40px]" />}
+                            </div>
+                          )}
+
+                          {/* Fallback: if no airport codes, show city names */}
+                          {!airFrom && !airTo && (cityFrom || cityTo) && (
+                            <div className="flex items-center mt-2">
+                              <div className="min-w-[52px] text-center">
+                                <p className="text-xs font-semibold text-slate-600">{cityFrom}</p>
+                              </div>
+                              <div className="flex-1" />
+                              <div className="min-w-[52px] text-center">
+                                <p className="text-xs font-semibold text-slate-600">{cityTo}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
                   };
 
                   return (
-                    <div className="space-y-2.5 py-3 border-b">
+                    <div className="space-y-3 py-3 border-b">
                       <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                         <Plane size={15} className="text-indigo-500" />
-                        Trajeto
+                        Informações de Voo
                       </div>
-                      {hasDep && (
-                        <div className="flex items-start gap-3 p-3 rounded-xl bg-indigo-50/60 border border-indigo-100">
-                          <div className="w-7 h-7 rounded-full bg-indigo-500 text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
-                            →
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-indigo-800">
-                              {dep.from} <ArrowRight size={12} className="inline mx-1 text-indigo-400" /> {dep.to}
-                            </p>
-                            <p className="text-xs text-indigo-600/80 mt-0.5">
-                              {dep.date ? formatRouteDate(dep.date) : ""}
-                              {dep.date && dep.time ? " • " : ""}
-                              {dep.time ? `Saída às ${dep.time}h` : ""}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                      {hasRet && (
-                        <div className="flex items-start gap-3 p-3 rounded-xl bg-emerald-50/60 border border-emerald-100">
-                          <div className="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
-                            ←
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-emerald-800">
-                              {ret.from} <ArrowRight size={12} className="inline mx-1 text-emerald-400" /> {ret.to}
-                            </p>
-                            <p className="text-xs text-emerald-600/80 mt-0.5">
-                              {ret.date ? formatRouteDate(ret.date) : ""}
-                              {ret.date && ret.time ? " • " : ""}
-                              {ret.time ? `Saída às ${ret.time}h` : ""}
-                            </p>
-                          </div>
-                        </div>
-                      )}
+                      {hasDep && <FlightLeg leg={dep} label="IDA" color="indigo" />}
+                      {hasRet && <FlightLeg leg={ret} label="VOLTA" color="emerald" />}
                     </div>
                   );
                 })()}

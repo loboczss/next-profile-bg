@@ -51,7 +51,7 @@ const directChannels = [
   {
     icon: MapPin,
     label: "Endereço",
-    value: "Av. Joaquim Tavora, sn – Baixa, Cruzeiro do Sul/AC",
+    value: "Av. Joaquim Tavora, 213 – Baixa, Cruzeiro do Sul/AC",
     href: "https://maps.google.com/?q=Cruzeiro+do+Sul+Acre",
     color: "hsl(232 100% 23%)",
     bg: "hsl(232 100% 23% / 0.08)",
